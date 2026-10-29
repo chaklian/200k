@@ -40,6 +40,11 @@ h1{font-size:22px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 @media (max-width:1000px){.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.kanban{grid-template-columns:1fr}}
 
+.kanban-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px;align-items:stretch}
+.kanban-4 .kcard{min-height:120px}
+@media (max-width:1000px){.kanban-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.kanban-4{grid-template-columns:1fr}}
+
 .canvas-wrap{margin-top:22px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
   padding:4px;overflow:hidden;container-type:inline-size;container-name:bridge}
 svg{display:block;width:100%;height:auto}
@@ -126,78 +131,30 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 </style>
 
 <div class="wrap">
-  <div class="kanban">
+  <div class="kanban-4">
     <div class="kcard">
       <h3>Valor do crédito (imóvel)</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="sub">INCC ref. 6%/ano (fixo)</div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
-        <h3 style="margin-bottom:6px">Total pago</h3>
-        <div class="big" id="kpiTotalPaid">R$ 0,00</div>
-        <p class="hint">Soma das parcelas pagas + recurso próprio dos lances</p>
-      </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
-        <h3 style="margin-bottom:6px">Parcela</h3>
-        <div class="big"><span id="paidLabel">0</span>/200</div>
-        <div class="sub" id="kpiParcela">parcela: R$ 700,00</div>
-        <p class="hint">Clique no botão pagar para iniciar a jornada do consórcio</p>
-      </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
-        <h3 style="margin-bottom:6px">Status</h3>
-        <div class="big" id="kpiStatus">Não contemplado</div>
-        <p class="hint" id="kpiStatusHint">Concorrendo ao sorteio</p>
-      </div>
     </div>
 
-    <div class="kcard locked" id="fixoCard">
-      <h3>Percentual igual pra todo mundo</h3>
-      <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
-      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink);font-size:14px">40%</b></div>
-
-      <div class="lance-slider-block" style="margin-top:4px">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
-      </div>
-      <p class="hint">O restante (<b><span id="fixoRecursoVal">10</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio — o teto de embutido não acompanha o percentual total do lance.</p>
-
-      <div class="lance-result">
-        <div>Lance total a pagar: <b id="fixoLanceTotalOut">R$ 0,00</b></div>
-        <div>Isso adianta <b id="fixoMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
-        <div>Sua carta líquida fica em: <b id="fixoCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
-      </div>
-      <div class="lance-row">
-        <button id="fixoBtn">Aplicar lance fixo</button>
-      </div>
-      <div class="lance-feedback" id="fixoFeedback"></div>
+    <div class="kcard">
+      <h3>Total pago</h3>
+      <div class="big" id="kpiTotalPaid">R$ 0,00</div>
+      <p class="hint">Soma das parcelas pagas + recurso próprio dos lances</p>
     </div>
 
-    <div class="kcard locked" id="livreCard">
-      <h3>Você escolhe o percentual</h3>
-      <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
+    <div class="kcard">
+      <h3>Parcela</h3>
+      <div class="big"><span id="paidLabel">0</span>/200</div>
+      <div class="sub" id="kpiParcela">parcela: R$ 700,00</div>
+      <p class="hint">Clique no botão pagar para iniciar a jornada do consórcio</p>
+    </div>
 
-      <div class="lance-slider-block" style="margin-top:4px">
-        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60,00</span>%</b></div>
-        <input type="range" id="livrePct" min="40" max="80" step="0.01" value="60">
-      </div>
-
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
-      </div>
-      <p class="hint">O restante (<b><span id="livreRecursoVal">30</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio.</p>
-
-      <div class="lance-result">
-        <div>Lance total a pagar: <b id="livreLanceTotalOut">R$ 0,00</b></div>
-        <div>Isso adianta <b id="livreMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
-        <div>Sua carta líquida fica em: <b id="livreCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
-      </div>
-      <div class="lance-row">
-        <button id="livreBtn">Aplicar lance livre</button>
-        <button id="resetBtn" class="danger">Zerar tudo</button>
-      </div>
-      <div class="lance-feedback" id="livreFeedback"></div>
+    <div class="kcard">
+      <h3>Status</h3>
+      <div class="big" id="kpiStatus">Não contemplado</div>
+      <p class="hint" id="kpiStatusHint">Concorrendo ao sorteio</p>
     </div>
   </div>
 
@@ -271,6 +228,72 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         .year-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:var(--ink);letter-spacing:.04em;font-weight:600}
       </style>
     </svg>
+  </div>
+
+  <div class="kanban">
+    <div class="kcard" id="sorteioCard">
+      <h3>Obrigatório — sorteado todo mês</h3>
+      <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
+      <details class="adv">
+        <summary>Como funciona</summary>
+        <p>A cada assembleia, se houver caixa disponível no fundo comum, uma cota é sorteada entre quem está em dia com as parcelas. É a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre.</p>
+      </details>
+      <div class="lance-result" style="margin-top:14px">
+        <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
+      </div>
+      <div class="lance-feedback" id="sorteioFeedback"></div>
+    </div>
+
+    <div class="kcard locked" id="fixoCard">
+      <h3>Percentual igual pra todo mundo</h3>
+      <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
+      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink);font-size:14px">40%</b></div>
+
+      <div class="lance-slider-block" style="margin-top:4px">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
+        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+      </div>
+      <p class="hint">O restante (<b><span id="fixoRecursoVal">10</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio — o teto de embutido não acompanha o percentual total do lance.</p>
+
+      <div class="lance-result">
+        <div>Lance total a pagar: <b id="fixoLanceTotalOut">R$ 0,00</b></div>
+        <div>Isso adianta <b id="fixoMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
+        <div>Sua carta líquida fica em: <b id="fixoCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
+      </div>
+      <div class="lance-row">
+        <button id="fixoBtn">Aplicar lance fixo</button>
+      </div>
+      <div class="lance-feedback" id="fixoFeedback"></div>
+    </div>
+
+    <div class="kcard locked" id="livreCard">
+      <h3>Você escolhe o percentual</h3>
+      <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
+
+      <div class="lance-slider-block" style="margin-top:4px">
+        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60,00</span>%</b></div>
+        <input type="range" id="livrePct" min="40" max="80" step="0.01" value="60">
+      </div>
+
+      <div class="lance-slider-block">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
+        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+      </div>
+      <p class="hint">O restante (<b><span id="livreRecursoVal">30</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio.</p>
+
+      <div class="lance-result">
+        <div>Lance total a pagar: <b id="livreLanceTotalOut">R$ 0,00</b></div>
+        <div>Isso adianta <b id="livreMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
+        <div>Sua carta líquida fica em: <b id="livreCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
+      </div>
+      <div class="lance-row">
+        <button id="livreBtn">Aplicar lance livre</button>
+        <button id="resetBtn" class="danger">Zerar tudo</button>
+      </div>
+      <div class="lance-feedback" id="livreFeedback"></div>
+    </div>
   </div>
 
   <div class="foot">
@@ -530,6 +553,7 @@ var recursoUsedTotal = 0;        // acumulado de recurso próprio já aplicado (
 // de reajustar o crédito e a parcela passa a ser a cheia (sem o redutor).
 var contemplated = false;
 var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — congela o INCC daí em diante
+var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mostrar no card certo qual modalidade contemplou
 var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de ~50% comum no mercado) — estimativa
 
 // grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
@@ -707,6 +731,15 @@ function updateContemplationUI(){
   livreBtn.disabled = contemplated;
   fixoBtn.style.opacity = contemplated ? '0.5' : '1';
   livreBtn.style.opacity = contemplated ? '0.5' : '1';
+
+  var sorteioOut = document.getElementById('sorteioStatusOut');
+  if (sorteioOut){
+    if (contemplated){
+      sorteioOut.textContent = (contemplationMethod === 'sorteio') ? 'Contemplado por sorteio' : 'Contemplado (por lance)';
+    } else {
+      sorteioOut.textContent = 'Concorrendo';
+    }
+  }
 }
 
 var deckG = document.getElementById('deck');
@@ -1054,6 +1087,22 @@ function showLanceFeedback(prefix, won){
   }
 }
 
+// feedback do card "Sorteio" — roda automaticamente a cada parcela paga
+// (doPay()), nunca via botão de ação: é a única modalidade que não depende
+// de dar lance, então o card nunca trava e o resultado aparece sozinho.
+function showSorteioFeedback(won){
+  var el = document.getElementById('sorteioFeedback');
+  if (!el) return;
+  el.classList.add('show');
+  if (won){
+    el.classList.remove('lose'); el.classList.add('win');
+    el.innerHTML = '🎉 <b>Contemplado no sorteio deste mês!</b>';
+  } else {
+    el.classList.remove('win'); el.classList.add('lose');
+    el.innerHTML = 'Sorteio realizado este mês — não foi sua cota desta vez. Continua concorrendo automaticamente todo mês.';
+  }
+}
+
 function applyLance(vals, kind){
   var chancePct = lanceChance(kind, vals.totalPct);
   var won = rollSorteio(chancePct);
@@ -1080,6 +1129,7 @@ function applyLance(vals, kind){
     if (idx < blockEls.length) blockEls[idx]._kind = (k < embMonths) ? 'embutido' : 'normal';
   }
 
+  contemplationMethod = kind;
   contemplate(n);
   updatePayBtn();
 }
@@ -1103,9 +1153,16 @@ function doPay(){
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
 
   // mesmo sem lance nenhum, todo mês tem um sorteio automático entre todo o
-  // grupo (GROUP_SIZE) — então a contemplação também pode vir sem lance
-  if (!contemplated && rollSorteio(100 / GROUP_SIZE)){
-    contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
+  // grupo (GROUP_SIZE) — então a contemplação também pode vir sem lance.
+  // Sempre roda e mostra o resultado no card "Sorteio" (que nunca trava,
+  // porque essa modalidade não depende de dar lance), ganhando ou não.
+  if (!contemplated){
+    var sorteioWon = rollSorteio(100 / GROUP_SIZE);
+    showSorteioFeedback(sorteioWon);
+    if (sorteioWon){
+      contemplationMethod = 'sorteio';
+      contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
+    }
   }
 
   // a ponte (progresso visual) só avança até onde o tempo real já chegou; se
@@ -1210,12 +1267,13 @@ function resetSimulation(){
   monthsElapsed = 0;
   contemplated = false;
   contemplationMonthsElapsed = null;
+  contemplationMethod = null;
   lanceUnlocked = false;
   lanceUsedThisRound = false;
   bridgeCompleted = false;
   stopFireworks();
   clearFinishWalk();
-  ['fixoFeedback', 'livreFeedback'].forEach(function(id){
+  ['sorteioFeedback', 'fixoFeedback', 'livreFeedback'].forEach(function(id){
     var el = document.getElementById(id);
     el.classList.remove('show', 'win', 'lose');
     el.innerHTML = '';
