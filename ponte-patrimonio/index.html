@@ -76,6 +76,10 @@ svg{display:block;width:100%;height:auto}
 #lanceBtn{background:var(--amber);border-color:var(--amber-ink);color:var(--amber-ink);font-weight:600}
 #lanceBtn:hover{background:var(--amber);border-color:var(--amber-ink)}
 
+/* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
+   prolongado como scroll/seleção de texto/menu de contexto no celular */
+#payBtn{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
 .kcard.locked{opacity:.4;pointer-events:none;filter:saturate(.5)}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
@@ -947,7 +951,11 @@ function updatePayBtn(){
   payBtn.style.opacity = done ? '0.5' : '1';
   payBtn.style.cursor = done ? 'default' : 'pointer';
 }
-payBtn.addEventListener('click', function(){
+// lógica de "pagar 1 parcela" extraída numa função própria pra poder ser
+// chamada tanto por um clique único quanto repetidamente ao segurar o botão
+// (ver listeners de pointerdown/hold abaixo) — era tudo inline dentro do
+// listener de click antes de 29/10.
+function doPay(){
   if (paidMonths >= TOTAL) return;
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
 
@@ -968,6 +976,44 @@ payBtn.addEventListener('click', function(){
   lanceUsedThisRound = false;
   updateLanceUnlockUI();
   updatePayBtn();
+}
+
+// segurar o botão "Pagar Parcela" repete o pagamento automaticamente, pra não
+// precisar clicar 200 vezes até o fim da ponte — clique único continua
+// funcionando normalmente, segurar é só um atalho em cima da mesma função.
+// Pointer events cobrem mouse E toque com o mesmo código.
+var HOLD_INITIAL_DELAY = 420; // atraso antes de começar a repetir, pra um clique rápido não "pegar" o hold por engano
+var HOLD_REPEAT_MS = 80;      // intervalo entre pagamentos repetidos enquanto segura (~12/s)
+var holdTimeout = null, holdInterval = null;
+var payPointerFired = false; // evita pagar 2x no mesmo toque/clique (pointerdown + click sintético depois)
+
+function stopPayHold(){
+  if (holdTimeout){ clearTimeout(holdTimeout); holdTimeout = null; }
+  if (holdInterval){ clearInterval(holdInterval); holdInterval = null; }
+}
+
+payBtn.addEventListener('pointerdown', function(e){
+  if (paidMonths >= TOTAL) return;
+  payPointerFired = true;
+  try { payBtn.setPointerCapture(e.pointerId); } catch (err){} // mantém recebendo o pointerup mesmo se o dedo escorregar pra fora do botão
+  doPay();
+  stopPayHold();
+  holdTimeout = setTimeout(function(){
+    holdInterval = setInterval(function(){
+      if (paidMonths >= TOTAL){ stopPayHold(); return; }
+      doPay();
+    }, HOLD_REPEAT_MS);
+  }, HOLD_INITIAL_DELAY);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(function(evt){
+  payBtn.addEventListener(evt, stopPayHold);
+});
+// 'click' continua existindo (teclado/acessibilidade dispara só esse evento,
+// sem pointerdown) — se o pointerdown já pagou essa interação, o click que
+// vem logo depois é ignorado pra não pagar 2 parcelas num clique só.
+payBtn.addEventListener('click', function(){
+  if (payPointerFired){ payPointerFired = false; return; }
+  doPay();
 });
 
 document.getElementById('fixoEmbutidoPct').addEventListener('input', updateFixoPreview);
