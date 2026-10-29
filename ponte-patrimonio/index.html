@@ -456,11 +456,15 @@ var GROUND_X = 40; // onde ele fica parado antes do primeiro bloco cair — no c
 var GROUND_FAR_X0 = 1110, GROUND_FAR_W = 90;
 var FINISH_X = GROUND_FAR_X0 + GROUND_FAR_W / 2;
 function investorX(n){
+  // mesma fórmula pra qualquer n, inclusive TOTAL: ele chega na borda da
+  // ponte seguindo exatamente o mesmo padrão dos outros meses (sempre a
+  // mesma distância atrás da frente de concretagem) — a caminhada extra
+  // até o centro do chão final é feita depois, por walkToFinish(), nunca
+  // um salto direto pra FINISH_X aqui (bug corrigido em 29/10: a versão
+  // anterior pulava direto pra FINISH_X nesse ponto, e como a transição
+  // CSS só dura .5s pra qualquer distância, uma passada maior que o normal
+  // parecia um "teleporte" em vez de caminhada)
   var i = Math.max(0, Math.min(TOTAL, Math.round(n)));
-  // ao concluir a última parcela, ele não para na borda da ponte — caminha
-  // mais alguns passos até o centro do chão do outro lado, completando
-  // visualmente a travessia (pedido em 29/10)
-  if (i >= TOTAL) return FINISH_X;
   var frontier = monthX[i] != null ? monthX[i] : X0;
   var bridgeStart = monthX[0] != null ? monthX[0] : X0;
   // ele mantém sempre essa mesma distância (chão → início da ponte) atrás da
@@ -477,12 +481,6 @@ function updateInvestor(n){
   }
   investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
   investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
-  if (n >= TOTAL){
-    // chegou — pernas e braços voltam pra posição neutra (parado), em vez
-    // de ficar "congelado" no meio de um passo
-    standStill(investorG);
-    investorPose = 0;
-  }
 }
 
 function hangerY(x){
@@ -547,6 +545,42 @@ var GROUP_SIZE = 1000;
 var bridgeCompleted = false;
 var fireworksG = document.getElementById('fireworks');
 var fireworksTimer = null;
+
+// caminhada extra até o centro do chão final (adicionado 29/10) — ele já
+// chega na borda da ponte normalmente, passo a passo, igual a qualquer
+// outro mês (via updateInvestor/investorX); daqui ele dá só MAIS alguns
+// passos reais (mesma cadência de STEP_MS, perna alternando normalmente)
+// até FINISH_X, em vez de um único translateX cobrindo a distância toda —
+// é isso que faz parecer caminhada de verdade, não um teleporte/deslize.
+var FINISH_WALK_STEPS = 3;
+var finishWalkTimers = [];
+function clearFinishWalk(){
+  finishWalkTimers.forEach(clearTimeout);
+  finishWalkTimers = [];
+}
+function walkToFinish(){
+  clearFinishWalk();
+  var startX = investorX(TOTAL); // borda da ponte, mesma posição de sempre
+  var stepDist = (FINISH_X - startX) / FINISH_WALK_STEPS;
+  var k = 0;
+  function nextStep(){
+    k++;
+    var pose = k % 2;
+    if (pose !== investorPose){
+      setWalkPose(investorG, pose);
+      investorPose = pose;
+    }
+    investorG.style.transform = 'translateX(' + (startX + stepDist * k) + 'px)';
+    if (k < FINISH_WALK_STEPS){
+      finishWalkTimers.push(setTimeout(nextStep, STEP_MS));
+    } else {
+      // último passo: espera ele terminar de pousar e só então para numa
+      // pose neutra, em vez de ficar "congelado" no meio de uma passada
+      finishWalkTimers.push(setTimeout(function(){ standStill(investorG); }, STEP_MS));
+    }
+  }
+  nextStep();
+}
 var FIREWORK_COLORS = ['#eeab3c', '#6fbf73', '#5fc3f0', '#e2543d', '#e8c468', '#dceaf5'];
 var FIREWORK_SPOTS = [
   {x:220, y:95}, {x:440, y:55}, {x:660, y:90}, {x:880, y:50}, {x:1060, y:100}, {x:340, y:140}, {x:980, y:145}
@@ -878,6 +912,7 @@ function paint(n, opts){
   if (n >= TOTAL && !bridgeCompleted){
     bridgeCompleted = true;
     launchFireworks();
+    walkToFinish();
   }
 }
 
@@ -1154,6 +1189,7 @@ function resetSimulation(){
   lanceUsedThisRound = false;
   bridgeCompleted = false;
   stopFireworks();
+  clearFinishWalk();
   ['fixoFeedback', 'livreFeedback'].forEach(function(id){
     var el = document.getElementById(id);
     el.classList.remove('show', 'win', 'lose');
@@ -1167,10 +1203,12 @@ function resetSimulation(){
 }
 document.getElementById('resetBtn').addEventListener('click', function(){
   stopFireworks(); // corta de imediato, não espera a animação de afundar terminar
+  clearFinishWalk();
   collapseIntoSea(resetSimulation);
 });
 document.getElementById('restartBtn').addEventListener('click', function(){
   stopFireworks();
+  clearFinishWalk();
   collapseIntoSea(resetSimulation);
 });
 
