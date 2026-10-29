@@ -585,8 +585,20 @@ var FIREWORK_COLORS = ['#eeab3c', '#6fbf73', '#5fc3f0', '#e2543d', '#e8c468', '#
 var FIREWORK_SPOTS = [
   {x:220, y:95}, {x:440, y:55}, {x:660, y:90}, {x:880, y:50}, {x:1060, y:100}, {x:340, y:140}, {x:980, y:145}
 ];
-function burstFirework(cx, cy, color, delayMs){
-  var g = el('g', {opacity:'0'});
+// bug corrigido em 29/10: a 1ª versão animava cada partícula com SMIL
+// (<animate>, begin="Xms") — mas begin em SMIL é um offset na timeline do
+// PRÓPRIO DOCUMENTO (desde o carregamento da página), não desde o instante
+// em que o elemento é inserido no DOM. Como os fogos só são criados bem
+// depois do carregamento (quando a 200ª parcela é paga), esse "begin" já
+// tinha passado havia muito tempo — testado em headless Chromium, a
+// opacidade do grupo ficava travada em 0 pra sempre, por isso nada aparecia.
+// Correção: trocado pra transição CSS (igual ao resto do artifact: blocos,
+// investidor etc.) — funciona de forma confiável em qualquer elemento criado
+// via JS, bastando forçar o navegador a registrar o estado inicial antes de
+// mudar o alvo (os 2 requestAnimationFrame encadeados abaixo).
+function burstFirework(cx, cy, color){
+  var g = el('g', {});
+  var parts = [];
   var count = 14;
   for (var k = 0; k < count; k++){
     var angle = (Math.PI * 2 * k) / count + Math.random() * 0.3;
@@ -594,25 +606,38 @@ function burstFirework(cx, cy, color, delayMs){
     var dx = Math.cos(angle) * dist;
     var dy = Math.sin(angle) * dist;
     var p = el('circle', {cx:cx, cy:cy, r:2.4, fill:color});
-    p.appendChild(el('animate', {attributeName:'cx', from:cx, to:cx + dx, dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
-    p.appendChild(el('animate', {attributeName:'cy', from:cy, to:cy + dy, dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
-    p.appendChild(el('animate', {attributeName:'opacity', values:'1;1;0', keyTimes:'0;0.45;1', dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
-    p.appendChild(el('animate', {attributeName:'r', values:'2.6;1.4;0.3', dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
+    p.style.opacity = '1';
+    p.style.transition = 'transform 900ms cubic-bezier(.15,.65,.35,1), opacity 900ms ease-out';
     g.appendChild(p);
+    parts.push({el:p, dx:dx, dy:dy});
   }
-  g.appendChild(el('animate', {attributeName:'opacity', from:'0', to:'1', dur:'60ms', begin:delayMs + 'ms', fill:'freeze'}));
   fireworksG.appendChild(g);
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      parts.forEach(function(pt){
+        pt.el.style.transform = 'translate(' + pt.dx + 'px,' + pt.dy + 'px)';
+        pt.el.style.opacity = '0';
+      });
+    });
+  });
+  // partícula some depois da transição — não precisa mais existir no DOM
+  setTimeout(function(){ if (g.parentNode) g.parentNode.removeChild(g); }, 950);
 }
+var fireworksBurstTimers = [];
 function launchFireworks(){
   fireworksG.innerHTML = '';
   FIREWORK_SPOTS.forEach(function(s, idx){
-    burstFirework(s.x, s.y, FIREWORK_COLORS[idx % FIREWORK_COLORS.length], idx * 240);
+    fireworksBurstTimers.push(setTimeout(function(){
+      burstFirework(s.x, s.y, FIREWORK_COLORS[idx % FIREWORK_COLORS.length]);
+    }, idx * 240));
   });
   // repete em loop pra comemoração continuar enquanto a carta estiver concluída
   fireworksTimer = setTimeout(launchFireworks, FIREWORK_SPOTS.length * 240 + 1500);
 }
 function stopFireworks(){
   if (fireworksTimer){ clearTimeout(fireworksTimer); fireworksTimer = null; }
+  fireworksBurstTimers.forEach(clearTimeout);
+  fireworksBurstTimers = [];
   fireworksG.innerHTML = '';
 }
 
