@@ -41,18 +41,18 @@ h1{font-size:22px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 @media (max-width:560px){.kanban{grid-template-columns:1fr}}
 
 .canvas-wrap{margin-top:22px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
-  padding:4px;overflow:hidden}
+  padding:4px;overflow:hidden;container-type:inline-size;container-name:bridge}
 svg{display:block;width:100%;height:auto}
 
 .pay-overlay{position:absolute;left:3.6%;top:41%;transform:translate(-50%,-100%);
-  display:flex;flex-direction:column;align-items:center;gap:14px;z-index:4}
-.pay-overlay button{width:72px;height:72px;padding:0;font-size:12px;line-height:1.5;
+  display:flex;flex-direction:column;align-items:center;gap:clamp(6px,2.4cqw,14px);z-index:4}
+/* Tamanho dos botões acompanha a largura real do container (cqw), igual ao SVG da ponte —
+   escala contínua, não só 2 tamanhos fixos com salto no meio. clamp() trava um piso/teto
+   pra nunca ficar ilegível nem gigante. */
+.pay-overlay button{width:clamp(34px,6.2cqw,72px);height:clamp(34px,6.2cqw,72px);padding:0;
+  font-size:clamp(7px,1.05cqw,12px);line-height:1.3;
   white-space:normal;text-align:center}
-.pay-overlay #restartBtn{font-size:9px}
-@media (max-width:640px){
-  .pay-overlay button{width:46px;height:46px;font-size:8px;line-height:1.3}
-  .pay-overlay #restartBtn{font-size:7px}
-}
+.pay-overlay #restartBtn{font-size:clamp(6px,0.85cqw,9px)}
 
 .pay-pulse{background:var(--paid);border-color:var(--paid-ink);color:var(--paid-ink);
   font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
@@ -836,7 +836,13 @@ function updateKpis(){
 // o restante vira recurso próprio).
 function calcLance(totalPct, embPct){
   totalPct = Math.max(0, Math.min(LANCE_LIVRE_MAX, totalPct));
-  embPct = Math.max(0, Math.min(EMBUTIDO_CAP, totalPct, embPct));
+  // teto de embutido é fixo em EMBUTIDO_CAP e NÃO acompanha o percentual total
+  // do lance (como o texto da tela já avisa) — por isso não entra totalPct
+  // neste min(). Bug corrigido em 29/10: antes o min() incluía totalPct,
+  // o que encolhia o teto silenciosamente sempre que o lance total ficasse
+  // abaixo de 30% (sem efeito hoje, porque fixo=40% e livre mínimo=40% — mas
+  // quebraria se a faixa do livre for ajustada pra baixo de 30% no futuro).
+  embPct = Math.max(0, Math.min(EMBUTIDO_CAP, embPct));
   var rpPct = Math.max(0, totalPct - embPct);
   var credit = currentCredit();
   var valorEmbutido = credit * embPct / 100;
@@ -852,7 +858,9 @@ function fmtPct(v){ return v.toLocaleString('pt-BR', {minimumFractionDigits:2, m
 
 function updateLanceCard(prefix, totalPct){
   var embInput = document.getElementById(prefix + 'EmbutidoPct');
-  var embMax = Math.max(0, Math.min(EMBUTIDO_CAP, totalPct));
+  // mesma correção de calcLance() acima: o teto do slider de embutido é
+  // sempre EMBUTIDO_CAP, não encolhe com o percentual total do lance.
+  var embMax = EMBUTIDO_CAP;
   embInput.max = embMax;
   var embPct = Math.max(0, parseFloat(embInput.value) || 0);
   if (embPct > embMax){ embPct = embMax; embInput.value = embPct; }
@@ -899,7 +907,13 @@ function applyLance(vals, kind){
 
   embutidoUsedTotal += vals.valorEmbutido;
   recursoUsedTotal += vals.valorRecurso;
-  var n = Math.max(paidMonths, Math.min(TOTAL, vals.mesesAdiantados));
+  // bug corrigido em 29/10: mesesAdiantados é quantos meses ESTE lance vale
+  // (fração do total) — precisa ser SOMADO ao progresso atual, não comparado
+  // com Math.max(). Antes, um lance vencedor dado depois que a ponte já tinha
+  // passado do ponto equivalente ao percentual do lance não avançava nada
+  // (só consumia o dinheiro), mesmo mostrando "Isso adianta X meses" e "Lance
+  // vencedor!" na tela — agora sempre soma de verdade ao progresso.
+  var n = Math.min(TOTAL, paidMonths + vals.mesesAdiantados);
 
   // marca a fatia de embutido dentro do trecho recém-preenchido por este
   // lance, pra colorir só esses blocos de amarelo
