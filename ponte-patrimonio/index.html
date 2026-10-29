@@ -1,0 +1,1031 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ponte do Patrimônio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#0a2744; --canvas:#0d3257; --canvas-deep:#092038;
+  --grid:#1d4a74; --ink:#dceaf5; --ink-dim:#89adc9; --ink-faint:#4f7498;
+  --redline:#e2543d; --redline-fill:#3a1d16;
+  --amber:#eeab3c; --amber-ink:#2a1a04;
+  --gold:#e8c468;
+  --concrete:#e4ebf1; --concrete-ink:#0a2744;
+  --paid:#6fbf73; --paid-ink:#173a1b;
+  --future:#5b6b7a;
+  --water-base:#1d5fa8; --water-line:#5fc3f0;
+  color-scheme: dark;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));}
+.wrap{max-width:none;margin:0 auto;padding-block:32px 60px}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+h1{font-size:22px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
+.lede{color:var(--ink-dim);font-size:13px;line-height:1.6;max-width:58ch;margin-top:10px}
+
+.kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;align-items:stretch}
+.kcard{background:var(--canvas);border:1px solid var(--grid);border-radius:8px;padding:16px;
+  display:flex;flex-direction:column;min-height:190px}
+.kcard .step{font-size:9px;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.kcard .step b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink-dim);
+  font-size:9px;margin-right:6px;font-weight:600}
+.kcard h3{font-size:12px;margin:0 0 10px;color:var(--ink-dim);font-weight:600;letter-spacing:.02em}
+.kcard .big{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.kcard .sub{font-size:10px;color:var(--ink-faint);margin-top:4px}
+.kcard .sub input{font-family:inherit;font-size:10px;width:40px;padding:2px 4px;margin:0 2px;
+  background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink);border-radius:2px}
+@media (max-width:1000px){.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.kanban{grid-template-columns:1fr}}
+
+.canvas-wrap{margin-top:22px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
+  padding:4px;overflow:hidden}
+svg{display:block;width:100%;height:auto}
+
+.pay-overlay{position:absolute;left:3.6%;top:41%;transform:translate(-50%,-100%);
+  display:flex;flex-direction:column;align-items:center;gap:14px;z-index:4}
+.pay-overlay button{width:72px;height:72px;padding:0;font-size:12px;line-height:1.5;
+  white-space:normal;text-align:center}
+.pay-overlay #restartBtn{font-size:9px}
+@media (max-width:640px){
+  .pay-overlay button{width:46px;height:46px;font-size:8px;line-height:1.3}
+  .pay-overlay #restartBtn{font-size:7px}
+}
+
+.pay-pulse{background:var(--paid);border-color:var(--paid-ink);color:var(--paid-ink);
+  font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
+.pay-pulse:hover{background:var(--paid);border-color:var(--paid-ink)}
+@keyframes payPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(111,191,115,.55)}
+  50%{box-shadow:0 0 0 9px rgba(111,191,115,0)}
+}
+
+#restartBtn{background:var(--redline);border-color:var(--redline);color:#fff}
+#restartBtn:hover{background:var(--redline);border-color:var(--redline)}
+
+#lanceBtn{background:var(--amber);border-color:var(--amber-ink);color:var(--amber-ink);font-weight:600}
+#lanceBtn:hover{background:var(--amber);border-color:var(--amber-ink)}
+
+.kcard.locked{opacity:.4;pointer-events:none;filter:saturate(.5)}
+
+.legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
+  background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-dim)}
+.sw{width:16px;height:10px;border-radius:2px;flex:none;border:1px solid var(--grid)}
+
+.detail{position:sticky;top:10px;z-index:5;margin-top:18px;background:var(--canvas);
+  border:1px solid var(--ink-faint);border-radius:4px;padding:12px 14px;
+  box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.detail .m{font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase}
+.detail .t{font-size:14px;margin-top:4px;color:var(--ink);font-weight:600}
+.detail .n{font-size:12px;color:var(--ink-dim);margin-top:6px;line-height:1.55}
+
+input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
+.hint{font-size:11px;color:var(--ink-faint);line-height:1.55;margin:6px 0 0}
+.lance-slider-block{margin-top:16px}
+.lance-slider-block:first-of-type{margin-top:4px}
+.lance-slider-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink);margin-bottom:5px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.lance-result{background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px;
+  padding:10px 12px;margin-top:14px;font-size:12px;line-height:1.85;color:var(--ink-dim)}
+.lance-result b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lance-feedback{font-size:12px;margin-top:10px;padding:8px 10px;border-radius:4px;display:none;line-height:1.5}
+.lance-feedback.show{display:block}
+.lance-feedback.win{background:#143a19;border:1px solid var(--paid);color:var(--paid)}
+.lance-feedback.lose{background:#2a2410;border:1px solid var(--ink-faint);color:var(--ink-dim)}
+.lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+details.adv{margin-top:12px;font-size:11px;color:var(--ink-faint)}
+details.adv summary{cursor:pointer;color:var(--ink-dim)}
+details.adv p{margin:8px 0 0;line-height:1.5}
+details.adv input{width:48px;font-size:10px;padding:2px 4px}
+input[type=number]{font-family:inherit;font-size:12px;background:var(--canvas-deep);
+  border:1px solid var(--ink-faint);color:var(--ink);padding:7px 8px;border-radius:3px;width:64px}
+button{font-family:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  padding:9px 12px;border-radius:3px;border:1px solid var(--ink-faint);
+  background:var(--canvas-deep);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink-dim)}
+button.danger{color:var(--redline);border-color:var(--redline)}
+
+.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--grid);
+  font-size:11px;color:var(--ink-faint);line-height:1.7}
+.span-g{cursor:pointer}
+</style>
+
+<div class="wrap">
+  <div class="kanban">
+    <div class="kcard">
+      <h3>Valor do crédito (imóvel)</h3>
+      <div class="big" id="kpiCredit">R$ 200.000,00</div>
+      <div class="sub">INCC ref. 6%/ano (fixo)</div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
+        <h3 style="margin-bottom:6px">Total pago</h3>
+        <div class="big" id="kpiTotalPaid">R$ 0,00</div>
+        <p class="hint">Soma das parcelas pagas + recurso próprio dos lances</p>
+      </div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
+        <h3 style="margin-bottom:6px">Parcela</h3>
+        <div class="big"><span id="paidLabel">0</span>/200</div>
+        <div class="sub" id="kpiParcela">parcela: R$ 700,00</div>
+        <p class="hint">Clique no botão pagar para iniciar a jornada do consórcio</p>
+      </div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)">
+        <h3 style="margin-bottom:6px">Status</h3>
+        <div class="big" id="kpiStatus">Não contemplado</div>
+        <p class="hint" id="kpiStatusHint">Concorrendo ao sorteio</p>
+      </div>
+    </div>
+
+    <div class="kcard locked" id="fixoCard">
+      <h3>Percentual igual pra todo mundo</h3>
+      <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
+      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink);font-size:14px">40%</b></div>
+
+      <div class="lance-slider-block" style="margin-top:4px">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
+        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+      </div>
+      <p class="hint">O restante (<b><span id="fixoRecursoVal">10</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio — o teto de embutido não acompanha o percentual total do lance.</p>
+
+      <div class="lance-result">
+        <div>Lance total a pagar: <b id="fixoLanceTotalOut">R$ 0,00</b></div>
+        <div>Isso adianta <b id="fixoMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
+        <div>Sua carta líquida fica em: <b id="fixoCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
+      </div>
+      <div class="lance-row">
+        <button id="fixoBtn">Aplicar lance fixo</button>
+      </div>
+      <div class="lance-feedback" id="fixoFeedback"></div>
+    </div>
+
+    <div class="kcard locked" id="livreCard">
+      <h3>Você escolhe o percentual</h3>
+      <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
+
+      <div class="lance-slider-block" style="margin-top:4px">
+        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60,00</span>%</b></div>
+        <input type="range" id="livrePct" min="40" max="80" step="0.01" value="60">
+      </div>
+
+      <div class="lance-slider-block">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
+        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+      </div>
+      <p class="hint">O restante (<b><span id="livreRecursoVal">30</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio.</p>
+
+      <div class="lance-result">
+        <div>Lance total a pagar: <b id="livreLanceTotalOut">R$ 0,00</b></div>
+        <div>Isso adianta <b id="livreMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
+        <div>Sua carta líquida fica em: <b id="livreCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
+      </div>
+      <div class="lance-row">
+        <button id="livreBtn">Aplicar lance livre</button>
+        <button id="resetBtn" class="danger">Zerar tudo</button>
+      </div>
+      <div class="lance-feedback" id="livreFeedback"></div>
+    </div>
+  </div>
+
+  <div class="canvas-wrap" style="position:relative">
+    <div class="pay-overlay" id="payOverlay">
+      <button id="restartBtn" class="danger">Cancelar<br>Carta</button>
+      <button id="lanceBtn">Dar<br>Lance</button>
+      <button id="payBtn" class="pay-pulse">Pagar<br>Parcela</button>
+    </div>
+    <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+          <path d="M24 0H0V24" fill="none" stroke="#1d4a74" stroke-width="0.5" opacity="0.5"/>
+        </pattern>
+        <pattern id="hazard" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="14" height="14" fill="#2a1a04"/>
+          <rect width="7" height="14" fill="#eeab3c"/>
+        </pattern>
+        <pattern id="formwork" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="none"/>
+          <line x1="0" y1="0" x2="0" y2="10" stroke="#1d4a74" stroke-width="1.5"/>
+        </pattern>
+        <pattern id="concrete-block" width="8" height="10" patternUnits="userSpaceOnUse">
+          <rect width="10" height="10" fill="none"/>
+          <line x1="0" y1="0" x2="10" y2="0" stroke="#c7d2db" stroke-width="0.6"/>
+        </pattern>
+        <pattern id="pier-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="#0d3257"/>
+          <line x1="0" y1="0" x2="0" y2="10" stroke="#1d4a74" stroke-width="2"/>
+        </pattern>
+        <pattern id="ground-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="5" height="5" fill="#e4ebf1"/>
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#0a2744" stroke-width="1.25"/>
+        </pattern>
+        <pattern id="water" width="40" height="8" patternUnits="userSpaceOnUse">
+          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 40 0" dur="4s" repeatCount="indefinite" additive="sum"/>
+          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 0 -2.6; 0 0" dur="2.1s" repeatCount="indefinite" additive="sum"/>
+          <path d="M0 4 Q10 0 20 4 T40 4" fill="none" stroke="var(--water-line)" stroke-width="1.1" opacity="0.85"/>
+        </pattern>
+      </defs>
+
+      <rect x="0" y="0" width="1200" height="460" fill="var(--canvas)"/>
+      <rect x="0" y="0" width="1200" height="460" fill="url(#grid)"/>
+      <rect id="water" x="90" y="372" width="1020" height="30" fill="var(--water-base)" opacity="0.55"/>
+      <rect x="90" y="372" width="1020" height="30" fill="url(#water)"/>
+
+      <!-- anchorage blocks (ground at each end, flush with the slab height) -->
+      <g id="anchorages"></g>
+
+      <!-- towers, cables, hangers, decks: all drawn by JS -->
+      <g id="cables"></g>
+      <g id="hangers"></g>
+      <g id="towers"></g>
+      <g id="deck"></g>
+      <g id="blocks"></g>
+
+      <!-- investor walks on top of the slab/blocks, so it must be drawn after them -->
+      <g id="investor"></g>
+
+      <!-- dimension line / scale ruler (no label) -->
+      <g id="dim" stroke="var(--ink-faint)" stroke-width="1"></g>
+
+      <style>
+        .lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:var(--ink-faint);letter-spacing:.04em}
+        .lbl-ink{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:var(--concrete-ink);letter-spacing:.04em}
+        .year-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:var(--ink);letter-spacing:.04em;font-weight:600}
+      </style>
+    </svg>
+  </div>
+
+  <div class="foot">
+    Protótipo conceitual &middot; 17 vãos (200 meses: 16 anos de 12 meses + o último ano com 8 meses) simulando o prazo total do consórcio. 3 vãos de aproximação de cada lado, 11 vãos suspensos entre os pilares. Dados fictícios.
+  </div>
+</div>
+
+<script>
+var NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs){
+  var e = document.createElementNS(NS, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+// transição-base dos blocos — guardada numa constante pra sempre restaurar o
+// MESMO valor depois de uma transição temporária (ex.: afundar no mar), em vez
+// de limpar a sub-propriedade transitionDuration (que não "volta" ao valor
+// definido via o shorthand — cai pro inicial 0s e mata a animação pra sempre
+// nesse elemento)
+var BLOCK_TRANSITION = 'transform .6s cubic-bezier(.3,.7,.3,1), opacity .48s ease, fill .3s ease, stroke .3s ease';
+var INVESTOR_TRANSITION = 'transform .5s cubic-bezier(.3,.7,.3,1), opacity .4s ease';
+
+var X0 = 90, X1 = 1110, DECK_Y = 300, DECK_H = 26, SPAN_COUNT = 17;
+var SLAB_H = 10, SLAB_GAP = 3;
+var SLAB_Y = DECK_Y - SLAB_GAP - SLAB_H;
+var UNIT = (X1 - X0) / SPAN_COUNT;
+var TOWER_A = X0 + 3 * UNIT;   // left tower, after 3 approach spans
+var TOWER_B = X0 + 14 * UNIT;  // right tower, before 3 approach spans
+var TOWER_TOP = 96;
+var GROUND_BOTTOM = 402;
+var WATER_Y = 372; // topo da água — onde os pilares realmente terminam
+
+var BACKSTAY_SAG = 14;
+function backstaySagY(x1, y1, x2, y2, x){
+  var t = (x - x1) / (x2 - x1);
+  return y1 + (y2 - y1) * t + BACKSTAY_SAG * 4 * t * (1 - t);
+}
+function drawBackstay(g, x1, y1, x2, y2, offset){
+  // slight sag + double stroke, same visual language as the main span's cable
+  var pts1 = [], pts2 = [];
+  for (var i = 0; i <= 24; i++){
+    var t = i / 24;
+    var bx = x1 + (x2 - x1) * t;
+    var by = backstaySagY(x1, y1, x2, y2, bx);
+    pts1.push(bx + ',' + (by - offset));
+    pts2.push(bx + ',' + (by + offset));
+  }
+  g.appendChild(el('polyline', {points:pts1.join(' '), fill:'none', stroke:'var(--ink-faint)', 'stroke-width':'1.5'}));
+  g.appendChild(el('polyline', {points:pts2.join(' '), fill:'none', stroke:'var(--ink-faint)', 'stroke-width':'1.5'}));
+}
+// figura em caminhada: pernas e braços são membros fixos que GIRAM em torno
+// do quadril/ombro (CSS transform + transition), então a passada é animada
+// de verdade em vez de trocar de pose de uma vez. A posição horizontal
+// segue a borda real do último bloco que caiu (monthX), pra ele pisar
+// sempre sobre o bloco, nunca flutuando entre eles.
+var monthX = [];   // preenchido em buildDeck(): borda x de cada mês, 0..TOTAL
+var WALK_ANGLE = 24; // graus de giro da perna/braço a cada passo
+
+var STEP_MS = 480;
+
+function buildWalker(g, baseY){
+  g.innerHTML = '';
+  var H = 48, r = 4.6;
+  var footY = baseY, hipY = baseY - H*0.52, shoulderY = baseY - H*0.84;
+  var kneeY = hipY + (footY - hipY) * 0.52;
+  var neckLen = 3, neckW = 1.6;
+  var headCY = shoulderY - neckLen - r;
+
+  var bodyG = el('g', {}); // carrega a figura inteira — usado só pro leve balanço vertical do passo
+  g.appendChild(bodyG);
+
+  function pivotLimb(pivotY, endY, w){
+    var wrap = el('g', {});
+    wrap.appendChild(el('line', {x1:0, y1:pivotY, x2:0, y2:endY, stroke:'var(--ink)',
+      'stroke-width':w, 'stroke-linecap':'round'}));
+    wrap.style.transformOrigin = '0px ' + pivotY + 'px';
+    wrap.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
+    bodyG.appendChild(wrap);
+    return wrap;
+  }
+
+  // perna = dois segmentos (coxa + canela) articulados no joelho, com um pé
+  // (sola) na ponta — pra poder dobrar o joelho na perna que está
+  // balançando, igual a uma caminhada real, e dar apoio visível no chão.
+  function pivotLeg(w){
+    var thigh = el('g', {});
+    thigh.appendChild(el('line', {x1:0, y1:hipY, x2:0, y2:kneeY, stroke:'var(--ink)',
+      'stroke-width':w, 'stroke-linecap':'round'}));
+    thigh.style.transformOrigin = '0px ' + hipY + 'px';
+    thigh.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
+
+    var shin = el('g', {});
+    shin.appendChild(el('line', {x1:0, y1:kneeY, x2:0, y2:footY, stroke:'var(--ink)',
+      'stroke-width':w*0.85, 'stroke-linecap':'round'}));
+    // pé/sola — sempre apontando pra frente (direção da caminhada)
+    shin.appendChild(el('path', {d:'M -1.2 ' + footY + ' L 6.5 ' + footY + ' L 4.3 ' + (footY+2.2) + ' L -1.2 ' + (footY+2.2) + ' Z',
+      fill:'var(--ink)'}));
+    shin.style.transformOrigin = '0px ' + kneeY + 'px';
+    shin.style.transform = 'rotate(0deg)';
+    thigh.appendChild(shin);
+
+    bodyG.appendChild(thigh);
+    return {thigh:thigh, shin:shin};
+  }
+
+  var legBack = pivotLeg(5.6);
+  var legFront = pivotLeg(5.6);
+
+  // torso — trapezoide com leve inclinação pra frente (mesma impressão de
+  // "andar inclinado no passo" de uma referência de caminhada real)
+  var torsoD = 'M ' + (-3.6) + ' ' + shoulderY + ' L ' + 3.6 + ' ' + shoulderY +
+    ' L ' + 4 + ' ' + hipY + ' L ' + (-1.6) + ' ' + hipY + ' Z';
+  bodyG.appendChild(el('path', {d:torsoD, fill:'var(--ink)'}));
+
+  // pescoço — fino, conecta a cabeça ao topo do torso
+  bodyG.appendChild(el('rect', {x:-neckW/2, y:shoulderY - neckLen, width:neckW, height:neckLen + 0.5, fill:'var(--ink)'}));
+
+  var armBack = pivotLimb(shoulderY, hipY + 2, 3.2);
+  var armFront = pivotLimb(shoulderY, hipY + 2, 3.2);
+
+  var head = el('circle', {cx:0, cy:headCY, r:r, fill:'var(--ink)'});
+  bodyG.appendChild(head);
+
+  g._bodyG = bodyG;
+  g._legBack = legBack; g._legFront = legFront;
+  g._armBack = armBack; g._armFront = armFront;
+}
+
+function setWalkPose(g, pose){
+  var a = pose ? WALK_ANGLE : -WALK_ANGLE;
+  // a perna que vai PRA FRENTE (+a) é a que balança no ar — dobra o joelho
+  // no meio do passo e estica de novo ao pousar. a que vai pra trás (-a) é
+  // a perna de apoio/empurro, que fica praticamente esticada.
+  var swingLeg = pose ? g._legFront : g._legBack;
+  var stanceLeg = pose ? g._legBack : g._legFront;
+
+  g._legBack.thigh.style.transform = 'rotate(' + (-a) + 'deg)';
+  g._legFront.thigh.style.transform = 'rotate(' + a + 'deg)';
+  // braços balançam quase tanto quanto as pernas — é o que deixa a marcha
+  // mais viva em vez de travada
+  g._armBack.style.transform = 'rotate(' + (a*0.9) + 'deg)';
+  g._armFront.style.transform = 'rotate(' + (-a*0.9) + 'deg)';
+
+  stanceLeg.shin.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
+  stanceLeg.shin.style.transform = 'rotate(0deg)';
+  swingLeg.shin.getAnimations().forEach(function(anim){ anim.cancel(); });
+  swingLeg.shin.animate([
+    { transform: 'rotate(0deg)' },
+    { transform: 'rotate(38deg)' },
+    { transform: 'rotate(0deg)' }
+  ], { duration: STEP_MS, easing: 'cubic-bezier(.4,0,.2,1)' });
+
+  g._bodyG.getAnimations().forEach(function(anim){ anim.cancel(); });
+  g._bodyG.animate([
+    { transform: 'translateY(0px)' },
+    { transform: 'translateY(-1.8px)' },
+    { transform: 'translateY(0px)' }
+  ], { duration: STEP_MS, easing: 'ease-in-out' });
+}
+
+var investorG = document.getElementById('investor');
+var investorPose = 0;
+var GROUND_X = 40; // onde ele fica parado antes do primeiro bloco cair — no chão, afastado da ponte
+function investorX(n){
+  var i = Math.max(0, Math.min(TOTAL, Math.round(n)));
+  var frontier = monthX[i] != null ? monthX[i] : X0;
+  var bridgeStart = monthX[0] != null ? monthX[0] : X0;
+  // ele mantém sempre essa mesma distância (chão → início da ponte) atrás da
+  // frente de concretagem, então começa a andar assim que o 1º bloco cai e
+  // nunca alcança o bloco recém-caído (que ainda está "curando")
+  var gap = bridgeStart - GROUND_X;
+  return Math.max(GROUND_X, frontier - gap);
+}
+function updateInvestor(n){
+  var pose = Math.floor(n) % 2;
+  if (pose !== investorPose){
+    setWalkPose(investorG, pose);
+    investorPose = pose;
+  }
+  investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
+  investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
+}
+
+function hangerY(x){
+  if (x >= TOWER_A && x <= TOWER_B) return cableY(x);
+  if (x < TOWER_A) return backstaySagY(60, SLAB_Y, TOWER_A, TOWER_TOP+10, x);
+  return backstaySagY(TOWER_B, TOWER_TOP+10, 1140, SLAB_Y, x);
+}
+
+function cableY(x){
+  if (x < TOWER_A || x > TOWER_B) return null;
+  var t = (x - TOWER_A) / (TOWER_B - TOWER_A);
+  return TOWER_TOP + 120 * 4 * t * (1 - t);
+}
+
+// 200 meses no total: os primeiros 16 vãos têm 12 meses (anos completos),
+// o último vão (17º) tem só 8 — mesma distribuição visual dos vãos, só a
+// laje do último é subdividida em 8 blocos em vez de 12.
+function monthsInSpan(i){ return (i === SPAN_COUNT - 1) ? 8 : 12; }
+var spanStarts = [];
+(function(){
+  var acc = 0;
+  for (var i = 0; i < SPAN_COUNT; i++){ spanStarts.push(acc); acc += monthsInSpan(i); }
+  spanStarts.push(acc); // total ao final
+})();
+var TOTAL = spanStarts[SPAN_COUNT];   // 200 parcelas no total
+var WAIT_Y = 40;                // altura onde os blocos ficam suspensos, no alto
+var DROP = SLAB_Y - WAIT_Y;     // distância de queda até a laje
+var paidMonths = 0;    // progresso visual na ponte (blocos caídos) — avança com parcela paga E com lance
+var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga de verdade (botão "Pagar").
+                        // é isso que corrige o INCC e o "total pago": um lance encurta o prazo
+                        // (derruba blocos lá na frente), mas não significa que o tempo passou de verdade.
+
+var CREDIT_BASE = 200000;       // valor da carta 200k
+var PARCELA_PCT = 0.0035;       // parcela = 0,35% do valor do crédito
+var INCC_PCT = 6;                // referência anual, travado em 6% — não editável
+var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
+var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
+var LANCE_LIVRE_MIN = 40;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
+var FIXO_PCT = 40;               // lance fixo: travado pela assembleia, não editável — exemplo real confirmado pelo usuário
+var embutidoUsedTotal = 0;       // acumulado de embutido já aplicado (reduz a carta líquida)
+var recursoUsedTotal = 0;        // acumulado de recurso próprio já aplicado (entra no total pago)
+
+// contemplação: lance NÃO garante ser contemplado — é uma disputa com chance
+// real de perder. Até ganhar (por lance ou pelo sorteio mensal automático,
+// que vale pra todo mundo adimplente, com ou sem lance), a carta segue com
+// parcela reduzida. A partir da contemplação, a carta é "usada": o INCC para
+// de reajustar o crédito e a parcela passa a ser a cheia (sem o redutor).
+var contemplated = false;
+var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — congela o INCC daí em diante
+var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de ~50% comum no mercado) — estimativa
+
+// grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
+// de nenhum grupo real — usamos esse tamanho só pra calcular uma chance de
+// sorteio internamente coerente (ninguém vê o número, é só pra não ser
+// instantâneo nem arbitrário)
+var GROUP_SIZE = 1000;
+
+function formatBRL(v){
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function currentCredit(){
+  // crédito vigente, já reajustado pelo INCC — só pelos anos REAIS decorridos
+  // (meses efetivamente pagos via botão "Pagar"), não pelos meses que um lance
+  // "pulou" na ponte. Depois de contemplado, a carta foi "usada": o INCC para
+  // de reajustar a partir daquele ponto, mesmo que o tempo real continue passando.
+  var months = contemplated ? contemplationMonthsElapsed : monthsElapsed;
+  var years = Math.floor(months / 12);
+  return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
+}
+
+function rollSorteio(chancePct){
+  return Math.random() * 100 < chancePct;
+}
+
+// quantos dos GROUP_SIZE membros a gente assume que disputam um lance num mês
+// qualquer — definição nossa aqui, não uma regra oficial de nenhum grupo real
+var LANCE_BID_FRACTION = 0.05;
+
+function lanceChance(kind, totalPct){
+  // nunca é mostrado na tela — só usado internamente pra sortear uma disputa
+  // real contra o resto do grupo (GROUP_SIZE), não um número arbitrário solto:
+  // lance fixo = todo mundo que dá lance oferece o mesmo %, sorteio simples entre eles;
+  // lance livre = quanto maior o seu %, menor a chance de ainda ter alguém
+  // competindo igual ou mais alto, então o "pool" de concorrentes encolhe.
+  var pool = GROUP_SIZE * LANCE_BID_FRACTION;
+  if (kind !== 'fixo'){
+    var t = (totalPct - LANCE_LIVRE_MIN) / (LANCE_LIVRE_MAX - LANCE_LIVRE_MIN);
+    t = Math.max(0, Math.min(1, t));
+    pool = pool * (1 - t * 0.8);
+  }
+  pool = Math.max(1, pool);
+  return Math.min(100, 100 / pool);
+}
+
+function contemplate(bridgeMonthAdvance){
+  if (contemplated) return;
+  contemplated = true;
+  contemplationMonthsElapsed = monthsElapsed;
+  if (bridgeMonthAdvance != null){
+    var n = Math.max(paidMonths, Math.min(TOTAL, bridgeMonthAdvance));
+    paint(n, {instant:true});
+    document.getElementById('paidLabel').textContent = n;
+  }
+  updateContemplationUI();
+}
+
+function updateContemplationUI(){
+  var statusEl = document.getElementById('kpiStatus');
+  var hintEl = document.getElementById('kpiStatusHint');
+  if (contemplated){
+    statusEl.textContent = 'Contemplado';
+    hintEl.textContent = 'Carta usada — parcela cheia';
+  } else {
+    statusEl.textContent = 'Não contemplado';
+    hintEl.textContent = 'Concorrendo ao sorteio';
+  }
+  var fixoBtn = document.getElementById('fixoBtn');
+  var livreBtn = document.getElementById('livreBtn');
+  fixoBtn.disabled = contemplated;
+  livreBtn.disabled = contemplated;
+  fixoBtn.style.opacity = contemplated ? '0.5' : '1';
+  livreBtn.style.opacity = contemplated ? '0.5' : '1';
+}
+
+var deckG = document.getElementById('deck');
+var blocksG = document.getElementById('blocks');
+var hangersG = document.getElementById('hangers');
+var cablesG = document.getElementById('cables');
+var dimG = document.getElementById('dim');
+var spanEls = [];
+var spanBorderEls = [];
+var yearLabelEls = [];
+var blockEls = [];
+
+function spanX(i){ return X0 + i * UNIT; }
+
+function drawStructure(){
+  // bridge is suspended: the tower + cable carries the deck,
+  // no intermediate stub piers on the approach spans.
+
+  // towers — plain, thin uprights, no cross-bracing. They really END right
+  // where they touch the water surface (WATER_Y), not drawn through/under it.
+  [TOWER_A, TOWER_B].forEach(function(tx){
+    var towersG = document.getElementById('towers');
+    towersG.appendChild(el('rect', {x:tx-7, y:TOWER_TOP, width:14, height:WATER_Y-TOWER_TOP, fill:'var(--canvas)', stroke:'var(--ink-faint)', 'stroke-width':'1.75'}));
+  });
+
+  // anchorage blocks (ground at each end), top flush with the slab height,
+  // stretched out to the edges of the canvas
+  var anchG = document.getElementById('anchorages');
+  [[0,90],[1110,90]].forEach(function(pair){
+    anchG.appendChild(el('rect', {x:pair[0], y:SLAB_Y, width:pair[1], height:GROUND_BOTTOM-SLAB_Y, fill:'var(--concrete)', stroke:'var(--ink-faint)'}));
+  });
+
+  // human-scale figure standing on the ground, level with the slab —
+  // our investor, who will walk across the bridge as parcelas são pagas
+  buildWalker(investorG, SLAB_Y);
+  investorG.style.transition = INVESTOR_TRANSITION;
+  setWalkPose(investorG, 0);
+
+  // main cable, sampled across main span
+  var pts1 = [], pts2 = [];
+  for (var x = TOWER_A; x <= TOWER_B; x += 8){
+    var y = cableY(x);
+    pts1.push(x + ',' + (y-2));
+    pts2.push(x + ',' + (y+2));
+  }
+  cablesG.appendChild(el('polyline', {points:pts1.join(' '), fill:'none', stroke:'var(--ink-faint)', 'stroke-width':'1.5'}));
+  cablesG.appendChild(el('polyline', {points:pts2.join(' '), fill:'none', stroke:'var(--ink-faint)', 'stroke-width':'1.5'}));
+
+  // backstays at the ends — slight sag, same double-stroke as the main cable
+  drawBackstay(cablesG, 60, SLAB_Y, TOWER_A, TOWER_TOP+10, 2);
+  drawBackstay(cablesG, TOWER_B, TOWER_TOP+10, 1140, SLAB_Y, 2);
+
+  // hangers at every span boundary — approach spans included, same as the middle
+  for (var i = 0; i <= SPAN_COUNT; i++){
+    var hx = spanX(i);
+    if (hx === TOWER_A || hx === TOWER_B) continue;
+    var hy = hangerY(hx);
+    hangersG.appendChild(el('line', {x1:hx, y1:hy, x2:hx, y2:SLAB_Y, stroke:'var(--ink-faint)', 'stroke-width':'0.75'}));
+  }
+
+}
+
+function buildDeck(){
+  deckG.innerHTML = '';
+  blocksG.innerHTML = '';
+  spanEls = [];
+  spanBorderEls = [];
+  yearLabelEls = [];
+  blockEls = [];
+  monthX = [];
+
+  for (var i = 0; i < SPAN_COUNT; i++){
+    var x0 = spanX(i) + 1.5, x1 = spanX(i+1) - 1.5, w = x1 - x0;
+    var g = el('g', {class:'span-g', 'data-i':i});
+
+    // outer span = the formwork itself. solid border once the year is fully
+    // concretado (12/12), dashed while it's still future / in progress.
+    var border = el('rect', {x:x0, y:DECK_Y, width:w, height:DECK_H, fill:'none',
+      stroke:'var(--ink-faint)', 'stroke-width':'1', 'stroke-dasharray':'3 2'});
+    g.appendChild(border);
+    spanBorderEls.push(border);
+
+    // "Ano N" aparece DENTRO da caixa da ponte — só quando o ano é concluído
+    // (a mesma hora em que a borda vira sólida), não numa régua fixa abaixo
+    var yl = el('text', {x:(x0 + x1) / 2, y:DECK_Y + DECK_H / 2 + 3, 'text-anchor':'middle',
+      class:'year-badge', stroke:'none'});
+    yl.textContent = (i + 1) + '° ano';
+    yl.style.opacity = '0';
+    yl.style.transition = 'opacity .5s ease';
+    g.appendChild(yl);
+    yearLabelEls.push(yl);
+
+    // slots above the span (the slab), spanning its full width,
+    // split into equal parts — one empty formwork frame per month
+    // (12 for every span, except the last one which only has 8).
+    var numSlots = monthsInSpan(i);
+    var sq = w / numSlots;
+    for (var m = 0; m < numSlots; m++){
+      var sx = x0 + m * sq;
+      // moldura do vão: sempre vazada (só contorno) — é o bloco suspenso
+      // acima, não a moldura, que carrega a cor (cinza → verde/amarelo)
+      g.appendChild(el('rect', {x:sx, y:SLAB_Y, width:sq, height:SLAB_H, fill:'none',
+        stroke:'var(--ink-faint)', 'stroke-width':'0.75', 'stroke-dasharray':'1.5 1.5'}));
+
+      // the block itself starts suspended at WAIT_Y and falls to SLAB_Y when paid —
+      // but invisible while suspended (opacity 0): only the empty formwork frame
+      // shows while unpaid, the block itself only appears as it falls
+      var b = el('rect', {x:sx, y:SLAB_Y, width:sq, height:SLAB_H, fill:'var(--future)', stroke:'var(--ink-faint)', 'stroke-width':'0.75'});
+      b.style.transition = BLOCK_TRANSITION;
+      b.style.transform = 'translateY(-' + DROP + 'px)';
+      b.style.opacity = '0';
+      b._active = false;
+      b._kind = 'normal';
+      blocksG.appendChild(b);
+      blockEls.push(b);
+
+      // borda real deste mês: a esquerda do bloco é onde o investidor pisa
+      // ao concluir o mês anterior, a direita é onde ele pisa ao concluir este.
+      var monthIdx = spanStarts[i] + m;
+      if (monthX[monthIdx] == null) monthX[monthIdx] = sx;
+      monthX[monthIdx + 1] = sx + sq;
+    }
+
+    deckG.appendChild(g);
+    spanEls.push(g);
+  }
+}
+
+// ao cancelar a carta, os blocos já pagos (visíveis) não só desaparecem —
+// eles afundam no mar em sequência do ÚLTIMO pro PRIMEIRO (como se a ponte
+// desmoronasse a partir da ponta onde o investidor está), e o investidor
+// também afunda — reaparecendo normal na posição inicial só depois do reset
+var SINK_DIST = (GROUND_BOTTOM - SLAB_Y) + 40;
+var SINK_STEP_MS = 18;    // intervalo entre cada bloco caindo, do último ao primeiro
+var SINK_MAX_DELAY = 400; // teto do atraso em cascata, pra não demorar demais com muitos blocos
+
+function collapseIntoSea(onDone){
+  var falling = blockEls.filter(function(b){ return b._active; });
+
+  // investidor afunda junto, na posição X em que estava — com 0,4s de atraso,
+  // só depois que os blocos já começaram a cair. Mas antes da 8ª parcela paga
+  // ele ainda não avançou o suficiente sobre a ponte — não tem o que afundar,
+  // ele só volta direto pra posição inicial.
+  var INVESTOR_SINK_DELAY = 400;
+  var INVESTOR_SINK_MIN_MONTHS = 8;
+  var investorX0 = investorX(paidMonths);
+  var investorOverBridge = paidMonths >= INVESTOR_SINK_MIN_MONTHS;
+  if (investorOverBridge){
+    investorG.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1), opacity .6s ease';
+    investorG.style.transitionDelay = INVESTOR_SINK_DELAY + 'ms';
+    investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + SINK_DIST + 'px)';
+    investorG.style.opacity = '0';
+  }
+
+  var maxDelay = 0;
+  falling.forEach(function(b, i){
+    // cascata invertida: o ÚLTIMO bloco (maior índice) cai primeiro, o
+    // PRIMEIRO (mais perto do início da ponte) cai por último
+    var order = falling.length - 1 - i;
+    var delay = Math.min(SINK_MAX_DELAY, order * SINK_STEP_MS);
+    maxDelay = Math.max(maxDelay, delay);
+    b.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1), opacity .6s ease, fill .3s ease, stroke .3s ease';
+    b.style.transitionDelay = delay + 'ms';
+    b.style.transform = 'translateY(' + SINK_DIST + 'px)';
+    b.style.opacity = '0';
+  });
+
+  setTimeout(function(){
+    falling.forEach(function(b){
+      // restaura a MESMA string-base usada na criação do bloco — nunca limpar
+      // a sub-propriedade transitionDuration isoladamente (ver comentário acima)
+      b.style.transition = BLOCK_TRANSITION;
+      b.style.transitionDelay = '';
+    });
+    investorG.style.transition = INVESTOR_TRANSITION;
+    investorG.style.transitionDelay = '';
+    onDone();
+  }, Math.max(maxDelay + 650, investorOverBridge ? INVESTOR_SINK_DELAY + 650 : 0));
+}
+
+function applyBlockStyle(b){
+  if (!b._active){
+    // ainda suspenso no alto, parcela não paga: cinza, igual à fôrma vazia
+    b.setAttribute('fill', 'var(--future)');
+    b.setAttribute('stroke', 'var(--ink-faint)');
+    return;
+  }
+  if (b._kind === 'embutido'){
+    b.setAttribute('fill', 'var(--amber)');
+    b.setAttribute('stroke', 'var(--amber-ink)');
+  } else {
+    b.setAttribute('fill', 'var(--paid)');
+    b.setAttribute('stroke', 'var(--paid-ink)');
+  }
+}
+
+function paint(n, opts){
+  opts = opts || {};
+  n = Math.max(0, Math.min(TOTAL, Math.round(n)));
+  for (var i = 0; i < TOTAL; i++){
+    var shouldBeActive = i < n;
+    var b = blockEls[i];
+    if (shouldBeActive !== b._active){
+      b._active = shouldBeActive;
+      if (!shouldBeActive) b._kind = 'normal';
+      var delay = opts.instant ? 0 : Math.min(420, Math.abs(i - paidMonths) * 9);
+      b.style.transitionDelay = delay + 'ms';
+      b.style.transform = shouldBeActive ? 'translateY(0px)' : 'translateY(-' + DROP + 'px)';
+      b.style.opacity = shouldBeActive ? '1' : '0';
+    }
+    applyBlockStyle(b);
+  }
+  paidMonths = n;
+  for (var s = 0; s < SPAN_COUNT; s++){
+    var total = monthsInSpan(s);
+    var filled = Math.max(0, Math.min(total, n - spanStarts[s]));
+    var complete = filled >= total;
+    spanBorderEls[s].setAttribute('stroke-width', complete ? '1.5' : '1');
+    spanBorderEls[s].setAttribute('stroke-dasharray', complete ? 'none' : '3 2');
+    // "Ano N" só aparece dentro da caixa no mesmo instante em que a borda
+    // vira sólida — ou seja, quando aquele ano de pagamentos é concluído
+    if (yearLabelEls[s]) yearLabelEls[s].style.opacity = complete ? '1' : '0';
+  }
+  updateInvestor(n);
+  updateKpis();
+}
+
+function totalPaidValue(){
+  // soma cada parcela REALMENTE paga (via botão "Pagar") pelo valor vigente no
+  // mês em que ela foi paga — meses "pulados" por um lance não entram aqui,
+  // porque não foram pagos como parcela, viraram recurso próprio + embutido.
+  // Antes da contemplação, cada parcela é a reduzida, reajustada por ano pelo
+  // INCC. A partir do mês da contemplação, a carta foi "usada": o INCC parou
+  // e a parcela virou a cheia (sem redutor), fixa dali pra frente.
+  var cheiaParcela = null;
+  if (contemplated){
+    var yAtContemp = Math.floor(contemplationMonthsElapsed / 12);
+    var creditAtContemp = CREDIT_BASE * Math.pow(1 + INCC_PCT/100, yAtContemp);
+    cheiaParcela = creditAtContemp * PARCELA_PCT * PARCELA_CHEIA_MULT;
+  }
+  var total = 0;
+  for (var m = 0; m < monthsElapsed; m++){
+    if (contemplated && m >= contemplationMonthsElapsed){
+      total += cheiaParcela;
+    } else {
+      var y = Math.floor(m / 12);
+      total += CREDIT_BASE * Math.pow(1 + INCC_PCT/100, y) * PARCELA_PCT;
+    }
+  }
+  return total;
+}
+
+function updateKpis(){
+  // a cada ano completo de parcelas pagas, o INCC reajusta o crédito e a parcela,
+  // até a contemplação — a partir daí a carta foi "usada" e o INCC congela.
+  // a parcela é calculada sobre o crédito NOMINAL (cheio) — o embutido não a reduz,
+  // só reduz a carta líquida que o investidor efetivamente recebe pra usar.
+  // antes da contemplação a parcela é reduzida; depois, vira a parcela cheia.
+  var nominalCredit = currentCredit();
+  var liquidCredit = Math.max(0, nominalCredit - embutidoUsedTotal);
+  var parcela = nominalCredit * PARCELA_PCT * (contemplated ? PARCELA_CHEIA_MULT : 1);
+  document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
+  document.getElementById('kpiParcela').textContent = 'parcela: ' + formatBRL(parcela) + (contemplated ? ' (cheia)' : ' (reduzida)');
+  document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
+  if (!contemplated){
+    updateFixoPreview();
+    updateLivrePreview();
+  }
+}
+
+// um lance tem um percentual TOTAL (fixo = igual pro grupo todo, sorteio decide;
+// livre = cada um escolhe o seu). esse total é sempre 100% financiado: uma parte
+// por embutido (até o teto do crédito) e o resto, obrigatoriamente, por recurso
+// próprio — exatamente como no exemplo real (60% de lance, teto de embutido fixo,
+// o restante vira recurso próprio).
+function calcLance(totalPct, embPct){
+  totalPct = Math.max(0, Math.min(LANCE_LIVRE_MAX, totalPct));
+  embPct = Math.max(0, Math.min(EMBUTIDO_CAP, totalPct, embPct));
+  var rpPct = Math.max(0, totalPct - embPct);
+  var credit = currentCredit();
+  var valorEmbutido = credit * embPct / 100;
+  var valorRecurso = credit * rpPct / 100;
+  var lanceTotal = totalPct / 100 * credit;   // oferta = % direto sobre o crédito vigente, sem encargo embutido
+  var cartaLiquida = credit - embutidoUsedTotal - valorEmbutido;
+  var mesesAdiantados = Math.round(TOTAL * totalPct / 100);
+  return {embPct:embPct, rpPct:rpPct, valorEmbutido:valorEmbutido, valorRecurso:valorRecurso,
+    lanceTotal:lanceTotal, cartaLiquida:cartaLiquida, mesesAdiantados:mesesAdiantados, totalPct:totalPct};
+}
+
+function fmtPct(v){ return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function updateLanceCard(prefix, totalPct){
+  var embInput = document.getElementById(prefix + 'EmbutidoPct');
+  var embMax = Math.max(0, Math.min(EMBUTIDO_CAP, totalPct));
+  embInput.max = embMax;
+  var embPct = Math.max(0, parseFloat(embInput.value) || 0);
+  if (embPct > embMax){ embPct = embMax; embInput.value = embPct; }
+
+  var r = calcLance(totalPct, embPct);
+
+  document.getElementById(prefix + 'EmbutidoVal').textContent = fmtPct(r.embPct);
+  document.getElementById(prefix + 'RecursoVal').textContent = fmtPct(r.rpPct);
+  document.getElementById(prefix + 'LanceTotalOut').textContent = formatBRL(r.lanceTotal);
+  document.getElementById(prefix + 'MesesOut').textContent = r.mesesAdiantados;
+  document.getElementById(prefix + 'CartaLiquidaOut').textContent = formatBRL(r.cartaLiquida);
+
+  return r;
+}
+
+function updateFixoPreview(){
+  return updateLanceCard('fixo', FIXO_PCT);
+}
+
+function updateLivrePreview(){
+  var totalPct = Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, parseFloat(document.getElementById('livrePct').value) || 0));
+  document.getElementById('livrePctVal').textContent = fmtPct(totalPct);
+  return updateLanceCard('livre', totalPct);
+}
+
+function showLanceFeedback(prefix, won){
+  var el = document.getElementById(prefix + 'Feedback');
+  if (!el) return;
+  el.classList.add('show');
+  if (won){
+    el.classList.remove('lose'); el.classList.add('win');
+    el.innerHTML = '🎉 <b>Lance vencedor!</b> Você foi sorteado entre o grupo. Contemplado.';
+  } else {
+    el.classList.remove('win'); el.classList.add('lose');
+    el.innerHTML = 'Não foi sorteado desta vez — seu dinheiro não foi usado. Continue pagando as parcelas e tente de novo no próximo mês.';
+  }
+}
+
+function applyLance(vals, kind){
+  var chancePct = lanceChance(kind, vals.totalPct);
+  var won = rollSorteio(chancePct);
+  showLanceFeedback(kind, won);
+  if (!won) return; // lance perdido: não consome embutido/recurso nem avança a ponte — pode tentar de novo depois
+
+  embutidoUsedTotal += vals.valorEmbutido;
+  recursoUsedTotal += vals.valorRecurso;
+  var n = Math.max(paidMonths, Math.min(TOTAL, vals.mesesAdiantados));
+
+  // marca a fatia de embutido dentro do trecho recém-preenchido por este
+  // lance, pra colorir só esses blocos de amarelo
+  var start = paidMonths;
+  var newCount = Math.max(0, n - start);
+  var embMonths = Math.min(newCount, Math.round(TOTAL * vals.embPct / 100));
+  for (var k = 0; k < newCount; k++){
+    var idx = start + k;
+    if (idx < blockEls.length) blockEls[idx]._kind = (k < embMonths) ? 'embutido' : 'normal';
+  }
+
+  contemplate(n);
+  updatePayBtn();
+}
+
+
+var payBtn = document.getElementById('payBtn');
+function updatePayBtn(){
+  var done = paidMonths >= TOTAL;
+  payBtn.disabled = done;
+  payBtn.innerHTML = done ? 'Concluído' : 'Pagar<br>Parcela';
+  payBtn.classList.toggle('pay-pulse', !done);
+  payBtn.style.opacity = done ? '0.5' : '1';
+  payBtn.style.cursor = done ? 'default' : 'pointer';
+}
+payBtn.addEventListener('click', function(){
+  if (paidMonths >= TOTAL) return;
+  monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
+
+  // mesmo sem lance nenhum, todo mês tem um sorteio automático entre todo o
+  // grupo (GROUP_SIZE) — então a contemplação também pode vir sem lance
+  if (!contemplated && rollSorteio(100 / GROUP_SIZE)){
+    contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
+  }
+
+  // a ponte (progresso visual) só avança até onde o tempo real já chegou; se
+  // um lance já tinha coberto mais meses lá na frente, a parcela real só
+  // "preenche" o tempo decorrido, sem precisar redesenhar nada até alcançar
+  var v = Math.min(TOTAL, Math.max(paidMonths, monthsElapsed));
+  document.getElementById('paidLabel').textContent = v;
+  paint(v);
+
+  // pagou uma nova parcela: libera uma nova chance de dar lance na próxima rodada
+  lanceUsedThisRound = false;
+  updateLanceUnlockUI();
+  updatePayBtn();
+});
+
+document.getElementById('fixoEmbutidoPct').addEventListener('input', updateFixoPreview);
+['livrePct', 'livreEmbutidoPct'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', updateLivrePreview);
+});
+
+document.getElementById('fixoBtn').addEventListener('click', function(){
+  if (contemplated || lanceUsedThisRound) return;
+  applyLance(updateFixoPreview(), 'fixo');
+  // só dá pra dar 1 lance por parcela — fixo ou livre, nunca os dois na
+  // mesma rodada. Os cards voltam a ficar opacos até a próxima "Pagar Parcela"
+  lanceUsedThisRound = true;
+  lanceUnlocked = false;
+  updateLanceUnlockUI();
+});
+document.getElementById('livreBtn').addEventListener('click', function(){
+  if (contemplated || lanceUsedThisRound) return;
+  applyLance(updateLivrePreview(), 'livre');
+  lanceUsedThisRound = true;
+  lanceUnlocked = false;
+  updateLanceUnlockUI();
+});
+
+// os 2 cards de lance começam travados (opacos) — só liberam quando o
+// investidor clica no botão amarelo "Lance" dentro do desenho, dando um
+// motivo deliberado pra "entrar" na disputa em vez de já começar nela.
+// E só dá pra dar 1 lance por parcela paga: depois de usar (fixo OU livre,
+// ganhando ou perdendo), o botão "Dar Lance" fica desabilitado de novo até
+// a próxima parcela real ser paga.
+var lanceUnlocked = false;
+var lanceUsedThisRound = false;
+var lanceBtn = document.getElementById('lanceBtn');
+function updateLanceUnlockUI(){
+  document.getElementById('fixoCard').classList.toggle('locked', !lanceUnlocked);
+  document.getElementById('livreCard').classList.toggle('locked', !lanceUnlocked);
+  var btnOff = contemplated || lanceUnlocked || lanceUsedThisRound;
+  lanceBtn.disabled = btnOff;
+  lanceBtn.style.opacity = btnOff ? '0.5' : '1';
+  lanceBtn.style.cursor = btnOff ? 'default' : 'pointer';
+}
+lanceBtn.addEventListener('click', function(){
+  if (contemplated || lanceUnlocked || lanceUsedThisRound) return;
+  lanceUnlocked = true;
+  updateLanceUnlockUI();
+});
+
+function resetSimulation(){
+  embutidoUsedTotal = 0;
+  recursoUsedTotal = 0;
+  monthsElapsed = 0;
+  contemplated = false;
+  contemplationMonthsElapsed = null;
+  lanceUnlocked = false;
+  lanceUsedThisRound = false;
+  ['fixoFeedback', 'livreFeedback'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.classList.remove('show', 'win', 'lose');
+    el.innerHTML = '';
+  });
+  paint(0, {instant:true});
+  document.getElementById('paidLabel').textContent = 0;
+  updateContemplationUI();
+  updateLanceUnlockUI();
+  updatePayBtn();
+}
+document.getElementById('resetBtn').addEventListener('click', function(){
+  collapseIntoSea(resetSimulation);
+});
+document.getElementById('restartBtn').addEventListener('click', function(){
+  collapseIntoSea(resetSimulation);
+});
+
+drawStructure();
+buildDeck();
+paint(0, {instant:true});
+updateKpis();
+updateContemplationUI();
+updateLanceUnlockUI();
+updatePayBtn();
+</script>
+
+</body></html>
