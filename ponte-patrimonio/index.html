@@ -244,6 +244,11 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <rect id="water" x="90" y="372" width="1020" height="30" fill="var(--water-base)" opacity="0.55"/>
       <rect x="90" y="372" width="1020" height="30" fill="url(#water)"/>
 
+      <!-- fogos de artifício: atrás de toda a estrutura (pilares/cabos/blocos),
+           na frente só do céu/água — por isso fica aqui, antes de
+           anchorages/towers/deck/blocks na ordem de desenho do SVG -->
+      <g id="fireworks"></g>
+
       <!-- anchorage blocks (ground at each end, flush with the slab height) -->
       <g id="anchorages"></g>
 
@@ -427,11 +432,35 @@ function setWalkPose(g, pose){
   ], { duration: STEP_MS, easing: 'ease-in-out' });
 }
 
+// ao concluir a travessia, pernas/braços voltam pra posição neutra (parado em
+// pé) em vez de ficar "congelado" no meio de um passo — usa a mesma transição
+// já configurada nos membros, então o movimento de parar fica suave
+function standStill(g){
+  g._legBack.thigh.style.transform = 'rotate(0deg)';
+  g._legFront.thigh.style.transform = 'rotate(0deg)';
+  g._armBack.style.transform = 'rotate(0deg)';
+  g._armFront.style.transform = 'rotate(0deg)';
+  [g._legBack.shin, g._legFront.shin].forEach(function(shin){
+    shin.getAnimations().forEach(function(anim){ anim.cancel(); });
+    shin.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
+    shin.style.transform = 'rotate(0deg)';
+  });
+  g._bodyG.getAnimations().forEach(function(anim){ anim.cancel(); });
+}
+
 var investorG = document.getElementById('investor');
 var investorPose = 0;
 var GROUND_X = 40; // onde ele fica parado antes do primeiro bloco cair — no chão, afastado da ponte
+// chão da margem final (direita): mesmo retângulo desenhado em "anchorages" (x=1110, largura 90)
+// — o investidor termina a travessia exatamente no CENTRO desse chão, não só na borda da ponte
+var GROUND_FAR_X0 = 1110, GROUND_FAR_W = 90;
+var FINISH_X = GROUND_FAR_X0 + GROUND_FAR_W / 2;
 function investorX(n){
   var i = Math.max(0, Math.min(TOTAL, Math.round(n)));
+  // ao concluir a última parcela, ele não para na borda da ponte — caminha
+  // mais alguns passos até o centro do chão do outro lado, completando
+  // visualmente a travessia (pedido em 29/10)
+  if (i >= TOTAL) return FINISH_X;
   var frontier = monthX[i] != null ? monthX[i] : X0;
   var bridgeStart = monthX[0] != null ? monthX[0] : X0;
   // ele mantém sempre essa mesma distância (chão → início da ponte) atrás da
@@ -448,6 +477,12 @@ function updateInvestor(n){
   }
   investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
   investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
+  if (n >= TOTAL){
+    // chegou — pernas e braços voltam pra posição neutra (parado), em vez
+    // de ficar "congelado" no meio de um passo
+    standStill(investorG);
+    investorPose = 0;
+  }
 }
 
 function hangerY(x){
@@ -504,6 +539,48 @@ var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de 
 // sorteio internamente coerente (ninguém vê o número, é só pra não ser
 // instantâneo nem arbitrário)
 var GROUP_SIZE = 1000;
+
+// comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
+// fundo da tela, atrás da ponte (o <g id="fireworks"> está logo depois da
+// água e antes de anchorages/towers/deck/blocks na ordem de desenho do SVG,
+// então nunca aparece na frente da estrutura)
+var bridgeCompleted = false;
+var fireworksG = document.getElementById('fireworks');
+var fireworksTimer = null;
+var FIREWORK_COLORS = ['#eeab3c', '#6fbf73', '#5fc3f0', '#e2543d', '#e8c468', '#dceaf5'];
+var FIREWORK_SPOTS = [
+  {x:220, y:95}, {x:440, y:55}, {x:660, y:90}, {x:880, y:50}, {x:1060, y:100}, {x:340, y:140}, {x:980, y:145}
+];
+function burstFirework(cx, cy, color, delayMs){
+  var g = el('g', {opacity:'0'});
+  var count = 14;
+  for (var k = 0; k < count; k++){
+    var angle = (Math.PI * 2 * k) / count + Math.random() * 0.3;
+    var dist = 38 + Math.random() * 28;
+    var dx = Math.cos(angle) * dist;
+    var dy = Math.sin(angle) * dist;
+    var p = el('circle', {cx:cx, cy:cy, r:2.4, fill:color});
+    p.appendChild(el('animate', {attributeName:'cx', from:cx, to:cx + dx, dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
+    p.appendChild(el('animate', {attributeName:'cy', from:cy, to:cy + dy, dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
+    p.appendChild(el('animate', {attributeName:'opacity', values:'1;1;0', keyTimes:'0;0.45;1', dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
+    p.appendChild(el('animate', {attributeName:'r', values:'2.6;1.4;0.3', dur:'900ms', begin:delayMs + 'ms', fill:'freeze'}));
+    g.appendChild(p);
+  }
+  g.appendChild(el('animate', {attributeName:'opacity', from:'0', to:'1', dur:'60ms', begin:delayMs + 'ms', fill:'freeze'}));
+  fireworksG.appendChild(g);
+}
+function launchFireworks(){
+  fireworksG.innerHTML = '';
+  FIREWORK_SPOTS.forEach(function(s, idx){
+    burstFirework(s.x, s.y, FIREWORK_COLORS[idx % FIREWORK_COLORS.length], idx * 240);
+  });
+  // repete em loop pra comemoração continuar enquanto a carta estiver concluída
+  fireworksTimer = setTimeout(launchFireworks, FIREWORK_SPOTS.length * 240 + 1500);
+}
+function stopFireworks(){
+  if (fireworksTimer){ clearTimeout(fireworksTimer); fireworksTimer = null; }
+  fireworksG.innerHTML = '';
+}
 
 function formatBRL(v){
   return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -796,6 +873,12 @@ function paint(n, opts){
   }
   updateInvestor(n);
   updateKpis();
+  // concluiu a travessia (200/200): dispara os fogos uma única vez, até o
+  // "Cancelar Carta"/"Zerar tudo" resetar tudo de novo (stopFireworks lá embaixo)
+  if (n >= TOTAL && !bridgeCompleted){
+    bridgeCompleted = true;
+    launchFireworks();
+  }
 }
 
 function totalPaidValue(){
@@ -1069,6 +1152,8 @@ function resetSimulation(){
   contemplationMonthsElapsed = null;
   lanceUnlocked = false;
   lanceUsedThisRound = false;
+  bridgeCompleted = false;
+  stopFireworks();
   ['fixoFeedback', 'livreFeedback'].forEach(function(id){
     var el = document.getElementById(id);
     el.classList.remove('show', 'win', 'lose');
@@ -1081,9 +1166,11 @@ function resetSimulation(){
   updatePayBtn();
 }
 document.getElementById('resetBtn').addEventListener('click', function(){
+  stopFireworks(); // corta de imediato, não espera a animação de afundar terminar
   collapseIntoSea(resetSimulation);
 });
 document.getElementById('restartBtn').addEventListener('click', function(){
+  stopFireworks();
   collapseIntoSea(resetSimulation);
 });
 
