@@ -158,7 +158,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard">
       <h3>Parcela</h3>
       <div class="big"><span id="paidLabel">0</span>/200</div>
-      <div class="sub" id="kpiParcela">parcela: R$ 700,00</div>
+      <div class="sub" id="kpiParcelaReduzida">parcela reduzida: R$ 700,00</div>
+      <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: R$ 1.400,00</div>
       <p class="hint">Clique no botão pagar para iniciar a jornada do consórcio</p>
     </div>
 
@@ -1113,9 +1114,11 @@ function updateKpis(){
   // antes da contemplação a parcela é reduzida; depois, vira a parcela cheia.
   var nominalCredit = currentCredit();
   var liquidCredit = Math.max(0, nominalCredit - embutidoUsedTotal);
-  var parcela = nominalCredit * PARCELA_PCT * (contemplated ? PARCELA_CHEIA_MULT : 1);
+  var parcelaReduzida = nominalCredit * PARCELA_PCT;
+  var parcelaPosContemp = nominalCredit * PARCELA_PCT * PARCELA_CHEIA_MULT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
-  document.getElementById('kpiParcela').textContent = 'parcela: ' + formatBRL(parcela) + (contemplated ? ' (cheia)' : ' (reduzida)');
+  document.getElementById('kpiParcelaReduzida').textContent = 'parcela reduzida: ' + formatBRL(parcelaReduzida);
+  document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' + formatBRL(parcelaPosContemp);
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
   if (!contemplated){
     updateFixoPreview();
