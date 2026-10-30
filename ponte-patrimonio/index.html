@@ -67,6 +67,17 @@ svg{display:block;width:100%;height:auto}
   white-space:normal;text-align:center}
 .pay-overlay #restartBtn{font-size:min(0.5cqw,9px)}
 
+/* painel "cotas contempladas" (29/10): fica no canto superior direito da
+   ponte, acima do chão final (GROUND_FAR_X0=1110..1200, SLAB_Y≈287 em 460
+   de altura ≈ 62% — então o painel, ancorado no topo, nunca desce até lá). */
+.contemplados-overlay{position:absolute;right:1.8%;top:4%;max-width:38%;
+  background:rgba(9,32,56,.9);border:1px solid var(--grid);border-radius:6px;
+  padding:min(1.3cqw,10px) min(1.5cqw,12px);z-index:4;color:var(--ink-dim);
+  font-size:min(1cqw,10.5px);line-height:1.6}
+.contemplados-overlay .sua-cota{font-size:min(1.25cqw,13px);font-weight:600;
+  color:var(--ink);margin-bottom:5px;white-space:nowrap}
+.contemplados-overlay .linha{white-space:nowrap}
+
 .pay-pulse{background:var(--paid);border-color:var(--paid-ink);color:var(--paid-ink);
   font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
 .pay-pulse:hover{background:var(--paid);border-color:var(--paid-ink)}
@@ -163,6 +174,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <button id="restartBtn" class="danger">Cancelar<br>Carta</button>
       <button id="lanceBtn">Dar<br>Lance</button>
       <button id="payBtn" class="pay-pulse">Pagar<br>Parcela</button>
+    </div>
+    <div class="contemplados-overlay" id="contempladosOverlay">
+      <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
+      <div class="linha" id="contLinha0">—</div>
+      <div class="linha" id="contLinha1">—</div>
+      <div class="linha" id="contLinha2">—</div>
+      <div class="linha" id="contLinha3">—</div>
+      <div class="linha" id="contLinha4">—</div>
     </div>
     <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -599,6 +618,26 @@ function initSorteioPool(){
 }
 function sorteioCotaLabel(n){
   return String(n).padStart(3, '0');
+}
+
+// painel "cotas contempladas" no card da ponte (29/10): mostra a cota da
+// simulação e, logo abaixo, a quais das 5 contemplações do mês (1 sorteio +
+// 1 fixo + 3 livre) cada número sorteado corresponde — posições fixas no
+// array `drawn` (sempre a ordem em que saem do baralho), não um sorteio de
+// papel separado: é só rótulo pra deixar claro de onde cada número "veio".
+var SORTEIO_ROLES = ['Sorteio', 'Lance Fixo', 'Lance Livre', 'Lance Livre', 'Lance Livre'];
+function updateContempladosPainel(drawn){
+  var cotaEl = document.getElementById('suaCotaPainelOut');
+  if (cotaEl && investorCotaNumber != null) cotaEl.textContent = sorteioCotaLabel(investorCotaNumber);
+  for (var i = 0; i < 5; i++){
+    var line = document.getElementById('contLinha' + i);
+    if (!line) continue;
+    if (drawn && drawn[i] != null){
+      line.textContent = SORTEIO_ROLES[i] + ': cota ' + sorteioCotaLabel(drawn[i]);
+    } else {
+      line.textContent = '—';
+    }
+  }
 }
 // texto exibido no card Sorteio — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
@@ -1229,6 +1268,7 @@ function doPay(){
     var drawn = sorteioDrawPool.splice(0, CONTEMPLACOES_POR_ASSEMBLEIA);
     var sorteioWon = drawn.indexOf(investorCotaNumber) !== -1;
     showSorteioFeedback(sorteioWon, drawn);
+    updateContempladosPainel(drawn);
     if (sorteioWon){
       contemplationMethod = 'sorteio';
       contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
@@ -1344,6 +1384,7 @@ function resetSimulation(){
   contemplationMonthsElapsed = null;
   contemplationMethod = null;
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
+  updateContempladosPainel(null);
   lanceUnlocked = false;
   lanceUsedThisRound = false;
   bridgeCompleted = false;
@@ -1374,6 +1415,7 @@ document.getElementById('restartBtn').addEventListener('click', function(){
 drawStructure();
 buildDeck();
 initSorteioPool();
+updateContempladosPainel(null);
 paint(0, {instant:true});
 updateKpis();
 updateContemplationUI();
