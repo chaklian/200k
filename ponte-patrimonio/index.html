@@ -159,7 +159,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Parcela</h3>
       <div class="big"><span id="paidLabel">0</span>/200</div>
       <div class="sub" id="kpiParcelaReduzida">parcela reduzida: R$ 700,00</div>
-      <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: R$ 1.400,00</div>
+      <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
 
     <div class="kcard">
@@ -574,8 +574,17 @@ var recursoUsedTotal = 0;        // acumulado de recurso próprio já aplicado (
 // de reajustar o crédito e a parcela passa a ser a cheia (sem o redutor).
 var contemplated = false;
 var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — congela o INCC daí em diante
+
+// parcela pós-contemplação (29/10): em vez de um multiplicador fixo
+// (PARCELA_CHEIA_MULT), recalculamos de fato com base no saldo devedor
+// restante no instante da contemplação — ver claude/regras-consorcio-
+// conferencia.md item 14 (pesquisa confirma: parcela pós-contemplação é
+// recalculada sobre o saldo devedor, não um "dobra sempre" fixo; na prática
+// pode até cair, se um lance grande já tiver amortizado boa parte do saldo).
+// Fica null até a contemplação acontecer de verdade — antes disso, a tela
+// mostra um valor genérico, não uma prévia calculada.
+var parcelaPosContempValue = null;
 var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mostrar no card certo qual modalidade contemplou
-var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de ~50% comum no mercado) — estimativa
 
 // grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
 // de nenhum grupo real. 999 (não 1000) de propósito, pra toda cota caber em
@@ -810,6 +819,17 @@ function contemplate(bridgeMonthAdvance){
     paint(n, {instant:true});
     document.getElementById('paidLabel').textContent = n;
   }
+  // recalcula a parcela pós-contemplação de verdade, uma vez só, no instante
+  // em que a contemplação acontece: saldo devedor restante (crédito líquido
+  // menos tudo que já foi pago via parcela + recurso próprio) dividido pelos
+  // meses que ainda faltam no prazo de 200. Fica travado daqui em diante —
+  // o crédito também para de reajustar ao contemplar (currentCredit()).
+  var creditoContemp = currentCredit();
+  var liquidCreditContemp = Math.max(0, creditoContemp - embutidoUsedTotal);
+  var totalContribuido = totalPaidValue() + recursoUsedTotal;
+  var saldoDevedor = Math.max(0, liquidCreditContemp - totalContribuido);
+  var mesesRestantes = Math.max(1, TOTAL - monthsElapsed);
+  parcelaPosContempValue = saldoDevedor / mesesRestantes;
   updateContemplationUI();
 }
 
@@ -1087,12 +1107,11 @@ function totalPaidValue(){
   // Antes da contemplação, cada parcela é a reduzida, reajustada por ano pelo
   // INCC. A partir do mês da contemplação, a carta foi "usada": o INCC parou
   // e a parcela virou a cheia (sem redutor), fixa dali pra frente.
-  var cheiaParcela = null;
-  if (contemplated){
-    var yAtContemp = Math.floor(contemplationMonthsElapsed / 12);
-    var creditAtContemp = CREDIT_BASE * Math.pow(1 + INCC_PCT/100, yAtContemp);
-    cheiaParcela = creditAtContemp * PARCELA_PCT * PARCELA_CHEIA_MULT;
-  }
+  // a partir da contemplação, a parcela não é mais um multiplicador fixo
+  // sobre o crédito — é o valor recalculado de verdade sobre o saldo devedor
+  // restante, travado no instante em que a contemplação aconteceu (ver
+  // parcelaPosContempValue, calculado em contemplate()).
+  var cheiaParcela = contemplated ? (parcelaPosContempValue || 0) : null;
   var total = 0;
   for (var m = 0; m < monthsElapsed; m++){
     if (contemplated && m >= contemplationMonthsElapsed){
@@ -1114,10 +1133,13 @@ function updateKpis(){
   var nominalCredit = currentCredit();
   var liquidCredit = Math.max(0, nominalCredit - embutidoUsedTotal);
   var parcelaReduzida = nominalCredit * PARCELA_PCT;
-  var parcelaPosContemp = nominalCredit * PARCELA_PCT * PARCELA_CHEIA_MULT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
   document.getElementById('kpiParcelaReduzida').textContent = 'parcela reduzida: ' + formatBRL(parcelaReduzida);
-  document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' + formatBRL(parcelaPosContemp);
+  // só mostra um valor real nessa linha depois que a contemplação de fato
+  // acontece (parcelaPosContempValue é calculado uma vez, em contemplate());
+  // antes disso é um placeholder genérico, não uma prévia estimada.
+  document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
+    (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
   if (!contemplated){
     updateFixoPreview();
@@ -1385,6 +1407,7 @@ function resetSimulation(){
   contemplated = false;
   contemplationMonthsElapsed = null;
   contemplationMethod = null;
+  parcelaPosContempValue = null;
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   updateContempladosPainel(null);
   lanceUnlocked = false;
