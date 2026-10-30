@@ -240,6 +240,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       </details>
       <div class="lance-result" style="margin-top:14px">
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
+        <div>Chance neste sorteio: <b id="sorteioChanceOut">1 em 1000</b></div>
       </div>
       <div class="lance-feedback" id="sorteioFeedback"></div>
     </div>
@@ -575,11 +576,20 @@ var GROUP_SIZE = 1000;
 // curva previsível e fácil de explicar).
 var CONTEMPLACOES_POR_ASSEMBLEIA = 5;
 function sorteioPoolRemaining(){
-  var jaContemplados = CONTEMPLACOES_POR_ASSEMBLEIA * (monthsElapsed - 1);
+  // antes do 1º pagamento (monthsElapsed=0) mostra o pool da 1ª parcela (1000),
+  // não um valor negativo de "já contemplados"
+  var m = Math.max(1, monthsElapsed);
+  var jaContemplados = CONTEMPLACOES_POR_ASSEMBLEIA * (m - 1);
   return Math.max(1, GROUP_SIZE - jaContemplados);
 }
 function sorteioChancePct(){
   return Math.min(100, 100 / sorteioPoolRemaining());
+}
+// texto exibido no card Sorteio ("1 em N") — a pedido do usuário (29/10), a
+// chance passou a ser mostrada na tela (antes era regra do produto nunca
+// mostrar número, só prosa; decisão revertida especificamente pra esse card)
+function sorteioChanceLabel(){
+  return '1 em ' + Math.round(sorteioPoolRemaining());
 }
 
 // comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
@@ -759,6 +769,10 @@ function updateContemplationUI(){
     } else {
       sorteioOut.textContent = 'Concorrendo';
     }
+  }
+  var sorteioChanceOut = document.getElementById('sorteioChanceOut');
+  if (sorteioChanceOut){
+    sorteioChanceOut.textContent = contemplated ? '—' : sorteioChanceLabel();
   }
 }
 
@@ -1184,6 +1198,11 @@ function doPay(){
       contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
     }
   }
+  // atualiza o número da chance mostrado no card Sorteio ("1 em N"), que sobe
+  // a cada parcela — contemplate() já chama updateContemplationUI() quando
+  // há contemplação, mas no caso comum (não contemplado ainda) precisa
+  // chamar aqui também, senão o número fica parado na tela
+  updateContemplationUI();
 
   // a ponte (progresso visual) só avança até onde o tempo real já chegou; se
   // um lance já tinha coberto mais meses lá na frente, a parcela real só
