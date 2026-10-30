@@ -563,7 +563,8 @@ var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = 
                                  // (remove o redutor de 50% do item 6) — modelo ABAC (29/10,
                                  // regras-consorcio-conferencia.md item 15): % fixo sobre o
                                  // crédito vigente, NÃO mais saldo devedor ÷ meses restantes.
-var INCC_PCT = 6;                // referência anual, travado em 6% — não editável
+var INCC_PCT = 6.5;              // referência anual, travado em 6,5% — não editável (bate com o
+                                 // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...")
 var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
 var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
 var LANCE_LIVRE_MIN = 40;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
@@ -574,10 +575,17 @@ var recursoUsedTotal = 0;        // acumulado de recurso próprio já aplicado (
 // contemplação: lance NÃO garante ser contemplado — é uma disputa com chance
 // real de perder. Até ganhar (por lance ou pelo sorteio mensal automático,
 // que vale pra todo mundo adimplente, com ou sem lance), a carta segue com
-// parcela reduzida. A partir da contemplação, a carta é "usada": o INCC para
-// de reajustar o crédito e a parcela passa a ser a cheia (sem o redutor).
+// parcela reduzida. A partir da contemplação, a parcela passa a ser a cheia
+// (sem o redutor) — mas o CRÉDITO continua reajustando pelo INCC normalmente,
+// sem congelar (ver nota em currentCredit() abaixo, 29/10: por definição do
+// projeto, não existe ainda uma dinâmica/botão de "usar a carta pra comprar
+// o imóvel" — o investidor pode ser contemplado e nunca efetivamente usar o
+// crédito, então ele continua existindo e sendo reajustado até o fim do
+// prazo, exatamente como antes de contemplar).
 var contemplated = false;
-var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — congela o INCC daí em diante
+var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — marca só a
+                                        // virada do percentual (reduzida → cheia) na parcela, NÃO
+                                        // mais um congelamento do crédito (ver currentCredit()).
 
 // parcela pós-contemplação (29/10): em vez de um multiplicador fixo
 // (PARCELA_CHEIA_MULT), recalculamos de fato com base no saldo devedor
@@ -769,33 +777,33 @@ function formatBRL(v){
 }
 
 function currentCredit(){
-  // crédito vigente, já reajustado pelo INCC — só pelos anos REAIS decorridos
-  // (meses efetivamente pagos via botão "Pagar"), não pelos meses que um lance
-  // "pulou" na ponte. Depois de contemplado, a carta foi "usada": o INCC para
-  // de reajustar a partir daquele ponto, mesmo que o tempo real continue passando.
-  // Usado só pro card "Valor do crédito" e pelos cálculos de lance — NÃO pela
-  // parcela pós-contemplação, que usa creditoIndexadoParaParcela() abaixo (ver
-  // o porquê da distinção lá).
-  var months = contemplated ? contemplationMonthsElapsed : monthsElapsed;
-  var years = Math.floor(months / 12);
-  return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
+  // crédito vigente, já reajustado pelo INCC — pelos anos REAIS decorridos
+  // (meses efetivamente pagos via botão "Pagar"), não pelos meses que um
+  // lance "pulou" na ponte.
+  //
+  // 29/10: o crédito NÃO congela mais na contemplação. Duas correções na
+  // mesma sessão: primeiro corrigimos um bug onde a PARCELA pós-contemplação
+  // travava pra sempre (não reajustava — ver histórico em
+  // claude/regras-consorcio-conferencia.md itens 14/15); o crédito em si
+  // ainda congelava de propósito, pela premissa de que a carta contemplada
+  // tinha sido "usada" pra comprar o imóvel. O usuário esclareceu a
+  // premissa do projeto: aqui ainda não existe nenhuma dinâmica/botão de
+  // "usar a carta pra comprar o imóvel" — contemplação e uso do crédito são
+  // dois eventos distintos (confirmado também pelo caso real da cota 134,
+  // item 13.3 do doc de regras: quase 1 ano de intervalo entre os dois). Por
+  // definição, enquanto essa dinâmica não existir, o crédito nunca para de
+  // reajustar — nem na contemplação, nem depois. Por isso esta função sempre
+  // usa `monthsElapsed` (nunca `contemplationMonthsElapsed`), e serve tanto
+  // pro card "Valor do crédito" quanto pros cálculos de lance E pela parcela
+  // pós-contemplação (que usa o mesmo crédito vigente, só com o percentual
+  // cheio em vez do reduzido — ver PARCELA_PCT_CHEIA).
+  return creditoAt(monthsElapsed);
 }
 
-function creditoIndexadoParaParcela(months){
-  // bug corrigido em 29/10: a parcela pós-contemplação estava travada num
-  // único valor calculado no instante da contemplação (em contemplate()) e
-  // nunca mais mudava — nem reajustava pelo INCC, nem acompanhava o índice
-  // crescendo, mesmo o tempo real continuando a passar. O usuário notou isso
-  // rodando a simulação. Conferido com a pesquisa já registrada em
-  // regras-consorcio-conferencia.md (itens 14 e 15): mesmo depois que o
-  // crédito "para" (porque a carta foi usada pra comprar o imóvel — ver
-  // currentCredit() acima), a PARCELA (e o saldo devedor) continuam sendo
-  // corrigidos pelo MESMO índice contratual até o fim do prazo — não existe
-  // uma "pausa" de correção monetária pra quem já foi contemplado. Por isso
-  // esta função nunca congela: sempre usa o `months` real passado a ela
-  // (tipicamente monthsElapsed, não contemplationMonthsElapsed), diferente de
-  // currentCredit(), que congela de propósito (é o valor "da carta", que vira
-  // o imóvel e para de ser um crédito reajustável).
+function creditoAt(months){
+  // mesma fórmula de currentCredit(), mas parametrizada por `months` — usada
+  // em totalPaidValue() pra pegar o crédito vigente em cada mês já pago m
+  // (não necessariamente o monthsElapsed atual).
   var years = Math.floor(months / 12);
   return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
 }
@@ -846,12 +854,12 @@ function contemplate(bridgeMonthAdvance){
     document.getElementById('paidLabel').textContent = n;
   }
   // a parcela pós-contemplação NÃO é mais travada aqui (bug corrigido em
-  // 29/10 — ver creditoIndexadoParaParcela() acima): o percentual troca pra
-  // cheio (PARCELA_PCT_CHEIA) a partir deste mês, mas o valor em R$ continua
-  // sendo recalculado toda vez que a tela atualiza (updateKpis()), porque o
-  // índice de reajuste continua correndo até o fim do prazo — não para no
-  // instante da contemplação.
-  parcelaPosContempValue = creditoIndexadoParaParcela(monthsElapsed) * PARCELA_PCT_CHEIA;
+  // 29/10 — ver currentCredit() acima): o percentual troca pra cheio
+  // (PARCELA_PCT_CHEIA) a partir deste mês, mas o valor em R$ continua sendo
+  // recalculado toda vez que a tela atualiza (updateKpis()), porque o crédito
+  // (e portanto a parcela) continua reajustando pelo INCC normalmente — não
+  // existe ainda uma dinâmica de "usar a carta" que o faria parar.
+  parcelaPosContempValue = currentCredit() * PARCELA_PCT_CHEIA;
   updateContemplationUI();
 }
 
@@ -860,7 +868,10 @@ function updateContemplationUI(){
   var hintEl = document.getElementById('kpiStatusHint');
   if (contemplated){
     statusEl.textContent = 'Contemplado';
-    hintEl.textContent = 'Carta usada — parcela cheia';
+    // 29/10: não é mais "Carta usada" — contemplação e uso do crédito são
+    // dois eventos distintos (não existe ainda essa dinâmica no protótipo),
+    // então o texto não pode dar a entender que a carta já foi usada.
+    hintEl.textContent = 'Parcela cheia (sem redutor)';
   } else {
     statusEl.textContent = 'Não contemplado';
     hintEl.textContent = 'Concorrendo ao sorteio';
@@ -1130,12 +1141,13 @@ function totalPaidValue(){
   // MESMO valor de parcela travado (parcelaPosContempValue calculado uma vez
   // em contemplate()) — então nem a parcela pós-contemplação nem o total pago
   // refletiam o INCC continuando a reajustar o índice ano a ano. Agora o
-  // índice (creditoIndexadoParaParcela) é recalculado mês a mês, igual
-  // acontecia antes da contemplação — só o percentual aplicado muda (reduzido
-  // antes, cheio depois, ver PARCELA_PCT vs. PARCELA_PCT_CHEIA).
+  // índice (creditoAt) é recalculado mês a mês, igual acontecia antes da
+  // contemplação — só o percentual aplicado muda (reduzido antes, cheio
+  // depois, ver PARCELA_PCT vs. PARCELA_PCT_CHEIA); o crédito em si nunca
+  // congela (ver nota em currentCredit()).
   var total = 0;
   for (var m = 0; m < monthsElapsed; m++){
-    var credAtM = creditoIndexadoParaParcela(m);
+    var credAtM = creditoAt(m);
     var pct = (contemplated && m >= contemplationMonthsElapsed) ? PARCELA_PCT_CHEIA : PARCELA_PCT;
     total += credAtM * pct;
   }
@@ -1159,7 +1171,7 @@ function updateKpis(){
   // um valor travado no instante da contemplação) — assim ele acompanha o
   // INCC continuando a reajustar o índice até o fim do prazo, em vez de
   // ficar parado pra sempre a partir do mês em que a carta foi contemplada.
-  parcelaPosContempValue = contemplated ? (creditoIndexadoParaParcela(monthsElapsed) * PARCELA_PCT_CHEIA) : null;
+  parcelaPosContempValue = contemplated ? (currentCredit() * PARCELA_PCT_CHEIA) : null;
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
