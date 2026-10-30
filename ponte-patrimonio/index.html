@@ -236,7 +236,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
       <details class="adv">
         <summary>Como funciona</summary>
-        <p>A cada assembleia, se houver caixa disponível no fundo comum, uma cota é sorteada entre quem está em dia com as parcelas. É a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre.</p>
+        <p>A cada assembleia, se houver caixa disponível no fundo comum, uma cota é sorteada entre quem está em dia com as parcelas. É a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre. E a chance não é fixa: a cada parcela paga, mais gente do grupo já foi contemplada (por sorteio ou por lance) e sai da disputa — então sua chance vai aumentando, mês a mês, conforme o grupo avança.</p>
       </details>
       <div class="lance-result" style="margin-top:14px">
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
@@ -561,6 +561,26 @@ var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de 
 // sorteio internamente coerente (ninguém vê o número, é só pra não ser
 // instantâneo nem arbitrário)
 var GROUP_SIZE = 1000;
+
+// chance PROGRESSIVA do sorteio automático (29/10): a cada parcela/assembleia,
+// assumimos que SEMPRE saem exatamente 5 cotas contempladas do grupo todo —
+// 1 por sorteio, 1 por lance fixo, 3 por lance livre — mesmo que não sejam a
+// do investidor que estamos simulando. Isso encolhe o pool de concorrentes
+// ainda não contemplados a cada mês, então a chance de SER sorteado sobe
+// mês a mês: 1/1000 na 1ª parcela, 1/995 na 2ª, 1/990 na 3ª, e assim por
+// diante — 1000/5 = 200 = TOTAL, ou seja, o grupo inteiro "zera" exatamente
+// no último mês. Simplificação do produto, não um dado oficial da Porto
+// (dado real, item 11 do doc de regras: o nº de contemplados por assembleia
+// varia de verdade, 4 a 7 nos exemplos reais — aqui fixamos em 5 pra ter uma
+// curva previsível e fácil de explicar).
+var CONTEMPLACOES_POR_ASSEMBLEIA = 5;
+function sorteioPoolRemaining(){
+  var jaContemplados = CONTEMPLACOES_POR_ASSEMBLEIA * (monthsElapsed - 1);
+  return Math.max(1, GROUP_SIZE - jaContemplados);
+}
+function sorteioChancePct(){
+  return Math.min(100, 100 / sorteioPoolRemaining());
+}
 
 // comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
 // fundo da tela, atrás da ponte (o <g id="fireworks"> está logo depois da
@@ -1157,7 +1177,7 @@ function doPay(){
   // Sempre roda e mostra o resultado no card "Sorteio" (que nunca trava,
   // porque essa modalidade não depende de dar lance), ganhando ou não.
   if (!contemplated){
-    var sorteioWon = rollSorteio(100 / GROUP_SIZE);
+    var sorteioWon = rollSorteio(sorteioChancePct());
     showSorteioFeedback(sorteioWon);
     if (sorteioWon){
       contemplationMethod = 'sorteio';
