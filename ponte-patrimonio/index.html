@@ -236,11 +236,12 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
       <details class="adv">
         <summary>Como funciona</summary>
-        <p>A cada assembleia, se houver caixa disponível no fundo comum, uma cota é sorteada entre quem está em dia com as parcelas. É a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre. E a chance não é fixa: a cada parcela paga, mais gente do grupo já foi contemplada (por sorteio ou por lance) e sai da disputa — então sua chance vai aumentando, mês a mês, conforme o grupo avança.</p>
+        <p>Ao começar a simulação, sua cota recebe um número — é essa cota que concorre, mês a mês, enquanto você paga parcela. A cada assembleia, se houver caixa disponível no fundo comum, algumas cotas são contempladas entre quem está em dia; é a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre. Ninguém fica de fora: conforme o grupo inteiro avança nas parcelas, a lista de quem ainda não foi contemplado vai encolhendo até não sobrar ninguém — ou seja, toda cota (inclusive a sua) acaba sendo contemplada até o fim do prazo, por sorteio ou por lance.</p>
       </details>
       <div class="lance-result" style="margin-top:14px">
+        <div>Sua cota neste sorteio: <b id="sorteioCotaOut">0001</b></div>
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
-        <div>Chance neste sorteio: <b id="sorteioChanceOut">1 em 1000</b></div>
+        <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 1000</b></div>
       </div>
       <div class="lance-feedback" id="sorteioFeedback"></div>
     </div>
@@ -563,33 +564,48 @@ var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de 
 // instantâneo nem arbitrário)
 var GROUP_SIZE = 1000;
 
-// chance PROGRESSIVA do sorteio automático (29/10): a cada parcela/assembleia,
-// assumimos que SEMPRE saem exatamente 5 cotas contempladas do grupo todo —
-// 1 por sorteio, 1 por lance fixo, 3 por lance livre — mesmo que não sejam a
-// do investidor que estamos simulando. Isso encolhe o pool de concorrentes
-// ainda não contemplados a cada mês, então a chance de SER sorteado sobe
-// mês a mês: 1/1000 na 1ª parcela, 1/995 na 2ª, 1/990 na 3ª, e assim por
-// diante — 1000/5 = 200 = TOTAL, ou seja, o grupo inteiro "zera" exatamente
-// no último mês. Simplificação do produto, não um dado oficial da Porto
-// (dado real, item 11 do doc de regras: o nº de contemplados por assembleia
-// varia de verdade, 4 a 7 nos exemplos reais — aqui fixamos em 5 pra ter uma
-// curva previsível e fácil de explicar).
+// SORTEIO DETERMINÍSTICO SEM REPOSIÇÃO (29/10, 2ª versão — substitui a 1ª
+// versão probabilística "rollSorteio(1/N)", que podia terminar as 200
+// parcelas sem NUNCA contemplar o investidor, mesmo a chance subindo todo
+// mês — matematicamente possível (nunca ganhar 200 sorteios seguidos é raro,
+// mas não impossível), e o usuário notou esse caso e pediu uma garantia.
+//
+// Mecanismo novo: a cota simulada recebe um número fixo e aleatório (1 a
+// GROUP_SIZE) no início da simulação — `investorCotaNumber`. Um baralho com
+// todos os GROUP_SIZE números é embaralhado uma vez (`sorteioDrawPool`). A
+// cada "Pagar Parcela", saem CONTEMPLACOES_POR_ASSEMBLEIA=5 números do topo
+// do baralho (1 por sorteio + 1 por lance fixo + 3 por lance livre do resto
+// do grupo, mesmo que não sejam a cota simulada) — se o número da cota
+// simulada estiver nesses 5, ela foi contemplada. Como 5×200=1000=GROUP_SIZE,
+// o baralho esgota EXATAMENTE na 200ª parcela — ou seja, toda cota (inclusive
+// a simulada) é garantidamente contemplada até o fim, o mais tardar na última
+// parcela. Simplificação de produto, não um dado oficial da Porto (dado
+// real, item 11 do doc de regras: o nº de contemplados por assembleia varia
+// de verdade, 4 a 7 nos exemplos reais — aqui fixamos em 5 pra ter uma
+// garantia previsível e fácil de explicar).
 var CONTEMPLACOES_POR_ASSEMBLEIA = 5;
-function sorteioPoolRemaining(){
-  // antes do 1º pagamento (monthsElapsed=0) mostra o pool da 1ª parcela (1000),
-  // não um valor negativo de "já contemplados"
-  var m = Math.max(1, monthsElapsed);
-  var jaContemplados = CONTEMPLACOES_POR_ASSEMBLEIA * (m - 1);
-  return Math.max(1, GROUP_SIZE - jaContemplados);
+var investorCotaNumber = null;
+var sorteioDrawPool = [];
+function initSorteioPool(){
+  investorCotaNumber = 1 + Math.floor(Math.random() * GROUP_SIZE);
+  sorteioDrawPool = [];
+  for (var i = 1; i <= GROUP_SIZE; i++) sorteioDrawPool.push(i);
+  // Fisher-Yates
+  for (var i = sorteioDrawPool.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = sorteioDrawPool[i]; sorteioDrawPool[i] = sorteioDrawPool[j]; sorteioDrawPool[j] = tmp;
+  }
 }
-function sorteioChancePct(){
-  return Math.min(100, 100 / sorteioPoolRemaining());
+function sorteioCotaLabel(n){
+  return String(n).padStart(4, '0');
 }
-// texto exibido no card Sorteio ("1 em N") — a pedido do usuário (29/10), a
-// chance passou a ser mostrada na tela (antes era regra do produto nunca
-// mostrar número, só prosa; decisão revertida especificamente pra esse card)
+// texto exibido no card Sorteio — a pedido do usuário (29/10), a chance
+// passou a ser mostrada na tela (antes era regra do produto nunca mostrar
+// número, só prosa; decisão revertida especificamente pra esse card).
+// "5 em N": a cada mês saem 5 números do baralho de N restantes.
 function sorteioChanceLabel(){
-  return '1 em ' + Math.round(sorteioPoolRemaining());
+  var n = Math.max(CONTEMPLACOES_POR_ASSEMBLEIA, sorteioDrawPool.length);
+  return CONTEMPLACOES_POR_ASSEMBLEIA + ' em ' + n;
 }
 
 // comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
@@ -769,6 +785,10 @@ function updateContemplationUI(){
     } else {
       sorteioOut.textContent = 'Concorrendo';
     }
+  }
+  var sorteioCotaOut = document.getElementById('sorteioCotaOut');
+  if (sorteioCotaOut && investorCotaNumber != null){
+    sorteioCotaOut.textContent = sorteioCotaLabel(investorCotaNumber);
   }
   var sorteioChanceOut = document.getElementById('sorteioChanceOut');
   if (sorteioChanceOut){
@@ -1124,16 +1144,17 @@ function showLanceFeedback(prefix, won){
 // feedback do card "Sorteio" — roda automaticamente a cada parcela paga
 // (doPay()), nunca via botão de ação: é a única modalidade que não depende
 // de dar lance, então o card nunca trava e o resultado aparece sozinho.
-function showSorteioFeedback(won){
+function showSorteioFeedback(won, drawn){
   var el = document.getElementById('sorteioFeedback');
   if (!el) return;
   el.classList.add('show');
+  var drawnLabel = (drawn || []).map(sorteioCotaLabel).sort().join(', ');
   if (won){
     el.classList.remove('lose'); el.classList.add('win');
-    el.innerHTML = '🎉 <b>Contemplado no sorteio deste mês!</b>';
+    el.innerHTML = '🎉 <b>Contemplado no sorteio deste mês!</b> Cotas sorteadas: ' + drawnLabel + ' — a sua (nº ' + sorteioCotaLabel(investorCotaNumber) + ') estava entre elas.';
   } else {
     el.classList.remove('win'); el.classList.add('lose');
-    el.innerHTML = 'Sorteio realizado este mês — não foi sua cota desta vez. Continua concorrendo automaticamente todo mês.';
+    el.innerHTML = 'Sorteio realizado este mês — cotas sorteadas: ' + drawnLabel + '. A sua (nº ' + sorteioCotaLabel(investorCotaNumber) + ') não saiu desta vez. Continua concorrendo automaticamente todo mês.';
   }
 }
 
@@ -1186,19 +1207,21 @@ function doPay(){
   if (paidMonths >= TOTAL) return;
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
 
-  // mesmo sem lance nenhum, todo mês tem um sorteio automático entre todo o
-  // grupo (GROUP_SIZE) — então a contemplação também pode vir sem lance.
-  // Sempre roda e mostra o resultado no card "Sorteio" (que nunca trava,
-  // porque essa modalidade não depende de dar lance), ganhando ou não.
+  // mesmo sem lance nenhum, todo mês saem 5 números do baralho do sorteio —
+  // então a contemplação também pode vir sem lance. Sempre roda e mostra o
+  // resultado no card "Sorteio" (que nunca trava, porque essa modalidade não
+  // depende de dar lance), ganhando ou não. Sorteio sem reposição: garante
+  // que a cota simulada é contemplada até a 200ª parcela, o mais tardar.
   if (!contemplated){
-    var sorteioWon = rollSorteio(sorteioChancePct());
-    showSorteioFeedback(sorteioWon);
+    var drawn = sorteioDrawPool.splice(0, CONTEMPLACOES_POR_ASSEMBLEIA);
+    var sorteioWon = drawn.indexOf(investorCotaNumber) !== -1;
+    showSorteioFeedback(sorteioWon, drawn);
     if (sorteioWon){
       contemplationMethod = 'sorteio';
       contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
     }
   }
-  // atualiza o número da chance mostrado no card Sorteio ("1 em N"), que sobe
+  // atualiza o número da chance mostrado no card Sorteio ("5 em N"), que sobe
   // a cada parcela — contemplate() já chama updateContemplationUI() quando
   // há contemplação, mas no caso comum (não contemplado ainda) precisa
   // chamar aqui também, senão o número fica parado na tela
@@ -1307,6 +1330,7 @@ function resetSimulation(){
   contemplated = false;
   contemplationMonthsElapsed = null;
   contemplationMethod = null;
+  initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   lanceUnlocked = false;
   lanceUsedThisRound = false;
   bridgeCompleted = false;
@@ -1336,6 +1360,7 @@ document.getElementById('restartBtn').addEventListener('click', function(){
 
 drawStructure();
 buildDeck();
+initSorteioPool();
 paint(0, {instant:true});
 updateKpis();
 updateContemplationUI();
