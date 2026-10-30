@@ -146,7 +146,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard">
       <h3>Valor do crédito (imóvel)</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
-      <div class="sub">INCC ref. 6%/ano (fixo)</div>
+      <div class="sub">INCC = 6,5% a.a. / Selic = 13,75% a.a / IPCA = 4,5% a.a</div>
     </div>
 
     <div class="kcard">
@@ -559,6 +559,10 @@ var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga 
 
 var CREDIT_BASE = 200000;       // valor da carta 200k
 var PARCELA_PCT = 0.0035;       // parcela = 0,35% do valor do crédito
+var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = dobro da reduzida
+                                 // (remove o redutor de 50% do item 6) — modelo ABAC (29/10,
+                                 // regras-consorcio-conferencia.md item 15): % fixo sobre o
+                                 // crédito vigente, NÃO mais saldo devedor ÷ meses restantes.
 var INCC_PCT = 6;                // referência anual, travado em 6% — não editável
 var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
 var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
@@ -820,16 +824,16 @@ function contemplate(bridgeMonthAdvance){
     document.getElementById('paidLabel').textContent = n;
   }
   // recalcula a parcela pós-contemplação de verdade, uma vez só, no instante
-  // em que a contemplação acontece: saldo devedor restante (crédito líquido
-  // menos tudo que já foi pago via parcela + recurso próprio) dividido pelos
-  // meses que ainda faltam no prazo de 200. Fica travado daqui em diante —
-  // o crédito também para de reajustar ao contemplar (currentCredit()).
+  // em que a contemplação acontece — revisado em 29/10 com a pesquisa do blog
+  // da ABAC (ver claude/regras-consorcio-conferencia.md item 15): a fórmula
+  // é simplesmente o percentual pleno (PARCELA_PCT_CHEIA, sem o desconto do
+  // redutor de 50%) sobre o crédito vigente, igual ao jeito de calcular de
+  // sempre — NÃO mais uma divisão de saldo devedor ÷ meses restantes (versão
+  // anterior desta mesma sessão, baseada numa leitura mais literal do
+  // regulamento de veículo da Porto). O crédito continua congelado a partir
+  // da contemplação (currentCredit() usa contemplationMonthsElapsed).
   var creditoContemp = currentCredit();
-  var liquidCreditContemp = Math.max(0, creditoContemp - embutidoUsedTotal);
-  var totalContribuido = totalPaidValue() + recursoUsedTotal;
-  var saldoDevedor = Math.max(0, liquidCreditContemp - totalContribuido);
-  var mesesRestantes = Math.max(1, TOTAL - monthsElapsed);
-  parcelaPosContempValue = saldoDevedor / mesesRestantes;
+  parcelaPosContempValue = creditoContemp * PARCELA_PCT_CHEIA;
   updateContemplationUI();
 }
 
@@ -1107,10 +1111,10 @@ function totalPaidValue(){
   // Antes da contemplação, cada parcela é a reduzida, reajustada por ano pelo
   // INCC. A partir do mês da contemplação, a carta foi "usada": o INCC parou
   // e a parcela virou a cheia (sem redutor), fixa dali pra frente.
-  // a partir da contemplação, a parcela não é mais um multiplicador fixo
-  // sobre o crédito — é o valor recalculado de verdade sobre o saldo devedor
-  // restante, travado no instante em que a contemplação aconteceu (ver
-  // parcelaPosContempValue, calculado em contemplate()).
+  // a partir da contemplação, a parcela cheia (sem o redutor) é travada no
+  // valor calculado no instante da contemplação — ver parcelaPosContempValue,
+  // calculado em contemplate() como crédito vigente × PARCELA_PCT_CHEIA
+  // (modelo ABAC, 29/10, item 15 do doc de regras).
   var cheiaParcela = contemplated ? (parcelaPosContempValue || 0) : null;
   var total = 0;
   for (var m = 0; m < monthsElapsed; m++){
