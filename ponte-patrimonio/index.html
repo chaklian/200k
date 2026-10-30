@@ -773,7 +773,29 @@ function currentCredit(){
   // (meses efetivamente pagos via botão "Pagar"), não pelos meses que um lance
   // "pulou" na ponte. Depois de contemplado, a carta foi "usada": o INCC para
   // de reajustar a partir daquele ponto, mesmo que o tempo real continue passando.
+  // Usado só pro card "Valor do crédito" e pelos cálculos de lance — NÃO pela
+  // parcela pós-contemplação, que usa creditoIndexadoParaParcela() abaixo (ver
+  // o porquê da distinção lá).
   var months = contemplated ? contemplationMonthsElapsed : monthsElapsed;
+  var years = Math.floor(months / 12);
+  return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
+}
+
+function creditoIndexadoParaParcela(months){
+  // bug corrigido em 29/10: a parcela pós-contemplação estava travada num
+  // único valor calculado no instante da contemplação (em contemplate()) e
+  // nunca mais mudava — nem reajustava pelo INCC, nem acompanhava o índice
+  // crescendo, mesmo o tempo real continuando a passar. O usuário notou isso
+  // rodando a simulação. Conferido com a pesquisa já registrada em
+  // regras-consorcio-conferencia.md (itens 14 e 15): mesmo depois que o
+  // crédito "para" (porque a carta foi usada pra comprar o imóvel — ver
+  // currentCredit() acima), a PARCELA (e o saldo devedor) continuam sendo
+  // corrigidos pelo MESMO índice contratual até o fim do prazo — não existe
+  // uma "pausa" de correção monetária pra quem já foi contemplado. Por isso
+  // esta função nunca congela: sempre usa o `months` real passado a ela
+  // (tipicamente monthsElapsed, não contemplationMonthsElapsed), diferente de
+  // currentCredit(), que congela de propósito (é o valor "da carta", que vira
+  // o imóvel e para de ser um crédito reajustável).
   var years = Math.floor(months / 12);
   return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
 }
@@ -823,17 +845,13 @@ function contemplate(bridgeMonthAdvance){
     paint(n, {instant:true});
     document.getElementById('paidLabel').textContent = n;
   }
-  // recalcula a parcela pós-contemplação de verdade, uma vez só, no instante
-  // em que a contemplação acontece — revisado em 29/10 com a pesquisa do blog
-  // da ABAC (ver claude/regras-consorcio-conferencia.md item 15): a fórmula
-  // é simplesmente o percentual pleno (PARCELA_PCT_CHEIA, sem o desconto do
-  // redutor de 50%) sobre o crédito vigente, igual ao jeito de calcular de
-  // sempre — NÃO mais uma divisão de saldo devedor ÷ meses restantes (versão
-  // anterior desta mesma sessão, baseada numa leitura mais literal do
-  // regulamento de veículo da Porto). O crédito continua congelado a partir
-  // da contemplação (currentCredit() usa contemplationMonthsElapsed).
-  var creditoContemp = currentCredit();
-  parcelaPosContempValue = creditoContemp * PARCELA_PCT_CHEIA;
+  // a parcela pós-contemplação NÃO é mais travada aqui (bug corrigido em
+  // 29/10 — ver creditoIndexadoParaParcela() acima): o percentual troca pra
+  // cheio (PARCELA_PCT_CHEIA) a partir deste mês, mas o valor em R$ continua
+  // sendo recalculado toda vez que a tela atualiza (updateKpis()), porque o
+  // índice de reajuste continua correndo até o fim do prazo — não para no
+  // instante da contemplação.
+  parcelaPosContempValue = creditoIndexadoParaParcela(monthsElapsed) * PARCELA_PCT_CHEIA;
   updateContemplationUI();
 }
 
@@ -1108,22 +1126,18 @@ function totalPaidValue(){
   // soma cada parcela REALMENTE paga (via botão "Pagar") pelo valor vigente no
   // mês em que ela foi paga — meses "pulados" por um lance não entram aqui,
   // porque não foram pagos como parcela, viraram recurso próprio + embutido.
-  // Antes da contemplação, cada parcela é a reduzida, reajustada por ano pelo
-  // INCC. A partir do mês da contemplação, a carta foi "usada": o INCC parou
-  // e a parcela virou a cheia (sem redutor), fixa dali pra frente.
-  // a partir da contemplação, a parcela cheia (sem o redutor) é travada no
-  // valor calculado no instante da contemplação — ver parcelaPosContempValue,
-  // calculado em contemplate() como crédito vigente × PARCELA_PCT_CHEIA
-  // (modelo ABAC, 29/10, item 15 do doc de regras).
-  var cheiaParcela = contemplated ? (parcelaPosContempValue || 0) : null;
+  // Bug corrigido em 29/10: antes, a partir da contemplação, todo mês usava o
+  // MESMO valor de parcela travado (parcelaPosContempValue calculado uma vez
+  // em contemplate()) — então nem a parcela pós-contemplação nem o total pago
+  // refletiam o INCC continuando a reajustar o índice ano a ano. Agora o
+  // índice (creditoIndexadoParaParcela) é recalculado mês a mês, igual
+  // acontecia antes da contemplação — só o percentual aplicado muda (reduzido
+  // antes, cheio depois, ver PARCELA_PCT vs. PARCELA_PCT_CHEIA).
   var total = 0;
   for (var m = 0; m < monthsElapsed; m++){
-    if (contemplated && m >= contemplationMonthsElapsed){
-      total += cheiaParcela;
-    } else {
-      var y = Math.floor(m / 12);
-      total += CREDIT_BASE * Math.pow(1 + INCC_PCT/100, y) * PARCELA_PCT;
-    }
+    var credAtM = creditoIndexadoParaParcela(m);
+    var pct = (contemplated && m >= contemplationMonthsElapsed) ? PARCELA_PCT_CHEIA : PARCELA_PCT;
+    total += credAtM * pct;
   }
   return total;
 }
@@ -1140,8 +1154,12 @@ function updateKpis(){
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
   document.getElementById('kpiParcelaReduzida').textContent = 'parcela reduzida: ' + formatBRL(parcelaReduzida);
   // só mostra um valor real nessa linha depois que a contemplação de fato
-  // acontece (parcelaPosContempValue é calculado uma vez, em contemplate());
-  // antes disso é um placeholder genérico, não uma prévia estimada.
+  // acontece — placeholder genérico ("—") antes disso. Bug corrigido em
+  // 29/10: o valor agora é RECALCULADO aqui a cada atualização (não lido de
+  // um valor travado no instante da contemplação) — assim ele acompanha o
+  // INCC continuando a reajustar o índice até o fim do prazo, em vez de
+  // ficar parado pra sempre a partir do mês em que a carta foi contemplada.
+  parcelaPosContempValue = contemplated ? (creditoIndexadoParaParcela(monthsElapsed) * PARCELA_PCT_CHEIA) : null;
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
