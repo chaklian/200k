@@ -625,7 +625,7 @@ function sorteioCotaLabel(n){
 // 1 fixo + 3 livre) cada número sorteado corresponde — posições fixas no
 // array `drawn` (sempre a ordem em que saem do baralho), não um sorteio de
 // papel separado: é só rótulo pra deixar claro de onde cada número "veio".
-var SORTEIO_ROLES = ['Sorteio', 'Lance Fixo', 'Lance Livre', 'Lance Livre', 'Lance Livre'];
+var SORTEIO_ROLES = ['Sorteio', 'lance fixo', 'lance livre', 'lance livre', 'lance livre'];
 function updateContempladosPainel(drawn){
   var cotaEl = document.getElementById('suaCotaPainelOut');
   if (cotaEl && investorCotaNumber != null) cotaEl.textContent = sorteioCotaLabel(investorCotaNumber);
@@ -633,7 +633,7 @@ function updateContempladosPainel(drawn){
     var line = document.getElementById('contLinha' + i);
     if (!line) continue;
     if (drawn && drawn[i] != null){
-      line.textContent = SORTEIO_ROLES[i] + ': cota ' + sorteioCotaLabel(drawn[i]);
+      line.textContent = SORTEIO_ROLES[i] + ': ' + sorteioCotaLabel(drawn[i]);
     } else {
       line.textContent = '—';
     }
