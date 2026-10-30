@@ -239,9 +239,9 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <p>Ao começar a simulação, sua cota recebe um número — é essa cota que concorre, mês a mês, enquanto você paga parcela. A cada assembleia, se houver caixa disponível no fundo comum, algumas cotas são contempladas entre quem está em dia; é a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre. Ninguém fica de fora: conforme o grupo inteiro avança nas parcelas, a lista de quem ainda não foi contemplado vai encolhendo até não sobrar ninguém — ou seja, toda cota (inclusive a sua) acaba sendo contemplada até o fim do prazo, por sorteio ou por lance.</p>
       </details>
       <div class="lance-result" style="margin-top:14px">
-        <div>Sua cota neste sorteio: <b id="sorteioCotaOut">0001</b></div>
+        <div>Sua cota neste sorteio: <b id="sorteioCotaOut">001</b></div>
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
-        <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 1000</b></div>
+        <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 999</b></div>
       </div>
       <div class="lance-feedback" id="sorteioFeedback"></div>
     </div>
@@ -559,10 +559,10 @@ var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mos
 var PARCELA_CHEIA_MULT = 2;      // parcela cheia ≈ 2x a reduzida (redutor de ~50% comum no mercado) — estimativa
 
 // grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
-// de nenhum grupo real — usamos esse tamanho só pra calcular uma chance de
-// sorteio internamente coerente (ninguém vê o número, é só pra não ser
-// instantâneo nem arbitrário)
-var GROUP_SIZE = 1000;
+// de nenhum grupo real. 999 (não 1000) de propósito, pra toda cota caber em
+// 3 dígitos (001 a 999) — mais parecido com o número de cota real de 4
+// dígitos da Porto, só que sem o zero inicial redundante de um grupo de 1000.
+var GROUP_SIZE = 999;
 
 // SORTEIO DETERMINÍSTICO SEM REPOSIÇÃO (29/10, 2ª versão — substitui a 1ª
 // versão probabilística "rollSorteio(1/N)", que podia terminar as 200
@@ -576,10 +576,11 @@ var GROUP_SIZE = 1000;
 // cada "Pagar Parcela", saem CONTEMPLACOES_POR_ASSEMBLEIA=5 números do topo
 // do baralho (1 por sorteio + 1 por lance fixo + 3 por lance livre do resto
 // do grupo, mesmo que não sejam a cota simulada) — se o número da cota
-// simulada estiver nesses 5, ela foi contemplada. Como 5×200=1000=GROUP_SIZE,
-// o baralho esgota EXATAMENTE na 200ª parcela — ou seja, toda cota (inclusive
-// a simulada) é garantidamente contemplada até o fim, o mais tardar na última
-// parcela. Simplificação de produto, não um dado oficial da Porto (dado
+// simulada estiver nesses 5, ela foi contemplada. Como 5×200=1000 ≥
+// GROUP_SIZE=999, o baralho esgota até a 200ª parcela (a última leva só os
+// 4 números finais) — ou seja, toda cota (inclusive a simulada) é
+// garantidamente contemplada até o fim, o mais tardar na última parcela.
+// Simplificação de produto, não um dado oficial da Porto (dado
 // real, item 11 do doc de regras: o nº de contemplados por assembleia varia
 // de verdade, 4 a 7 nos exemplos reais — aqui fixamos em 5 pra ter uma
 // garantia previsível e fácil de explicar).
@@ -597,7 +598,7 @@ function initSorteioPool(){
   }
 }
 function sorteioCotaLabel(n){
-  return String(n).padStart(4, '0');
+  return String(n).padStart(3, '0');
 }
 // texto exibido no card Sorteio — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
@@ -729,22 +730,34 @@ function rollSorteio(chancePct){
   return Math.random() * 100 < chancePct;
 }
 
-// quantos dos GROUP_SIZE membros a gente assume que disputam um lance num mês
-// qualquer — definição nossa aqui, não uma regra oficial de nenhum grupo real
+// quantos dos GROUP_SIZE membros a gente assume que disputam um lance livre
+// num mês qualquer — definição nossa aqui, não uma regra oficial de nenhum
+// grupo real. (Lance fixo usa FIXO_PARTICIPACAO_PCT abaixo, não esta.)
 var LANCE_BID_FRACTION = 0.05;
+
+// dinâmica do sorteio sem reposição estendida ao lance fixo (29/10): como
+// todo mundo que dá lance fixo oferece o mesmo percentual (40%, `FIXO_PCT`),
+// não há como desempatar por valor — então assumimos que, a cada mês,
+// `FIXO_PARTICIPACAO_PCT` das "cotas disponíveis" (cotas do grupo ainda não
+// contempladas — mesmo pool do sorteio automático, `sorteioDrawPool`) entram
+// na disputa do lance fixo daquele mês, concorrendo todas em igualdade. A
+// cota simulada, ao dar lance fixo, entra nessa disputa como mais uma — a
+// chance de vencer é 1 dividido pelo nº de participantes daquele mês.
+var FIXO_PARTICIPACAO_PCT = 0.20;
 
 function lanceChance(kind, totalPct){
   // nunca é mostrado na tela — só usado internamente pra sortear uma disputa
-  // real contra o resto do grupo (GROUP_SIZE), não um número arbitrário solto:
-  // lance fixo = todo mundo que dá lance oferece o mesmo %, sorteio simples entre eles;
+  // real contra o resto do grupo, não um número arbitrário solto.
+  if (kind === 'fixo'){
+    var participantesFixo = Math.max(1, Math.round(sorteioDrawPool.length * FIXO_PARTICIPACAO_PCT));
+    return Math.min(100, 100 / participantesFixo);
+  }
   // lance livre = quanto maior o seu %, menor a chance de ainda ter alguém
   // competindo igual ou mais alto, então o "pool" de concorrentes encolhe.
   var pool = GROUP_SIZE * LANCE_BID_FRACTION;
-  if (kind !== 'fixo'){
-    var t = (totalPct - LANCE_LIVRE_MIN) / (LANCE_LIVRE_MAX - LANCE_LIVRE_MIN);
-    t = Math.max(0, Math.min(1, t));
-    pool = pool * (1 - t * 0.8);
-  }
+  var t = (totalPct - LANCE_LIVRE_MIN) / (LANCE_LIVRE_MAX - LANCE_LIVRE_MIN);
+  t = Math.max(0, Math.min(1, t));
+  pool = pool * (1 - t * 0.8);
   pool = Math.max(1, pool);
   return Math.min(100, 100 / pool);
 }
