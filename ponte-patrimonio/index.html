@@ -144,6 +144,8 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-result{background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px;
   padding:10px 12px;margin-top:14px;font-size:12px;line-height:1.85;color:var(--ink-dim)}
 .lance-result b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lance-result-line{margin-top:14px;font-size:14px;color:var(--ink-dim)}
+.lance-result-line b{color:var(--amber);font-variant-numeric:tabular-nums}
 .lance-feedback{font-size:12px;margin-top:10px;padding:8px 10px;border-radius:4px;display:none;line-height:1.5}
 .lance-feedback.show{display:block}
 .lance-feedback.win{background:#143a19;border:1px solid var(--paid);color:var(--paid)}
@@ -316,11 +318,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <p class="hint">Valor do seu bolso: <b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
       </div>
 
-      <div class="lance-result">
-        <div>Lance total a pagar: <b id="fixoLanceTotalOut">R$ 0,00</b></div>
-        <div>Isso adianta <b id="fixoMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
-        <div>Sua carta líquida fica em: <b id="fixoCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
-      </div>
+      <p class="lance-result-line">Novo valor da carta: <b id="fixoCartaLiquidaOut">R$ 0,00</b></p>
       <div class="lance-row">
         <button id="fixoBtn">Aplicar Lance Fixo</button>
       </div>
@@ -349,11 +347,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <p class="hint">Valor do seu bolso: <b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
       </div>
 
-      <div class="lance-result">
-        <div>Lance total a pagar: <b id="livreLanceTotalOut">R$ 0,00</b></div>
-        <div>Isso adianta <b id="livreMesesOut">0</b> meses na ponte, <u>se vencer o sorteio</u></div>
-        <div>Sua carta líquida fica em: <b id="livreCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
-      </div>
+      <p class="lance-result-line">Novo valor da carta: <b id="livreCartaLiquidaOut">R$ 0,00</b></p>
       <div class="lance-row">
         <button id="livreBtn">Aplicar Lance Livre</button>
         <button id="resetBtn" class="danger">Zerar Tudo</button>
@@ -1364,8 +1358,6 @@ function updateLanceCard(prefix, totalPct, intPct){
 
   document.getElementById(prefix + 'EmbutidoVal').textContent = fmtPct(r.embPct, intPct);
   document.getElementById(prefix + 'RecursoVal').textContent = fmtPct(r.rpPct, intPct);
-  document.getElementById(prefix + 'LanceTotalOut').textContent = formatBRL(r.lanceTotal);
-  document.getElementById(prefix + 'MesesOut').textContent = r.mesesAdiantados;
   document.getElementById(prefix + 'CartaLiquidaOut').textContent = formatBRL(r.cartaLiquida);
 
   // valores em R$ exibidos embaixo de cada régua, no lugar do texto explicativo
