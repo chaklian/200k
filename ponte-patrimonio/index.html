@@ -169,7 +169,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
   <div class="canvas-wrap" style="position:relative">
     <div class="pay-overlay" id="payOverlay">
-      <button id="restartBtn" class="danger">Cancelar<br>Carta</button>
+      <button id="restartBtn">Cancelar<br>Carta</button>
       <button id="lanceBtn">Dar<br>Lance</button>
       <button id="payBtn" class="pay-pulse">Pagar<br>Parcela</button>
     </div>
@@ -243,7 +243,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="sorteioCard">
       <h3>Sorteio</h3>
       <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
-      <div class="lance-result" style="margin-top:14px">
+      <div class="lance-result">
         <div>Sua cota neste sorteio: <b id="sorteioCotaOut">001</b></div>
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
         <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 999</b></div>
@@ -261,7 +261,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard locked" id="fixoCard">
       <h3>Lance Fixo</h3>
       <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
-      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink);font-size:14px">40%</b></div>
+      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink)">40%</b></div>
 
       <div class="lance-slider-block" style="margin-top:4px">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
@@ -1032,8 +1032,12 @@ function buildDeck(){
 // desmoronasse a partir da ponta onde o investidor está), e o investidor
 // também afunda — reaparecendo normal na posição inicial só depois do reset
 var SINK_DIST = (GROUND_BOTTOM - SLAB_Y) + 40;
+// 31/10: sem teto de atraso — antes, um SINK_MAX_DELAY=400ms fazia todo bloco
+// além do ~22º (400/18) cair no mesmo instante, em bloco só, em vez de manter
+// a cascata sequencial até o fim. Agora cada bloco sempre cai um pouco depois
+// do seguinte, do último (mais perto do investidor) até o primeiro — a
+// queda demora mais quando há mais blocos pagos, mas nunca "pula" nenhum.
 var SINK_STEP_MS = 18;    // intervalo entre cada bloco caindo, do último ao primeiro
-var SINK_MAX_DELAY = 400; // teto do atraso em cascata, pra não demorar demais com muitos blocos
 
 function collapseIntoSea(onDone){
   var falling = blockEls.filter(function(b){ return b._active; });
@@ -1058,7 +1062,7 @@ function collapseIntoSea(onDone){
     // cascata invertida: o ÚLTIMO bloco (maior índice) cai primeiro, o
     // PRIMEIRO (mais perto do início da ponte) cai por último
     var order = falling.length - 1 - i;
-    var delay = Math.min(SINK_MAX_DELAY, order * SINK_STEP_MS);
+    var delay = order * SINK_STEP_MS;
     maxDelay = Math.max(maxDelay, delay);
     b.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1), opacity .6s ease, fill .3s ease, stroke .3s ease';
     b.style.transitionDelay = delay + 'ms';
