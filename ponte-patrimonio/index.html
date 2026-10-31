@@ -302,11 +302,15 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink)">40%</b></div>
 
       <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="fixoRecursoVal">10</span>%</b></div>
+        <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" style="accent-color:var(--paid)">
+        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida.</p>
       </div>
-      <p class="hint">O restante (<b><span id="fixoRecursoVal">10</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio — o teto de embutido não acompanha o percentual total do lance.</p>
+      <div class="lance-slider-block">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
+        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor. As duas réguas somam sempre 40%.</p>
+      </div>
 
       <div class="lance-result">
         <div>Lance total a pagar: <b id="fixoLanceTotalOut">R$ 0,00</b></div>
@@ -1333,9 +1337,12 @@ function calcLance(totalPct, embPct){
     lanceTotal:lanceTotal, cartaLiquida:cartaLiquida, mesesAdiantados:mesesAdiantados, totalPct:totalPct};
 }
 
-function fmtPct(v){ return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtPct(v, intOnly){
+  if (intOnly) return String(Math.round(v));
+  return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
 
-function updateLanceCard(prefix, totalPct){
+function updateLanceCard(prefix, totalPct, intPct){
   var embInput = document.getElementById(prefix + 'EmbutidoPct');
   // mesma correção de calcLance() acima: o teto do slider de embutido é
   // sempre EMBUTIDO_CAP, não encolhe com o percentual total do lance.
@@ -1346,8 +1353,8 @@ function updateLanceCard(prefix, totalPct){
 
   var r = calcLance(totalPct, embPct);
 
-  document.getElementById(prefix + 'EmbutidoVal').textContent = fmtPct(r.embPct);
-  document.getElementById(prefix + 'RecursoVal').textContent = fmtPct(r.rpPct);
+  document.getElementById(prefix + 'EmbutidoVal').textContent = fmtPct(r.embPct, intPct);
+  document.getElementById(prefix + 'RecursoVal').textContent = fmtPct(r.rpPct, intPct);
   document.getElementById(prefix + 'LanceTotalOut').textContent = formatBRL(r.lanceTotal);
   document.getElementById(prefix + 'MesesOut').textContent = r.mesesAdiantados;
   document.getElementById(prefix + 'CartaLiquidaOut').textContent = formatBRL(r.cartaLiquida);
@@ -1356,7 +1363,10 @@ function updateLanceCard(prefix, totalPct){
 }
 
 function updateFixoPreview(){
-  return updateLanceCard('fixo', FIXO_PCT);
+  // lance fixo: as duas réguas (recurso próprio + embutido) são travadas
+  // para somarem sempre FIXO_PCT (40%) — ver listeners de input abaixo,
+  // que mantêm a régua de recurso próprio sincronizada com a de embutido.
+  return updateLanceCard('fixo', FIXO_PCT, true);
 }
 
 function updateLivrePreview(){
@@ -1524,7 +1534,26 @@ payBtn.addEventListener('click', function(){
   doPay();
 });
 
-document.getElementById('fixoEmbutidoPct').addEventListener('input', updateFixoPreview);
+// Lance Fixo: duas réguas travadas — recurso próprio + embutido somam
+// sempre FIXO_PCT (40%). Mover uma régua recalcula a outra na hora,
+// antes de chamar updateFixoPreview (que só lê a régua de embutido).
+(function(){
+  var embEl = document.getElementById('fixoEmbutidoPct');
+  var rpEl = document.getElementById('fixoRecursoPct');
+  embEl.addEventListener('input', function(){
+    var emb = Math.max(0, Math.min(EMBUTIDO_CAP, Math.round(parseFloat(embEl.value) || 0)));
+    embEl.value = emb;
+    rpEl.value = FIXO_PCT - emb;
+    updateFixoPreview();
+  });
+  rpEl.addEventListener('input', function(){
+    var rpMin = FIXO_PCT - EMBUTIDO_CAP;
+    var rp = Math.max(rpMin, Math.min(FIXO_PCT, Math.round(parseFloat(rpEl.value) || 0)));
+    rpEl.value = rp;
+    embEl.value = FIXO_PCT - rp;
+    updateFixoPreview();
+  });
+})();
 ['livrePct', 'livreEmbutidoPct'].forEach(function(id){
   document.getElementById(id).addEventListener('input', updateLivrePreview);
 });
