@@ -109,8 +109,16 @@ svg{display:block;width:100%;height:auto}
 
 input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .hint{font-size:10px;color:var(--ink-faint);line-height:1.55;margin:6px 0 0}
-.lance-slider-block{margin-top:16px}
-.lance-slider-block:first-of-type{margin-top:4px}
+/* 31/10, bug corrigido: a regra dependia de :first-of-type (posição entre
+   TODOS os <div> irmãos, não só os .lance-slider-block) — no card "Lance
+   Fixo" o primeiro <div> irmão é o ".sub" do percentual fixo, não o
+   slider-block, então a regra nunca batia ali e só funcionava por causa do
+   style inline redundante no HTML. Trocado por um seletor baseado em
+   irmão adjacente: margem pequena por padrão, margem grande só quando um
+   slider-block vem logo depois de OUTRO slider-block — funciona igual nos
+   dois cards, sem depender do que vem antes. */
+.lance-slider-block{margin-top:4px}
+.lance-slider-block + .lance-slider-block{margin-top:16px}
 .lance-slider-label{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--ink);margin-bottom:5px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .lance-result{background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px;
@@ -139,34 +147,43 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 </style>
 
 <div class="wrap">
+  <!-- Os 8 cards da tela, nomeados internamente (31/10): 1 Valor do crédito,
+       2 Total pago, 3 Parcela, 4 Status, 5 Ponte, 6 Sorteio, 7 Lance Fixo,
+       8 Lance Livre — ids creditoCard/totalPagoCard/parcelaCard/statusCard/
+       ponteCard/sorteioCard/fixoCard/livreCard. -->
   <div class="kanban-4">
-    <div class="kcard">
+    <!-- CARD 1: Valor do crédito -->
+    <div class="kcard" id="creditoCard">
       <h3>Valor do crédito (imóvel)</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="sub">INCC = 6,5% a.a. / Selic = 13,75% a.a / IPCA = 4,5% a.a</div>
     </div>
 
-    <div class="kcard">
+    <!-- CARD 2: Total pago -->
+    <div class="kcard" id="totalPagoCard">
       <h3>Total pago</h3>
       <div class="big" id="kpiTotalPaid">R$ 0,00</div>
       <div class="sub">Soma das parcelas pagas + recurso próprio dos lances</div>
     </div>
 
-    <div class="kcard">
+    <!-- CARD 3: Parcela -->
+    <div class="kcard" id="parcelaCard">
       <h3>Parcela</h3>
       <div class="big"><span id="paidLabel">0</span>/200</div>
       <div class="sub" id="kpiParcelaReduzida">parcela reduzida: R$ 700,00</div>
       <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
 
-    <div class="kcard">
+    <!-- CARD 4: Status -->
+    <div class="kcard" id="statusCard">
       <h3>Status</h3>
       <div class="big" id="kpiStatus">Não contemplado</div>
       <div class="sub" id="kpiStatusHint">Concorrendo ao sorteio</div>
     </div>
   </div>
 
-  <div class="canvas-wrap" style="position:relative">
+  <!-- CARD 5: Ponte -->
+  <div class="canvas-wrap" id="ponteCard" style="position:relative">
     <div class="pay-overlay" id="payOverlay">
       <button id="restartBtn">Cancelar<br>Carta</button>
       <button id="lanceBtn">Dar<br>Lance</button>
@@ -239,6 +256,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   </div>
 
   <div class="kanban">
+    <!-- CARD 6: Sorteio -->
     <div class="kcard" id="sorteioCard">
       <h3>Sorteio</h3>
       <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
@@ -257,12 +275,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       </div>
     </div>
 
+    <!-- CARD 7: Lance Fixo -->
     <div class="kcard locked" id="fixoCard">
       <h3>Lance Fixo</h3>
       <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
       <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink)">40%</b></div>
 
-      <div class="lance-slider-block" style="margin-top:4px">
+      <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
         <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
         <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
@@ -275,16 +294,17 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div>Sua carta líquida fica em: <b id="fixoCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
       </div>
       <div class="lance-row">
-        <button id="fixoBtn">Aplicar lance fixo</button>
+        <button id="fixoBtn">Aplicar Lance Fixo</button>
       </div>
       <div class="lance-feedback" id="fixoFeedback"></div>
     </div>
 
+    <!-- CARD 8: Lance Livre -->
     <div class="kcard locked" id="livreCard">
       <h3>Lance Livre</h3>
       <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
 
-      <div class="lance-slider-block" style="margin-top:4px">
+      <div class="lance-slider-block">
         <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60,00</span>%</b></div>
         <input type="range" id="livrePct" min="40" max="80" step="0.01" value="60">
       </div>
@@ -302,8 +322,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div>Sua carta líquida fica em: <b id="livreCartaLiquidaOut" style="color:var(--amber)">R$ 0,00</b></div>
       </div>
       <div class="lance-row">
-        <button id="livreBtn">Aplicar lance livre</button>
-        <button id="resetBtn" class="danger">Zerar tudo</button>
+        <button id="livreBtn">Aplicar Lance Livre</button>
+        <button id="resetBtn" class="danger">Zerar Tudo</button>
       </div>
       <div class="lance-feedback" id="livreFeedback"></div>
     </div>
