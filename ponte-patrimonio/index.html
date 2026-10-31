@@ -283,12 +283,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 6: Sorteio -->
     <div class="kcard" id="sorteioCard">
       <h3>Sorteio</h3>
-      <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
-      <div class="lance-result">
-        <div>Sua cota neste sorteio: <b id="sorteioCotaOut">001</b></div>
-        <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
-        <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 999</b></div>
-      </div>
+      <p class="hint" style="margin-top:0">Vale para todo o grupo adimplente, sem precisar dar lance. Sorteio realizado todo mês pela Loteria Federal. Sua chance neste sorteio: <b id="sorteioChanceOut">0,50%</b>.</p>
       <div class="contemplados-painel" id="contempladosOverlay">
         <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
         <div class="linha" id="contLinha0">—</div>
@@ -706,10 +701,13 @@ function updateContempladosPainel(drawn){
 // texto exibido no card Sorteio — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
 // número, só prosa; decisão revertida especificamente pra esse card).
-// "5 em N": a cada mês saem 5 números do baralho de N restantes.
+// 31/10: trocado de "5 em N" pra porcentagem — mais direto de ler, e sobe
+// mês a mês porque o baralho (sorteioDrawPool) perde 5 cotas por sorteio,
+// então a fração CONTEMPLACOES_POR_ASSEMBLEIA/N só aumenta com o tempo.
 function sorteioChanceLabel(){
   var n = Math.max(CONTEMPLACOES_POR_ASSEMBLEIA, sorteioDrawPool.length);
-  return CONTEMPLACOES_POR_ASSEMBLEIA + ' em ' + n;
+  var pct = CONTEMPLACOES_POR_ASSEMBLEIA / n * 100;
+  return pct.toFixed(2).replace('.', ',') + '%';
 }
 
 // comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
