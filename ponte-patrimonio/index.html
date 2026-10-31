@@ -299,17 +299,21 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard locked" id="fixoCard">
       <h3>Lance Fixo</h3>
       <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
-      <div class="sub" style="margin-bottom:10px">Percentual fixo: <b style="color:var(--ink)">40%</b></div>
 
       <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="fixoRecursoVal">10</span>%</b></div>
-        <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" style="accent-color:var(--paid)">
-        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida.</p>
+        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="fixoTotalPctVal">40</span>%</b></div>
+        <input type="range" id="fixoTotalPct" min="40" max="40" step="1" value="40" disabled>
+        <p class="hint">Travado pela assembleia — não editável.</p>
       </div>
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
         <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor. As duas réguas somam sempre 40%.</p>
+        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+      </div>
+      <div class="lance-slider-block">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="fixoRecursoVal">10</span>%</b></div>
+        <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" style="accent-color:var(--paid)">
+        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida. Embutido e recurso próprio sempre somam 40%.</p>
       </div>
 
       <div class="lance-result">
@@ -329,16 +333,20 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
 
       <div class="lance-slider-block">
-        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60,00</span>%</b></div>
-        <input type="range" id="livrePct" min="40" max="80" step="0.01" value="60">
+        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60</span>%</b></div>
+        <input type="range" id="livrePct" min="40" max="80" step="1" value="60">
       </div>
 
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="0.01" value="30" style="accent-color:var(--amber)">
+        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
         <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
       </div>
-      <p class="hint">O restante (<b><span id="livreRecursoVal">30</span>%</b>) tem que vir de <span class="dot" style="background:var(--paid)"></span>recurso próprio.</p>
+      <div class="lance-slider-block">
+        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="livreRecursoVal">30</span>%</b></div>
+        <input type="range" id="livreRecursoPct" min="10" max="80" step="1" value="30" style="accent-color:var(--paid)">
+        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida. Embutido e recurso próprio sempre somam o percentual do lance.</p>
+      </div>
 
       <div class="lance-result">
         <div>Lance total a pagar: <b id="livreLanceTotalOut">R$ 0,00</b></div>
@@ -1370,9 +1378,9 @@ function updateFixoPreview(){
 }
 
 function updateLivrePreview(){
-  var totalPct = Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, parseFloat(document.getElementById('livrePct').value) || 0));
-  document.getElementById('livrePctVal').textContent = fmtPct(totalPct);
-  return updateLanceCard('livre', totalPct);
+  var totalPct = Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
+  document.getElementById('livrePctVal').textContent = fmtPct(totalPct, true);
+  return updateLanceCard('livre', totalPct, true);
 }
 
 function showLanceFeedback(prefix, won){
@@ -1534,28 +1542,52 @@ payBtn.addEventListener('click', function(){
   doPay();
 });
 
-// Lance Fixo: duas réguas travadas — recurso próprio + embutido somam
-// sempre FIXO_PCT (40%). Mover uma régua recalcula a outra na hora,
-// antes de chamar updateFixoPreview (que só lê a régua de embutido).
-(function(){
-  var embEl = document.getElementById('fixoEmbutidoPct');
-  var rpEl = document.getElementById('fixoRecursoPct');
-  embEl.addEventListener('input', function(){
+// Embutido + Recurso Próprio são réguas complementares em ambos os cards
+// de lance: sempre somam o percentual total do lance (no Fixo, travado em
+// FIXO_PCT/40%; no Livre, acompanha a régua "Percentual do lance", que o
+// próprio investidor controla). Mover uma régua recalcula a outra na hora.
+function wireEmbutidoRecursoSliders(prefix, getTotal, onChange){
+  var embEl = document.getElementById(prefix + 'EmbutidoPct');
+  var rpEl = document.getElementById(prefix + 'RecursoPct');
+
+  function resync(){
+    var total = getTotal();
     var emb = Math.max(0, Math.min(EMBUTIDO_CAP, Math.round(parseFloat(embEl.value) || 0)));
+    if (emb > total) emb = total;
     embEl.value = emb;
-    rpEl.value = FIXO_PCT - emb;
-    updateFixoPreview();
+    rpEl.min = Math.max(0, total - EMBUTIDO_CAP);
+    rpEl.max = total;
+    rpEl.value = total - emb;
+  }
+
+  embEl.addEventListener('input', function(){
+    resync();
+    onChange();
   });
   rpEl.addEventListener('input', function(){
-    var rpMin = FIXO_PCT - EMBUTIDO_CAP;
-    var rp = Math.max(rpMin, Math.min(FIXO_PCT, Math.round(parseFloat(rpEl.value) || 0)));
+    var total = getTotal();
+    var rpMin = Math.max(0, total - EMBUTIDO_CAP);
+    var rp = Math.max(rpMin, Math.min(total, Math.round(parseFloat(rpEl.value) || 0)));
     rpEl.value = rp;
-    embEl.value = FIXO_PCT - rp;
-    updateFixoPreview();
+    embEl.value = total - rp;
+    onChange();
   });
-})();
-['livrePct', 'livreEmbutidoPct'].forEach(function(id){
-  document.getElementById(id).addEventListener('input', updateLivrePreview);
+
+  return resync;
+}
+
+var fixoResync = wireEmbutidoRecursoSliders('fixo', function(){ return FIXO_PCT; }, updateFixoPreview);
+fixoResync();
+
+function livreTotal(){
+  return Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
+}
+var livreResync = wireEmbutidoRecursoSliders('livre', livreTotal, updateLivrePreview);
+livreResync();
+
+document.getElementById('livrePct').addEventListener('input', function(){
+  livreResync();
+  updateLivrePreview();
 });
 
 document.getElementById('fixoBtn').addEventListener('click', function(){
