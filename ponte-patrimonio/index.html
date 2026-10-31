@@ -49,34 +49,33 @@ h1{font-size:22px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
   padding:4px;overflow:hidden;container-type:inline-size;container-name:bridge}
 svg{display:block;width:100%;height:auto}
 
-.pay-overlay{position:absolute;left:3.6%;top:41%;transform:translate(-50%,-100%);
-  display:flex;flex-direction:column;align-items:center;gap:min(0.77cqw,14px);z-index:4}
-/* Tamanho dos botões escala com a ALTURA disponível, não a largura — o overlay é ancorado
-   em top:41% (vertical) e o container tem altura amarrada à largura (aspect-ratio fixo do
-   viewBox, 460/1200). Container queries só dão cqw/cqi aqui (container-type:inline-size,
-   não "size" — isso exigiria altura explícita, incompatível com height:auto fluido), então
-   simulamos "% da altura" multiplicando por essa razão fixa (460/1200 ≈ 0.3833): um botão
-   de "10% da altura" vira 10*0.3833 ≈ 3.8cqw. Bug corrigido em 29/10: a versão anterior
-   usava um PISO mínimo em px (34px) que não encolhia junto com a altura do container em
-   telas estreitas — a altura total dos 3 botões empilhados passava a ser maior que o
-   espaço vertical disponível (41% da altura), e o overflow:hidden do container cortava a
-   parte que estourava pra cima ("sumia" visualmente). Sem piso, só com teto (min() com
-   valor em px), nunca estoura, em qualquer largura de tela — só fica menor. */
+/* Centralizado horizontalmente acima de toda a estrutura da ponte (31/10) —
+   antes ficava ancorado em left:3.6% (rente ao bloco de ancoragem/chão do
+   lado esquerdo); agora left:50%+translateX(-50%) centra o conjunto na
+   largura toda do SVG, e top:4% sobe o painel pra cima dos torres/cabos
+   (TOWER_TOP=96 de 460 ≈ 21% — top:4% fica bem acima disso, sem sobrepor
+   nada da estrutura). Direção trocada de coluna pra linha: 3 botões num
+   único eixo horizontal lê melhor como "centralizado" do que uma coluna
+   fina presa no topo. */
+.pay-overlay{position:absolute;left:50%;top:4%;transform:translateX(-50%);
+  display:flex;flex-direction:row;align-items:center;gap:min(1.3cqw,16px);z-index:4}
+/* Tamanho dos botões escala com a LARGURA do container (cqw) — sem o antigo
+   limite de altura (painel não precisa mais caber numa fração vertical
+   fixa, já que agora fica livre no topo, não espremido ao lado do chão). */
 .pay-overlay button{width:min(3.8cqw,72px);height:min(3.8cqw,72px);padding:0;
   font-size:min(0.65cqw,12px);line-height:1.3;
   white-space:normal;text-align:center}
 .pay-overlay #restartBtn{font-size:min(0.5cqw,9px)}
 
-/* painel "cotas contempladas" (29/10): fica no canto superior direito da
-   ponte, acima do chão final (GROUND_FAR_X0=1110..1200, SLAB_Y≈287 em 460
-   de altura ≈ 62% — então o painel, ancorado no topo, nunca desce até lá). */
-.contemplados-overlay{position:absolute;right:1.8%;top:4%;max-width:38%;
-  background:rgba(9,32,56,.9);border:1px solid var(--grid);border-radius:6px;
-  padding:min(1.3cqw,10px) min(1.5cqw,12px);z-index:4;color:var(--ink-dim);
-  font-size:min(1cqw,10.5px);line-height:1.6}
-.contemplados-overlay .sua-cota{font-size:min(1.25cqw,13px);font-weight:600;
-  color:var(--ink);margin-bottom:5px;white-space:nowrap}
-.contemplados-overlay .linha{white-space:nowrap}
+/* painel "cotas contempladas" (29/10) — movido (31/10) de um overlay
+   flutuante sobre o SVG da ponte pra dentro do card "Sorteio", a pedido do
+   usuário. Deixa de ser position:absolute/cqw (não está mais dentro do
+   .canvas-wrap com container query) e passa a usar tamanhos normais, iguais
+   ao resto do texto do card. */
+.contemplados-painel{margin-top:14px}
+.contemplados-painel .sua-cota{font-size:13px;font-weight:600;
+  color:var(--ink);margin-bottom:6px}
+.contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
 
 .pay-pulse{background:var(--paid);border-color:var(--paid-ink);color:var(--paid-ink);
   font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
@@ -175,14 +174,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <button id="lanceBtn">Dar<br>Lance</button>
       <button id="payBtn" class="pay-pulse">Pagar<br>Parcela</button>
     </div>
-    <div class="contemplados-overlay" id="contempladosOverlay">
-      <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
-      <div class="linha" id="contLinha0">—</div>
-      <div class="linha" id="contLinha1">—</div>
-      <div class="linha" id="contLinha2">—</div>
-      <div class="linha" id="contLinha3">—</div>
-      <div class="linha" id="contLinha4">—</div>
-    </div>
     <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -261,6 +252,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div>Sua cota neste sorteio: <b id="sorteioCotaOut">001</b></div>
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
         <div>Sorteadas por mês: <b id="sorteioChanceOut">5 em 999</b></div>
+      </div>
+      <div class="contemplados-painel" id="contempladosOverlay">
+        <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
+        <div class="linha" id="contLinha0">—</div>
+        <div class="linha" id="contLinha1">—</div>
+        <div class="linha" id="contLinha2">—</div>
+        <div class="linha" id="contLinha3">—</div>
+        <div class="linha" id="contLinha4">—</div>
       </div>
       <div class="lance-feedback" id="sorteioFeedback"></div>
     </div>
