@@ -202,6 +202,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Status</h3>
       <div class="big" id="kpiStatus">Não contemplado</div>
       <div class="sub" id="kpiStatusHint">Concorrendo ao sorteio</div>
+      <div class="sub" id="kpiStatusCota">Concorrendo ao sorteio: 1 cota de 999</div>
     </div>
   </div>
 
@@ -283,7 +284,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 6: Sorteio -->
     <div class="kcard" id="sorteioCard">
       <h3>Sorteio</h3>
-      <p class="hint" style="margin-top:0">Vale para todo o grupo adimplente, sem precisar dar lance. Sorteio realizado todo mês pela Loteria Federal. Sua chance neste sorteio: <b id="sorteioChanceOut">0,50%</b>.</p>
+      <p class="hint" style="margin-top:0">Vale para todo o grupo adimplente, sem precisar dar lance. Sorteio realizado todo mês pela Loteria Federal.</p>
       <div class="contemplados-painel" id="contempladosOverlay">
         <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
         <div class="linha" id="contLinha0">—</div>
@@ -698,16 +699,15 @@ function updateContempladosPainel(drawn){
     }
   }
 }
-// texto exibido no card Sorteio — a pedido do usuário (29/10), a chance
+// texto exibido no card Status — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
-// número, só prosa; decisão revertida especificamente pra esse card).
-// 31/10: trocado de "5 em N" pra porcentagem — mais direto de ler, e sobe
-// mês a mês porque o baralho (sorteioDrawPool) perde 5 cotas por sorteio,
-// então a fração CONTEMPLACOES_POR_ASSEMBLEIA/N só aumenta com o tempo.
+// número, só prosa). 31/10: passou de "5 em N" pra "%" e, no mesmo dia,
+// pra "1 cota de N" — a cota do investidor (sempre 1) sobre o total ainda
+// no baralho (sorteioDrawPool), que só diminui (perde 5 por sorteio
+// realizado), então N cai mês a mês e a formatação acompanha sozinha.
 function sorteioChanceLabel(){
   var n = Math.max(CONTEMPLACOES_POR_ASSEMBLEIA, sorteioDrawPool.length);
-  var pct = CONTEMPLACOES_POR_ASSEMBLEIA / n * 100;
-  return pct.toFixed(2).replace('.', ',') + '%';
+  return '1 cota de ' + n;
 }
 
 // comemoração ao concluir a travessia (200/200 pago) — fogos de artifício no
@@ -917,29 +917,16 @@ function updateContemplationUI(){
     statusEl.textContent = 'Não contemplado';
     hintEl.textContent = 'Concorrendo ao sorteio';
   }
+  var cotaEl = document.getElementById('kpiStatusCota');
+  if (cotaEl){
+    cotaEl.textContent = contemplated ? '—' : ('Concorrendo ao sorteio: ' + sorteioChanceLabel());
+  }
   var fixoBtn = document.getElementById('fixoBtn');
   var livreBtn = document.getElementById('livreBtn');
   fixoBtn.disabled = contemplated;
   livreBtn.disabled = contemplated;
   fixoBtn.style.opacity = contemplated ? '0.5' : '1';
   livreBtn.style.opacity = contemplated ? '0.5' : '1';
-
-  var sorteioOut = document.getElementById('sorteioStatusOut');
-  if (sorteioOut){
-    if (contemplated){
-      sorteioOut.textContent = (contemplationMethod === 'sorteio') ? 'Contemplado por sorteio' : 'Contemplado (por lance)';
-    } else {
-      sorteioOut.textContent = 'Concorrendo';
-    }
-  }
-  var sorteioCotaOut = document.getElementById('sorteioCotaOut');
-  if (sorteioCotaOut && investorCotaNumber != null){
-    sorteioCotaOut.textContent = sorteioCotaLabel(investorCotaNumber);
-  }
-  var sorteioChanceOut = document.getElementById('sorteioChanceOut');
-  if (sorteioChanceOut){
-    sorteioChanceOut.textContent = contemplated ? '—' : sorteioChanceLabel();
-  }
 }
 
 var deckG = document.getElementById('deck');
