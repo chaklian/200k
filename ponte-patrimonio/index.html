@@ -1092,6 +1092,31 @@ var SINK_STEP_MS = 18;    // intervalo entre cada bloco caindo, do último ao pr
 function collapseIntoSea(onDone){
   var falling = blockEls.filter(function(b){ return b._active; });
 
+  // 31/10: os textos "N° ano" ficavam visíveis durante toda a queda dos
+  // blocos e só sumiam (com fade de 0,5s) depois que o reset rodava, no
+  // finalzinho da animação — agora somem JUNTO com o clique em "Cancelar
+  // Carta", de forma instantânea (sem transição), acompanhando a queda
+  // desde o primeiro instante em vez de ficar "sobrando" sozinhos.
+  yearLabelEls.forEach(function(yl){
+    yl.style.transition = 'none';
+    yl.style.opacity = '0';
+  });
+  spanBorderEls.forEach(function(border){
+    border.setAttribute('stroke-width', '1');
+    border.setAttribute('stroke-dasharray', '3 2');
+  });
+  // reflow sozinho (offsetHeight) não basta pra "travar" o opacity:0 antes
+  // de devolver a transição — o navegador só separa os dois estados em
+  // frames de renderização diferentes; precisa de 2 rAF encadeados (o
+  // primeiro garante que o frame com opacity:0 sem transição já foi
+  // pintado, o segundo já roda depois disso) — senão o "instantâneo" nunca
+  // chega a aparecer, ele só reduz a duração do fade pela metade.
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      yearLabelEls.forEach(function(yl){ yl.style.transition = 'opacity .5s ease'; });
+    });
+  });
+
   // investidor afunda junto, na posição X em que estava — com 0,4s de atraso,
   // só depois que os blocos já começaram a cair. Mas antes da 8ª parcela paga
   // ele ainda não avançou o suficiente sobre a ponte — não tem o que afundar,
