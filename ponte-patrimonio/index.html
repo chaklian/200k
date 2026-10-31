@@ -907,19 +907,26 @@ function contemplate(bridgeMonthAdvance){
 function updateContemplationUI(){
   var statusEl = document.getElementById('kpiStatus');
   var hintEl = document.getElementById('kpiStatusHint');
+  // mapa pro nome de exibição da modalidade que contemplou — chaves iguais
+  // às usadas em contemplationMethod ('sorteio'/'fixo'/'livre')
+  var MODALIDADE_LABEL = {sorteio:'Sorteio', fixo:'Lance Fixo', livre:'Lance Livre'};
   if (contemplated){
     statusEl.textContent = 'Contemplado';
-    // 29/10: não é mais "Carta usada" — contemplação e uso do crédito são
-    // dois eventos distintos (não existe ainda essa dinâmica no protótipo),
-    // então o texto não pode dar a entender que a carta já foi usada.
-    hintEl.textContent = 'Parcela cheia (sem redutor)';
+    // 31/10: "Parcela cheia (sem redutor)" deu lugar à modalidade que
+    // contemplou (sorteio/lance fixo/lance livre) — informação mais útil
+    // pro investidor do que o efeito na parcela, que já aparece noutro card.
+    hintEl.textContent = 'Modalidade: ' + (MODALIDADE_LABEL[contemplationMethod] || '—');
   } else {
     statusEl.textContent = 'Não contemplado';
     hintEl.textContent = 'Concorrendo ao sorteio';
   }
   var cotaEl = document.getElementById('kpiStatusCota');
   if (cotaEl){
-    cotaEl.textContent = contemplated ? '—' : ('Concorrendo ao sorteio: ' + sorteioChanceLabel());
+    // contemplado: fixa o mês REAL (contemplationMonthsElapsed) em que a
+    // contemplação aconteceu, não contemplado: mostra a cota corrente
+    cotaEl.textContent = contemplated
+      ? ('Mês ' + contemplationMonthsElapsed + ' de ' + TOTAL)
+      : ('Concorrendo ao sorteio: ' + sorteioChanceLabel());
   }
   var fixoBtn = document.getElementById('fixoBtn');
   var livreBtn = document.getElementById('livreBtn');
