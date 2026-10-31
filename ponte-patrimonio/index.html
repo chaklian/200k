@@ -613,6 +613,10 @@ var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = 
                                  // (remove o redutor de 50% do item 6) — modelo ABAC (29/10,
                                  // regras-consorcio-conferencia.md item 15): % fixo sobre o
                                  // crédito vigente, NÃO mais saldo devedor ÷ meses restantes.
+                                 // 31/10 (item 19): esse valor fixo agora só é usado quando a
+                                 // contemplação foi por SORTEIO (sem pagamento extra). Quando foi
+                                 // por LANCE, a parcela pós-contemplação é recalculada de verdade
+                                 // — ver parcelaPctPos, calculado em contemplate().
 var INCC_PCT = 6.5;              // referência anual, travado em 6,5% — não editável (bate com o
                                  // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...")
                                  // — usado pra reajustar o crédito SÓ até a contemplação.
@@ -652,6 +656,19 @@ var contemplationMonthsElapsed = null; // tempo real (meses) no instante da cont
 // mostra um valor genérico, não uma prévia calculada.
 var parcelaPosContempValue = null;
 var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mostrar no card certo qual modalidade contemplou
+
+// 31/10 (item 19 do doc de regras): taxa mensal (% do crédito) usada pra
+// calcular a parcela pós-contemplação, calculada de verdade uma única vez,
+// no instante da contemplação — ver contemplate(). Quando a contemplação foi
+// por LANCE (fixo ou livre), o investidor já pagou algo extra (o lance), então
+// em vez de simplesmente dobrar a parcela (PARCELA_PCT_CHEIA, regra antiga),
+// recalculamos o ritmo necessário pra terminar de pagar o que falta do
+// crédito nos meses que restam do plano — confirmado com um caso real (cota
+// 134, regras-consorcio-conferencia.md item 19): bate com precisão de 4 casas
+// decimais. Quando foi por SORTEIO (sem pagamento extra, sem amortização
+// extraordinária), mantém a regra simples de dobrar. Fica null até a
+// contemplação acontecer.
+var parcelaPctPos = null;
 
 // grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
 // de nenhum grupo real. 999 (não 1000) de propósito, pra toda cota caber em
@@ -943,12 +960,34 @@ function contemplate(){
   // "Pagar Parcela". Antes, `bridgeMonthAdvance` fazia `paint()` pular o
   // boneco adiante na hora — removido (ver applyLance() e doPay() abaixo).
   // a parcela pós-contemplação NÃO é mais travada aqui (bug corrigido em
-  // 29/10 — ver currentCredit() acima): o percentual troca pra cheio
-  // (PARCELA_PCT_CHEIA) a partir deste mês, mas o valor em R$ continua sendo
-  // recalculado toda vez que a tela atualiza (updateKpis()), porque o crédito
-  // (e portanto a parcela) continua reajustando pelo INCC normalmente — não
-  // existe ainda uma dinâmica de "usar a carta" que o faria parar.
-  parcelaPosContempValue = currentCredit() * PARCELA_PCT_CHEIA;
+  // 29/10 — ver currentCredit() acima): o percentual troca a partir deste
+  // mês, mas o valor em R$ continua sendo recalculado toda vez que a tela
+  // atualiza (updateKpis()), porque o crédito (e portanto a parcela) continua
+  // reajustando normalmente — não existe ainda uma dinâmica de "usar a carta"
+  // que o faria parar.
+  //
+  // 31/10 (item 19): o PERCENTUAL em si também muda de regra aqui, dependendo
+  // de como a contemplação aconteceu:
+  // - Por LANCE (fixo ou livre): o investidor já pagou algo extra
+  //   (embutidoUsedTotal + recursoUsedTotal, o lance vencedor). Isso é uma
+  //   amortização real do crédito, então recalculamos o ritmo mensal
+  //   necessário pra cobrir o que ainda falta, nos meses que restam do
+  //   plano — em vez de um multiplicador fixo que ignora o tamanho do lance.
+  // - Por SORTEIO (sem lance, sem pagamento extra): não houve amortização
+  //   extraordinária nenhuma, então mantém a regra simples de dobrar
+  //   (PARCELA_PCT_CHEIA) — não tem saldo nenhum pra "descontar".
+  if (contemplationMethod === 'fixo' || contemplationMethod === 'livre'){
+    var lanceTotalVencedor = embutidoUsedTotal + recursoUsedTotal;
+    var creditoNoMomento = currentCredit();
+    var pctJaPago = monthsElapsed * PARCELA_PCT;
+    var pctDoLance = creditoNoMomento > 0 ? (lanceTotalVencedor / creditoNoMomento) : 0;
+    var pctRestante = Math.max(0, 1 - pctJaPago - pctDoLance);
+    var mesesRestantes = Math.max(1, TOTAL - monthsElapsed);
+    parcelaPctPos = pctRestante / mesesRestantes;
+  } else {
+    parcelaPctPos = PARCELA_PCT_CHEIA;
+  }
+  parcelaPosContempValue = currentCredit() * parcelaPctPos;
   updateContemplationUI();
 }
 
@@ -1320,7 +1359,7 @@ function totalPaidValue(){
   var total = 0;
   for (var m = 0; m < monthsElapsed; m++){
     var credAtM = creditoAt(m);
-    var pct = (contemplated && m >= contemplationMonthsElapsed) ? PARCELA_PCT_CHEIA : PARCELA_PCT;
+    var pct = (contemplated && m >= contemplationMonthsElapsed) ? (parcelaPctPos != null ? parcelaPctPos : PARCELA_PCT_CHEIA) : PARCELA_PCT;
     total += credAtM * pct;
   }
   return total;
@@ -1362,7 +1401,7 @@ function updateKpis(){
   // um valor travado no instante da contemplação) — assim ele acompanha o
   // INCC continuando a reajustar o índice até o fim do prazo, em vez de
   // ficar parado pra sempre a partir do mês em que a carta foi contemplada.
-  parcelaPosContempValue = contemplated ? (currentCredit() * PARCELA_PCT_CHEIA) : null;
+  parcelaPosContempValue = contemplated ? (currentCredit() * (parcelaPctPos != null ? parcelaPctPos : PARCELA_PCT_CHEIA)) : null;
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
@@ -1681,6 +1720,7 @@ function resetSimulation(){
   contemplationMonthsElapsed = null;
   contemplationMethod = null;
   parcelaPosContempValue = null;
+  parcelaPctPos = null;
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   updateContempladosPainel(null);
   lanceUnlocked = false;
