@@ -73,13 +73,29 @@ svg{display:block;width:100%;height:auto}
    recorte em seta — pedido do usuário pra simplificar o visual. Cancelar/
    Pagar viram literalmente "<<<"/">>>"; Dar Lance mantém o texto normal
    (não mais caixa alta — a regra base de button{} usa uppercase, então
-   precisa desligar aqui). Todos em 20px, negrito. */
+   precisa desligar aqui). Todos em 24px (era 20px), negrito. */
 .pay-overlay button{background:none;border:none;box-shadow:none;padding:0;
   width:auto;height:auto;border-radius:0;animation:none;
-  font-size:min(1.4cqw,20px);font-weight:700;letter-spacing:0;text-transform:none;
+  font-size:min(1.68cqw,24px);font-weight:700;letter-spacing:0;text-transform:none;
   color:var(--ink);white-space:nowrap;transition:opacity .15s ease}
 .pay-overlay button:hover{opacity:.7;background:none}
 .pay-overlay button:disabled{opacity:.4}
+
+/* seta ">>>" piscando progressiva (31/10): cada ">" é um <span> próprio
+   (ver updatePayBtn no JS) com a MESMA animação de opacidade, só que
+   atrasada em relação ao anterior — cria o efeito de "onda" passando da
+   esquerda pra direita, reforçando a direção de avançar. Só enquanto o
+   botão está ativo (classe pay-pulse, igual antes — ligada/desligada pelo
+   JS conforme paidMonths < TOTAL); no estado "Concluído" o texto plano não
+   usa spans, então a animação simplesmente não entra em jogo. */
+.pay-pulse .arrow-chevron{display:inline-block;animation:arrowChase 1.1s ease-in-out infinite}
+.pay-pulse .arrow-chevron:nth-child(1){animation-delay:0s}
+.pay-pulse .arrow-chevron:nth-child(2){animation-delay:.14s}
+.pay-pulse .arrow-chevron:nth-child(3){animation-delay:.28s}
+@keyframes arrowChase{
+  0%, 55%, 100%{opacity:.25}
+  25%{opacity:1}
+}
 
 /* painel "cotas contempladas" (29/10) — movido (31/10) de um overlay
    flutuante sobre o SVG da ponte pra dentro do card "Sorteio", a pedido do
@@ -89,18 +105,6 @@ svg{display:block;width:100%;height:auto}
 .contemplados-painel{margin-top:14px}
 .contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
 
-/* 31/10: todos os botões voltam a ser brancos (cor "concreto", igual aos
-   blocos) — removidos os overrides de cor própria do Cancelar (vermelho),
-   Dar Lance (âmbar) e Pagar Parcela (verde). O pulso do botão Pagar
-   continua existindo, só com o brilho recolorido pra branco em vez de
-   verde, pra não sobrar nenhum resquício de cor. */
-.pay-pulse{background:var(--concrete);border-color:var(--concrete-ink);color:var(--concrete-ink);
-  font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
-.pay-pulse:hover{background:var(--concrete);border-color:var(--concrete-ink)}
-@keyframes payPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(228,235,241,.65)}
-  50%{box-shadow:0 0 0 9px rgba(228,235,241,0)}
-}
 
 /* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
    prolongado como scroll/seleção de texto/menu de contexto no celular */
@@ -202,7 +206,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="pay-overlay" id="payOverlay">
       <button id="restartBtn" aria-label="Cancelar carta">&lt;&lt;&lt;</button>
       <button id="lanceBtn">Dar Lance</button>
-      <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela">&gt;&gt;&gt;</button>
+      <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1424,9 +1428,15 @@ var payBtn = document.getElementById('payBtn');
 function updatePayBtn(){
   var done = paidMonths >= TOTAL;
   payBtn.disabled = done;
-  // 31/10: botão voltou a ser só texto — ">>>" normalmente, "Concluído"
-  // por extenso quando não há mais parcela pra pagar.
-  payBtn.textContent = done ? 'Concluído' : '>>>';
+  // 31/10: botão voltou a ser só texto — ">>>" normalmente (cada ">" num
+  // <span> próprio, pra poder piscar em cascata via CSS — ver .pay-pulse
+  // .arrow-chevron), "Concluído" por extenso (texto plano, sem spans)
+  // quando não há mais parcela pra pagar.
+  if (done){
+    payBtn.textContent = 'Concluído';
+  } else {
+    payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span>';
+  }
   payBtn.classList.toggle('pay-pulse', !done);
   payBtn.style.opacity = done ? '0.5' : '1';
   payBtn.style.cursor = done ? 'default' : 'pointer';
