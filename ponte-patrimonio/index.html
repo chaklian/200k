@@ -863,27 +863,40 @@ function rollSorteio(chancePct){
   return Math.random() * 100 < chancePct;
 }
 
-// Modelo de probabilidade por modalidade (31/10, confirmado pelo usuário —
-// números aproximados, não dado oficial de nenhum grupo real da Porto):
-// as 3 modalidades concorrem com fatias diferentes do mesmo pool de "cotas
-// disponíveis" (`sorteioDrawPool`, cotas do grupo ainda não contempladas,
-// o mesmo baralho sem reposição usado pelo sorteio automático).
+// Modelo de probabilidade por modalidade (atualizado em 31/10, confirmado
+// pelo usuário — números aproximados, não dado oficial de nenhum grupo
+// real da Porto). Sorteio e Lance Fixo são **sorte pura**: concorrem com
+// uma fatia do mesmo pool de "cotas disponíveis" (`sorteioDrawPool`, cotas
+// do grupo ainda não contempladas, o mesmo baralho sem reposição do
+// sorteio automático) — ninguém tem controle sobre o resultado.
 // - Sorteio: concorre com o pool inteiro (puro aleatório, "1 cota de N") —
 //   ver sorteioCotaLabel()/card Sorteio, não usa lanceChance().
 // - Lance Fixo: historicamente só ~30% dos cotistas usam essa modalidade,
 //   então a disputa de cada mês é só entre essa fatia do pool (ex.: pool de
 //   999 → ~300 participantes, "1 cota de 300").
-// - Lance Livre: os outros ~70% dos lances contemplados são dessa
-//   modalidade, então a disputa é entre ~70% do pool (ex.: pool de 999 →
-//   ~700 participantes).
+// Lance Livre, na prática, **não é sorte** — é um leilão (quem oferece mais
+// tem mais chance), mecanismo que não dá pra simular com um pool de
+// concorrentes reais (não sabemos quantos concorrentes nem quanto cada um
+// oferece). Em vez disso, uma escada de chance ligada só ao percentual que
+// o próprio investidor escolhe: no mínimo da régua (`LANCE_LIVRE_MIN`,
+// 40%) a chance é bem baixa; sobe numa curva acelerada conforme o
+// percentual se aproxima do máximo (`LANCE_LIVRE_MAX`, 80%), onde fica
+// quase certo (mas nunca 100% — ainda é uma disputa).
 var FIXO_PARTICIPACAO_PCT = 0.30;
-var LIVRE_PARTICIPACAO_PCT = 0.70;
+var LIVRE_CHANCE_MIN = 2;      // % de chance no mínimo da régua (40%)
+var LIVRE_CHANCE_MAX = 97;     // % de chance no máximo da régua (80%)
+var LIVRE_CHANCE_CURVE = 2.2;  // >1 = escada acelerada perto do topo da régua
 
 function lanceChance(kind, totalPct){
   // nunca é mostrado na tela — só usado internamente pra sortear uma disputa
   // real contra o resto do grupo, não um número arbitrário solto.
-  var pct = (kind === 'fixo') ? FIXO_PARTICIPACAO_PCT : LIVRE_PARTICIPACAO_PCT;
-  var participantes = Math.max(1, Math.round(sorteioDrawPool.length * pct));
+  if (kind === 'livre'){
+    var t = (totalPct - LANCE_LIVRE_MIN) / (LANCE_LIVRE_MAX - LANCE_LIVRE_MIN);
+    t = Math.max(0, Math.min(1, t));
+    var chance = LIVRE_CHANCE_MIN + (LIVRE_CHANCE_MAX - LIVRE_CHANCE_MIN) * Math.pow(t, LIVRE_CHANCE_CURVE);
+    return Math.min(100, chance);
+  }
+  var participantes = Math.max(1, Math.round(sorteioDrawPool.length * FIXO_PARTICIPACAO_PCT));
   return Math.min(100, 100 / participantes);
 }
 
