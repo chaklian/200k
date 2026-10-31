@@ -248,8 +248,12 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
       <rect x="0" y="0" width="1200" height="460" fill="var(--canvas)"/>
       <rect x="0" y="0" width="1200" height="460" fill="url(#grid)"/>
-      <rect id="water" x="90" y="372" width="1020" height="30" fill="var(--water-base)" opacity="0.55"/>
-      <rect x="90" y="372" width="1020" height="30" fill="url(#water)"/>
+      <!-- altura da água aumentada em 50% (31/10), pra baixo — y fica igual
+           (372), só a height cresce (30 -> 45); GROUND_BOTTOM (JS, abaixo)
+           acompanha pra o chão/pilares de ancoragem continuarem batendo
+           exatamente no fundo da água, sem sobrar nem faltar. -->
+      <rect id="water" x="90" y="372" width="1020" height="45" fill="var(--water-base)" opacity="0.55"/>
+      <rect x="90" y="372" width="1020" height="45" fill="url(#water)"/>
 
       <!-- fogos de artifício: atrás de toda a estrutura (pilares/cabos/blocos),
            na frente só do céu/água — por isso fica aqui, antes de
@@ -377,8 +381,11 @@ var UNIT = (X1 - X0) / SPAN_COUNT;
 var TOWER_A = X0 + 3 * UNIT;   // left tower, after 3 approach spans
 var TOWER_B = X0 + 14 * UNIT;  // right tower, before 3 approach spans
 var TOWER_TOP = 96;
-var GROUND_BOTTOM = 402;
-var WATER_Y = 372; // topo da água — onde os pilares realmente terminam
+var WATER_Y = 372;      // topo da água — onde os pilares realmente terminam
+var WATER_H = 45;       // 31/10: altura da água +50% (era 30), sempre pra
+                         // baixo — espelha a height do <rect id="water"> no SVG
+var GROUND_BOTTOM = WATER_Y + WATER_H; // chão/pilares de ancoragem acompanham
+                                        // o fundo da água automaticamente
 
 var BACKSTAY_SAG = 14;
 function backstaySagY(x1, y1, x2, y2, x){
@@ -1066,14 +1073,28 @@ function buildDeck(){
 // eles afundam no mar em sequência do ÚLTIMO pro PRIMEIRO (como se a ponte
 // desmoronasse a partir da ponta onde o investidor está), e o investidor
 // também afunda — reaparecendo normal na posição inicial só depois do reset
-// 31/10: a queda ia até GROUND_BOTTOM+40 — bem abaixo da linha d'água
-// (WATER_Y), então os blocos e o boneco visivelmente atravessavam a água e
-// só desapareciam já dentro da faixa do "chão"/pilares. Agora a distância é
-// só até um pouco abaixo de WATER_Y (a própria altura do bloco + uma margem
-// pequena) — o bloco/boneco afunda só até a linha d'água e a opacidade
-// chega a 0 exatamente nesse ponto (mesma duração da transição), então ele
-// desaparece NA superfície da água, nunca abaixo dela.
-var SINK_DIST = (WATER_Y - SLAB_Y) + SLAB_H + 6;
+// 31/10: a queda agora tem DUAS fases — pedido do usuário pra parecer uma
+// queda "sólida" na água de verdade, não um fade genérico:
+//   fase 1 (sólido): cai 100% opaco até a borda INFERIOR encostar na
+//   superfície da água (WATER_Y) — nenhuma transição de opacity rodando.
+//   fase 2 (afundando + sumindo): só a PARTIR desse encostar é que começa a
+//   sumir, continuando a cair a MESMA altura do bloco/boneco (ou seja, até a
+//   borda SUPERIOR também passar da linha d'água — "submerso por inteiro")
+//   — exatamente quando a opacidade chega a 0.
+// Os blocos são todos iguais (mesma largura/altura, mesmo Y de repouso), daí
+// as duas distâncias abaixo valerem pra qualquer bloco, sem precisar
+// recalcular por elemento.
+var BLOCK_WATER_TOUCH_DIST = WATER_Y - (SLAB_Y + SLAB_H); // até a base do bloco tocar a água
+var BLOCK_SUBMERGE_DIST = BLOCK_WATER_TOUCH_DIST + SLAB_H; // + a própria altura = submerso por inteiro
+
+// o boneco usa o MESMO baseY (SLAB_Y) como datum dos PÉS (a base da figura,
+// ver buildWalker) — então o cálculo espelha o do bloco, só trocando a
+// "altura" pela altura aproximada do corpo inteiro (H em buildWalker).
+var INVESTOR_HEIGHT = 48; // == H em buildWalker() — pés até o topo da cabeça
+var INVESTOR_WATER_TOUCH_DIST = WATER_Y - SLAB_Y;               // até os pés tocarem a água
+var INVESTOR_SUBMERGE_DIST = INVESTOR_WATER_TOUCH_DIST + INVESTOR_HEIGHT; // + a altura dele = submerso por inteiro
+
+var FALL_MS = 600; // duração total da queda (fase 1 + fase 2 somadas), por elemento
 // sem teto de atraso — antes, um SINK_MAX_DELAY=400ms fazia todo bloco além
 // do ~22º (400/18) cair no mesmo instante, em bloco só, em vez de manter a
 // cascata sequencial até o fim. Agora cada bloco sempre cai um pouco depois
@@ -1117,13 +1138,30 @@ function collapseIntoSea(onDone){
   var INVESTOR_SINK_MIN_MONTHS = 8;
   var investorX0 = investorX(paidMonths);
   var investorOverBridge = paidMonths >= INVESTOR_SINK_MIN_MONTHS;
+  // fração do percurso total (em distância) que cabe dentro da fase 1 —
+  // determina quantos ms de FALL_MS vão pra cada fase, mantendo a MESMA
+  // velocidade de queda (px/ms) nas duas fases, só muda o que acontece com
+  // a opacidade em cada uma
+  var investorTouchFrac = INVESTOR_WATER_TOUCH_DIST / INVESTOR_SUBMERGE_DIST;
+  var investorPhase1Ms = Math.round(FALL_MS * investorTouchFrac);
+  var investorPhase2Ms = FALL_MS - investorPhase1Ms;
   if (investorOverBridge){
-    investorG.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1), opacity .6s ease';
+    // fase 1: sólido até os pés encostarem na água — sem transição de opacity
+    investorG.style.transition = 'transform ' + investorPhase1Ms + 'ms cubic-bezier(.4,0,.2,1)';
     investorG.style.transitionDelay = INVESTOR_SINK_DELAY + 'ms';
-    investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + SINK_DIST + 'px)';
-    investorG.style.opacity = '0';
+    investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + INVESTOR_WATER_TOUCH_DIST + 'px)';
+    setTimeout(function(){
+      // fase 2: continua afundando + some, até a altura toda dele passar
+      // da linha d'água (submerso por inteiro = opacidade 0)
+      investorG.style.transition = 'transform ' + investorPhase2Ms + 'ms linear, opacity ' + investorPhase2Ms + 'ms linear';
+      investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + INVESTOR_SUBMERGE_DIST + 'px)';
+      investorG.style.opacity = '0';
+    }, INVESTOR_SINK_DELAY + investorPhase1Ms);
   }
 
+  var blockTouchFrac = BLOCK_WATER_TOUCH_DIST / BLOCK_SUBMERGE_DIST;
+  var blockPhase1Ms = Math.round(FALL_MS * blockTouchFrac);
+  var blockPhase2Ms = FALL_MS - blockPhase1Ms;
   var maxDelay = 0;
   falling.forEach(function(b, i){
     // cascata invertida: o ÚLTIMO bloco (maior índice) cai primeiro, o
@@ -1131,10 +1169,16 @@ function collapseIntoSea(onDone){
     var order = falling.length - 1 - i;
     var delay = order * SINK_STEP_MS;
     maxDelay = Math.max(maxDelay, delay);
-    b.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1), opacity .6s ease, fill .3s ease, stroke .3s ease';
+    // fase 1: sólido até a base do bloco encostar na água
+    b.style.transition = 'transform ' + blockPhase1Ms + 'ms cubic-bezier(.4,0,.2,1), fill .3s ease, stroke .3s ease';
     b.style.transitionDelay = delay + 'ms';
-    b.style.transform = 'translateY(' + SINK_DIST + 'px)';
-    b.style.opacity = '0';
+    b.style.transform = 'translateY(' + BLOCK_WATER_TOUCH_DIST + 'px)';
+    setTimeout(function(){
+      // fase 2: continua afundando + some, até o bloco ficar submerso por inteiro
+      b.style.transition = 'transform ' + blockPhase2Ms + 'ms linear, opacity ' + blockPhase2Ms + 'ms linear';
+      b.style.transform = 'translateY(' + BLOCK_SUBMERGE_DIST + 'px)';
+      b.style.opacity = '0';
+    }, delay + blockPhase1Ms);
   });
 
   setTimeout(function(){
@@ -1147,7 +1191,7 @@ function collapseIntoSea(onDone){
     investorG.style.transition = INVESTOR_TRANSITION;
     investorG.style.transitionDelay = '';
     onDone();
-  }, Math.max(maxDelay + 650, investorOverBridge ? INVESTOR_SINK_DELAY + 650 : 0));
+  }, Math.max(maxDelay + FALL_MS + 50, investorOverBridge ? INVESTOR_SINK_DELAY + FALL_MS + 50 : 0));
 }
 
 function applyBlockStyle(b){
