@@ -302,18 +302,18 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="fixoTotalPctVal">40</span>%</b></div>
-        <input type="range" id="fixoTotalPct" min="40" max="40" step="1" value="40" disabled>
-        <p class="hint">Travado pela assembleia — não editável.</p>
+        <input type="range" id="fixoTotalPct" min="0" max="40" step="1" value="40" disabled>
+        <p class="hint">Valor do lance: <b id="fixoTotalValorOut" style="color:var(--ink)">R$ 0,00</b></p>
       </div>
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
         <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+        <p class="hint">Valor embutido: <b id="fixoEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></p>
       </div>
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="fixoRecursoVal">10</span>%</b></div>
         <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" style="accent-color:var(--paid)">
-        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida. Embutido e recurso próprio sempre somam 40%.</p>
+        <p class="hint">Valor do seu bolso: <b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
       </div>
 
       <div class="lance-result">
@@ -335,17 +335,18 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60</span>%</b></div>
         <input type="range" id="livrePct" min="40" max="80" step="1" value="60">
+        <p class="hint">Valor do lance: <b id="livreTotalValorOut" style="color:var(--ink)">R$ 0,00</b></p>
       </div>
 
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
         <input type="range" id="livreEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Sai do crédito da própria carta — você não paga nada do seu bolso, mas a carta líquida fica menor.</p>
+        <p class="hint">Valor embutido: <b id="livreEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></p>
       </div>
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="livreRecursoVal">30</span>%</b></div>
         <input type="range" id="livreRecursoPct" min="10" max="80" step="1" value="30" style="accent-color:var(--paid)">
-        <p class="hint">Vem do seu bolso — entra no total pago, mas não reduz a carta líquida. Embutido e recurso próprio sempre somam o percentual do lance.</p>
+        <p class="hint">Valor do seu bolso: <b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
       </div>
 
       <div class="lance-result">
@@ -1366,6 +1367,11 @@ function updateLanceCard(prefix, totalPct, intPct){
   document.getElementById(prefix + 'LanceTotalOut').textContent = formatBRL(r.lanceTotal);
   document.getElementById(prefix + 'MesesOut').textContent = r.mesesAdiantados;
   document.getElementById(prefix + 'CartaLiquidaOut').textContent = formatBRL(r.cartaLiquida);
+
+  // valores em R$ exibidos embaixo de cada régua, no lugar do texto explicativo
+  document.getElementById(prefix + 'TotalValorOut').textContent = formatBRL(r.lanceTotal);
+  document.getElementById(prefix + 'EmbutidoValorOut').textContent = formatBRL(r.valorEmbutido);
+  document.getElementById(prefix + 'RecursoValorOut').textContent = formatBRL(r.valorRecurso);
 
   return r;
 }
