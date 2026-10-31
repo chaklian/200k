@@ -877,8 +877,14 @@ function creditoAt(months){
   if (contemplationMonthsElapsed != null && months > contemplationMonthsElapsed){
     var anosAteContemplacao = Math.floor(contemplationMonthsElapsed / 12);
     var creditoNaContemplacao = CREDIT_BASE * Math.pow(1 + INCC_PCT/100, anosAteContemplacao);
-    var anosDepoisContemplacao = Math.floor((months - contemplationMonthsElapsed) / 12);
-    return creditoNaContemplacao * Math.pow(1 + POS_CONTEMP_INDEX_PCT/100, anosDepoisContemplacao);
+    // 31/10 (ajuste): pós-contemplação não espera fechar o ano — reajusta
+    // mês a mês, juros compostos com taxa mensal simplificada (taxa anual
+    // ÷ 12, não a equivalente composta exata) — confirmado pelo usuário:
+    // "se fosse 12% ao ano, já contabiliza 1% ao mês". Antes disso só
+    // reajustava fechando anos inteiros, igual o INCC pré-contemplação.
+    var mesesDepoisContemplacao = months - contemplationMonthsElapsed;
+    var taxaMensal = POS_CONTEMP_INDEX_PCT / 100 / 12;
+    return creditoNaContemplacao * Math.pow(1 + taxaMensal, mesesDepoisContemplacao);
   }
   var years = Math.floor(months / 12);
   return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
