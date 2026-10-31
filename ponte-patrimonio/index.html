@@ -71,13 +71,16 @@ svg{display:block;width:100%;height:auto}
   display:flex;flex-direction:row;align-items:center;gap:min(1.6cqw,22px);z-index:4}
 /* 31/10: os 3 "botões" voltam a ser só texto — sem fundo, borda, sombra ou
    recorte em seta — pedido do usuário pra simplificar o visual. Cancelar/
-   Pagar viram literalmente "<<<"/">>>"; Dar Lance mantém o texto normal
-   (não mais caixa alta — a regra base de button{} usa uppercase, então
-   precisa desligar aqui). Todos em 24px (era 20px), negrito. */
+   Pagar viram literalmente "< < <"/"> > >" (com espaço entre os sinais);
+   Dar Lance mantém o texto normal (não mais caixa alta — a regra base de
+   button{} usa uppercase, então precisa desligar aqui). Dar Lance fica em
+   24px; as setas sobem pra 32px (maiores, de propósito — chamam mais
+   atenção que o texto do meio). */
 .pay-overlay button{background:none;border:none;box-shadow:none;padding:0;
   width:auto;height:auto;border-radius:0;animation:none;
   font-size:min(1.68cqw,24px);font-weight:700;letter-spacing:0;text-transform:none;
   color:var(--ink);white-space:nowrap;transition:opacity .15s ease}
+.pay-overlay #restartBtn,.pay-overlay #payBtn{font-size:min(2.24cqw,32px)}
 .pay-overlay button:hover{opacity:.7;background:none}
 .pay-overlay button:disabled{opacity:.4}
 
@@ -204,9 +207,9 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
     <div class="ponte-titulo">Consórcio de Imóvel</div>
     <div class="pay-overlay" id="payOverlay">
-      <button id="restartBtn" aria-label="Cancelar carta">&lt;&lt;&lt;</button>
+      <button id="restartBtn" aria-label="Cancelar carta">&lt; &lt; &lt;</button>
       <button id="lanceBtn">Dar Lance</button>
-      <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span></button>
+      <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1435,7 +1438,7 @@ function updatePayBtn(){
   if (done){
     payBtn.textContent = 'Concluído';
   } else {
-    payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span><span class="arrow-chevron">&gt;</span>';
+    payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span>';
   }
   payBtn.classList.toggle('pay-pulse', !done);
   payBtn.style.opacity = done ? '0.5' : '1';
