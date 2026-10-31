@@ -179,6 +179,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="sub">INCC = 6,5% a.a. / Selic = 13,75% a.a / IPCA = 4,5% a.a</div>
+      <div class="sub" id="kpiCreditIndexHint" style="display:none"></div>
     </div>
 
     <!-- CARD 2: Total pago -->
@@ -614,6 +615,11 @@ var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = 
                                  // crédito vigente, NÃO mais saldo devedor ÷ meses restantes.
 var INCC_PCT = 6.5;              // referência anual, travado em 6,5% — não editável (bate com o
                                  // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...")
+                                 // — usado pra reajustar o crédito SÓ até a contemplação.
+var SELIC_PCT = 13.75;           // referência anual, mesma do card "Valor do crédito" ("Selic = 13,75% a.a").
+var POS_CONTEMP_INDEX_PCT = SELIC_PCT * 0.90; // 31/10, confirmado pelo usuário: depois de
+                                 // contemplada, a carta passa a render 90% da Selic (12,375% a.a.)
+                                 // em vez de continuar pelo INCC — ver creditoAt() abaixo.
 var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
 var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
 var LANCE_LIVRE_MIN = 40;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
@@ -828,9 +834,9 @@ function formatBRL(v){
 }
 
 function currentCredit(){
-  // crédito vigente, já reajustado pelo INCC — pelos anos REAIS decorridos
-  // (meses efetivamente pagos via botão "Pagar"), não pelos meses que um
-  // lance "pulou" na ponte.
+  // crédito vigente, já reajustado — pelos anos REAIS decorridos (meses
+  // efetivamente pagos via botão "Pagar"), não pelos meses que um lance
+  // "pulou" na ponte.
   //
   // 29/10: o crédito NÃO congela mais na contemplação. Duas correções na
   // mesma sessão: primeiro corrigimos um bug onde a PARCELA pós-contemplação
@@ -843,18 +849,37 @@ function currentCredit(){
   // dois eventos distintos (confirmado também pelo caso real da cota 134,
   // item 13.3 do doc de regras: quase 1 ano de intervalo entre os dois). Por
   // definição, enquanto essa dinâmica não existir, o crédito nunca para de
-  // reajustar — nem na contemplação, nem depois. Por isso esta função sempre
-  // usa `monthsElapsed` (nunca `contemplationMonthsElapsed`), e serve tanto
-  // pro card "Valor do crédito" quanto pros cálculos de lance E pela parcela
-  // pós-contemplação (que usa o mesmo crédito vigente, só com o percentual
-  // cheio em vez do reduzido — ver PARCELA_PCT_CHEIA).
+  // reajustar — nem na contemplação, nem depois.
+  //
+  // 31/10: o ÍNDICE usado pra reajustar muda na contemplação (continua
+  // nunca congelando): até lá, segue o INCC normalmente; a partir do mês
+  // em que a cota é contemplada, a carta passa a render 90% da Selic
+  // (`POS_CONTEMP_INDEX_PCT`) em vez do INCC — ver creditoAt() abaixo, que
+  // faz a troca de índice no mês exato (`contemplationMonthsElapsed`).
+  // Serve tanto pro card "Valor do crédito" quanto pros cálculos de lance
+  // E pela parcela pós-contemplação (que usa o mesmo crédito vigente, só
+  // com o percentual cheio em vez do reduzido — ver PARCELA_PCT_CHEIA).
   return creditoAt(monthsElapsed);
 }
 
 function creditoAt(months){
-  // mesma fórmula de currentCredit(), mas parametrizada por `months` — usada
+  // mesma ideia de currentCredit(), mas parametrizada por `months` — usada
   // em totalPaidValue() pra pegar o crédito vigente em cada mês já pago m
   // (não necessariamente o monthsElapsed atual).
+  //
+  // 31/10: troca de índice na contemplação. Até o mês da contemplação
+  // (`contemplationMonthsElapsed`), o crédito segue reajustado pelo INCC,
+  // como sempre. A partir daí, o índice muda pra 90% da Selic
+  // (`POS_CONTEMP_INDEX_PCT`) — a carta contemplada passa a render como
+  // uma aplicação financeira, não mais pelo índice de obra. O valor na
+  // virada (`creditoNaContemplacao`) é "travado" como base pro novo
+  // índice, igual uma correção monetária em 2 tramos.
+  if (contemplationMonthsElapsed != null && months > contemplationMonthsElapsed){
+    var anosAteContemplacao = Math.floor(contemplationMonthsElapsed / 12);
+    var creditoNaContemplacao = CREDIT_BASE * Math.pow(1 + INCC_PCT/100, anosAteContemplacao);
+    var anosDepoisContemplacao = Math.floor((months - contemplationMonthsElapsed) / 12);
+    return creditoNaContemplacao * Math.pow(1 + POS_CONTEMP_INDEX_PCT/100, anosDepoisContemplacao);
+  }
   var years = Math.floor(months / 12);
   return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
 }
@@ -1296,8 +1321,9 @@ function totalPaidValue(){
 }
 
 function updateKpis(){
-  // a cada ano completo de parcelas pagas, o INCC reajusta o crédito e a parcela,
-  // até a contemplação — a partir daí a carta foi "usada" e o INCC congela.
+  // a cada ano completo de parcelas pagas, o crédito e a parcela são reajustados
+  // — pelo INCC até a contemplação, e por 90% da Selic a partir dela (ver
+  // creditoAt()/currentCredit() acima — nunca congela, só troca de índice).
   // a parcela é calculada sobre o crédito NOMINAL (cheio) — o embutido não a reduz,
   // só reduz a carta líquida que o investidor efetivamente recebe pra usar.
   // antes da contemplação a parcela é reduzida; depois, vira a parcela cheia.
@@ -1305,6 +1331,14 @@ function updateKpis(){
   var liquidCredit = Math.max(0, nominalCredit - embutidoUsedTotal);
   var parcelaReduzida = nominalCredit * PARCELA_PCT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
+  var creditIndexHintEl = document.getElementById('kpiCreditIndexHint');
+  if (contemplated){
+    creditIndexHintEl.style.display = '';
+    creditIndexHintEl.textContent = 'Pós-contemplação: reajuste passa a ser 90% da Selic = ' +
+      POS_CONTEMP_INDEX_PCT.toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3}) + '% a.a.';
+  } else {
+    creditIndexHintEl.style.display = 'none';
+  }
   document.getElementById('kpiParcelaReduzida').textContent = 'parcela reduzida: ' + formatBRL(parcelaReduzida);
   // só mostra um valor real nessa linha depois que a contemplação de fato
   // acontece — placeholder genérico ("—") antes disso. Bug corrigido em
