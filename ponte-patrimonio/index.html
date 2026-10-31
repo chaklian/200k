@@ -193,7 +193,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="parcelaCard">
       <h3>Parcela</h3>
       <div class="big"><span id="paidLabel">0</span>/200</div>
-      <div class="sub" id="kpiParcelaReduzida">parcela pré contemplação: R$ 700,00</div>
+      <div class="sub" id="kpiParcelaReduzida">parcela pré contemplação: R$ 720,00</div>
       <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
 
@@ -608,7 +608,7 @@ var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga 
                         // (derruba blocos lá na frente), mas não significa que o tempo passou de verdade.
 
 var CREDIT_BASE = 200000;       // valor da carta 200k
-var PARCELA_PCT = 0.0035;       // parcela = 0,35% do valor do crédito
+var PARCELA_PCT = 0.0036;       // parcela = 0,36% do valor do crédito (R$720,00 sobre R$200k)
 var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = dobro da reduzida
                                  // (remove o redutor de 50% do item 6) — modelo ABAC (29/10,
                                  // regras-consorcio-conferencia.md item 15): % fixo sobre o
