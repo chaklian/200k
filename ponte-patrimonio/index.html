@@ -74,18 +74,15 @@ svg{display:block;width:100%;height:auto}
   box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .15s ease,background .15s ease}
 .pay-overlay #lanceBtn:hover{background:#fff;transform:translateY(-2px)}
 
-/* Cancelar/Pagar deixam de ser quadrados com ícone dentro e passam a ser,
-   eles mesmos, no formato de seta (clip-path em ponta), sem borda — visual
-   mais moderno, tipo botão de "avançar/voltar" de carrossel. O glifo
-   unicode (←/→) continua dentro, só reforça a direção. */
-.pay-overlay .btn-arrow{width:min(4.6cqw,84px);height:min(3.4cqw,62px);padding:0;
-  border:none;display:flex;align-items:center;justify-content:center;
-  font-size:min(1.3cqw,22px);line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.25);
+/* Cancelar/Pagar: o botão inteiro É a seta (sem glifo/texto dentro) — recorte
+   em clip-path desenha uma haste + ponta triangular (forma de seta "cheia",
+   como um cursor de avançar), sem borda, sombra leve e hover. Nada escrito
+   dentro: a própria silhueta já indica a direção. */
+.pay-overlay .btn-arrow{width:min(5.2cqw,92px);height:min(3.2cqw,58px);padding:0;
+  border:none;box-shadow:0 2px 8px rgba(0,0,0,.25);
   transition:transform .15s ease,background .15s ease}
-.pay-overlay #payBtn.btn-arrow{clip-path:polygon(0 0,62% 0,100% 50%,62% 100%,0 100%);
-  padding-right:min(1cqw,10px)}
-.pay-overlay #restartBtn.btn-arrow{clip-path:polygon(100% 0,38% 0,0 50%,38% 100%,100% 100%);
-  padding-left:min(1cqw,10px)}
+.pay-overlay #payBtn.btn-arrow{clip-path:polygon(0% 22%,54% 22%,54% 0%,100% 50%,54% 100%,54% 78%,0% 78%)}
+.pay-overlay #restartBtn.btn-arrow{clip-path:polygon(100% 22%,46% 22%,46% 0%,0% 50%,46% 100%,46% 78%,100% 78%)}
 .pay-overlay .btn-arrow:hover{background:#fff;transform:scale(1.06)}
 /* estado "Concluído" (texto, não ícone) não usa mais o recorte em seta —
    volta a ser um pill normal pra caber a palavra. */
@@ -212,9 +209,9 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
     <div class="ponte-titulo">Consórcio de Imóvel</div>
     <div class="pay-overlay" id="payOverlay">
-      <button id="restartBtn" class="btn-arrow" aria-label="Cancelar carta">&#8592;</button>
+      <button id="restartBtn" class="btn-arrow" aria-label="Cancelar carta"></button>
       <button id="lanceBtn">Dar Lance</button>
-      <button id="payBtn" class="pay-pulse btn-icon-arrow btn-arrow" aria-label="Pagar parcela">&#8594;</button>
+      <button id="payBtn" class="pay-pulse btn-icon-arrow btn-arrow" aria-label="Pagar parcela"></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1077,10 +1074,17 @@ function buildDeck(){
 // eles afundam no mar em sequência do ÚLTIMO pro PRIMEIRO (como se a ponte
 // desmoronasse a partir da ponta onde o investidor está), e o investidor
 // também afunda — reaparecendo normal na posição inicial só depois do reset
-var SINK_DIST = (GROUND_BOTTOM - SLAB_Y) + 40;
-// 31/10: sem teto de atraso — antes, um SINK_MAX_DELAY=400ms fazia todo bloco
-// além do ~22º (400/18) cair no mesmo instante, em bloco só, em vez de manter
-// a cascata sequencial até o fim. Agora cada bloco sempre cai um pouco depois
+// 31/10: a queda ia até GROUND_BOTTOM+40 — bem abaixo da linha d'água
+// (WATER_Y), então os blocos e o boneco visivelmente atravessavam a água e
+// só desapareciam já dentro da faixa do "chão"/pilares. Agora a distância é
+// só até um pouco abaixo de WATER_Y (a própria altura do bloco + uma margem
+// pequena) — o bloco/boneco afunda só até a linha d'água e a opacidade
+// chega a 0 exatamente nesse ponto (mesma duração da transição), então ele
+// desaparece NA superfície da água, nunca abaixo dela.
+var SINK_DIST = (WATER_Y - SLAB_Y) + SLAB_H + 6;
+// sem teto de atraso — antes, um SINK_MAX_DELAY=400ms fazia todo bloco além
+// do ~22º (400/18) cair no mesmo instante, em bloco só, em vez de manter a
+// cascata sequencial até o fim. Agora cada bloco sempre cai um pouco depois
 // do seguinte, do último (mais perto do investidor) até o primeiro — a
 // queda demora mais quando há mais blocos pagos, mas nunca "pula" nenhum.
 var SINK_STEP_MS = 18;    // intervalo entre cada bloco caindo, do último ao primeiro
@@ -1359,7 +1363,7 @@ var payBtn = document.getElementById('payBtn');
 function updatePayBtn(){
   var done = paidMonths >= TOTAL;
   payBtn.disabled = done;
-  payBtn.innerHTML = done ? 'Concluído' : '&#8594;';
+  payBtn.innerHTML = done ? 'Concluído' : '';
   // "Concluído" é texto, não ícone — .btn-icon-arrow (fonte grande, só pro
   // símbolo da seta) só fica ligada enquanto o botão mostra a seta.
   payBtn.classList.toggle('btn-icon-arrow', !done);
