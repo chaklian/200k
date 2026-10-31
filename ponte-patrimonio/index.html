@@ -278,7 +278,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <style>
         .lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:var(--ink-faint);letter-spacing:.04em}
         .lbl-ink{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:var(--concrete-ink);letter-spacing:.04em}
-        .year-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#4f7498;letter-spacing:.04em;font-weight:600}
+        .year-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#4f7498;letter-spacing:.04em;font-weight:600}
       </style>
     </svg>
   </div>
@@ -900,15 +900,17 @@ function lanceChance(kind, totalPct){
   return Math.min(100, 100 / participantes);
 }
 
-function contemplate(bridgeMonthAdvance){
+function contemplate(){
   if (contemplated) return;
   contemplated = true;
   contemplationMonthsElapsed = monthsElapsed;
-  if (bridgeMonthAdvance != null){
-    var n = Math.max(paidMonths, Math.min(TOTAL, bridgeMonthAdvance));
-    paint(n, {instant:true});
-    document.getElementById('paidLabel').textContent = n;
-  }
+  // 31/10: a contemplação (por sorteio ou por lance vencedor) NÃO avança
+  // mais a ponte — na prática, ganhar o sorteio ou o lance não pula meses
+  // de parcela: o investidor continua pagando normalmente, 1 parcela por
+  // vez, e o boneco permanece exatamente onde estava no instante em que
+  // foi contemplado, só seguindo andando dali pra frente nas próximas
+  // "Pagar Parcela". Antes, `bridgeMonthAdvance` fazia `paint()` pular o
+  // boneco adiante na hora — removido (ver applyLance() e doPay() abaixo).
   // a parcela pós-contemplação NÃO é mais travada aqui (bug corrigido em
   // 29/10 — ver currentCredit() acima): o percentual troca pra cheio
   // (PARCELA_PCT_CHEIA) a partir deste mês, mas o valor em R$ continua sendo
@@ -1039,7 +1041,7 @@ function buildDeck(){
     // (a mesma hora em que a borda vira sólida), não numa régua fixa abaixo
     var yl = el('text', {x:(x0 + x1) / 2, y:DECK_Y + DECK_H / 2 + 3, 'text-anchor':'middle',
       class:'year-badge', stroke:'none'});
-    yl.textContent = (i + 1) + '° ano';
+    yl.textContent = 'Ano ' + (i + 1);
     yl.style.opacity = '0';
     yl.style.transition = 'opacity .5s ease';
     g.appendChild(yl);
@@ -1340,9 +1342,11 @@ function calcLance(totalPct, embPct){
   var valorRecurso = credit * rpPct / 100;
   var lanceTotal = totalPct / 100 * credit;   // oferta = % direto sobre o crédito vigente, sem encargo embutido
   var cartaLiquida = credit - embutidoUsedTotal - valorEmbutido;
-  var mesesAdiantados = Math.round(TOTAL * totalPct / 100);
+  // 31/10: mesesAdiantados removido — lance vencedor não avança mais a
+  // ponte (ver contemplate()/applyLance()/doPay() acima), então esse
+  // número deixou de ter uso em qualquer lugar da tela ou da lógica.
   return {embPct:embPct, rpPct:rpPct, valorEmbutido:valorEmbutido, valorRecurso:valorRecurso,
-    lanceTotal:lanceTotal, cartaLiquida:cartaLiquida, mesesAdiantados:mesesAdiantados, totalPct:totalPct};
+    lanceTotal:lanceTotal, cartaLiquida:cartaLiquida, totalPct:totalPct};
 }
 
 function fmtPct(v, intOnly){
@@ -1424,26 +1428,13 @@ function applyLance(vals, kind){
 
   embutidoUsedTotal += vals.valorEmbutido;
   recursoUsedTotal += vals.valorRecurso;
-  // bug corrigido em 29/10: mesesAdiantados é quantos meses ESTE lance vale
-  // (fração do total) — precisa ser SOMADO ao progresso atual, não comparado
-  // com Math.max(). Antes, um lance vencedor dado depois que a ponte já tinha
-  // passado do ponto equivalente ao percentual do lance não avançava nada
-  // (só consumia o dinheiro), mesmo mostrando "Isso adianta X meses" e "Lance
-  // vencedor!" na tela — agora sempre soma de verdade ao progresso.
-  var n = Math.min(TOTAL, paidMonths + vals.mesesAdiantados);
-
-  // marca a fatia de embutido dentro do trecho recém-preenchido por este
-  // lance, pra colorir só esses blocos de amarelo
-  var start = paidMonths;
-  var newCount = Math.max(0, n - start);
-  var embMonths = Math.min(newCount, Math.round(TOTAL * vals.embPct / 100));
-  for (var k = 0; k < newCount; k++){
-    var idx = start + k;
-    if (idx < blockEls.length) blockEls[idx]._kind = (k < embMonths) ? 'embutido' : 'normal';
-  }
+  // 31/10: lance vencedor NÃO avança mais a ponte — na prática, ganhar o
+  // lance não pula meses de parcela, só muda a modalidade/mês em que a
+  // contemplação acontece. O investidor continua pagando 1 parcela por vez
+  // normalmente (ver doPay()), e o boneco segue exatamente de onde estava.
 
   contemplationMethod = kind;
-  contemplate(n);
+  contemplate();
   updatePayBtn();
 }
 
@@ -1485,7 +1476,7 @@ function doPay(){
     updateContempladosPainel(drawn);
     if (sorteioWon){
       contemplationMethod = 'sorteio';
-      contemplate(paidMonths); // sem lance, a ponte só avança até onde o tempo real chegou
+      contemplate(); // contemplação não mexe na ponte — ela segue avançando só com parcela real
     }
   }
   // atualiza o número da chance mostrado no card Sorteio ("5 em N"), que sobe
@@ -1494,10 +1485,9 @@ function doPay(){
   // chamar aqui também, senão o número fica parado na tela
   updateContemplationUI();
 
-  // a ponte (progresso visual) só avança até onde o tempo real já chegou; se
-  // um lance já tinha coberto mais meses lá na frente, a parcela real só
-  // "preenche" o tempo decorrido, sem precisar redesenhar nada até alcançar
-  var v = Math.min(TOTAL, Math.max(paidMonths, monthsElapsed));
+  // 31/10: ponte avança só com parcela real paga (monthsElapsed), nunca com
+  // lance/contemplação — ver nota em contemplate() e applyLance() acima.
+  var v = Math.min(TOTAL, monthsElapsed);
   document.getElementById('paidLabel').textContent = v;
   paint(v);
 
