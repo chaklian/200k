@@ -863,36 +863,28 @@ function rollSorteio(chancePct){
   return Math.random() * 100 < chancePct;
 }
 
-// quantos dos GROUP_SIZE membros a gente assume que disputam um lance livre
-// num mês qualquer — definição nossa aqui, não uma regra oficial de nenhum
-// grupo real. (Lance fixo usa FIXO_PARTICIPACAO_PCT abaixo, não esta.)
-var LANCE_BID_FRACTION = 0.05;
-
-// dinâmica do sorteio sem reposição estendida ao lance fixo (29/10): como
-// todo mundo que dá lance fixo oferece o mesmo percentual (40%, `FIXO_PCT`),
-// não há como desempatar por valor — então assumimos que, a cada mês,
-// `FIXO_PARTICIPACAO_PCT` das "cotas disponíveis" (cotas do grupo ainda não
-// contempladas — mesmo pool do sorteio automático, `sorteioDrawPool`) entram
-// na disputa do lance fixo daquele mês, concorrendo todas em igualdade. A
-// cota simulada, ao dar lance fixo, entra nessa disputa como mais uma — a
-// chance de vencer é 1 dividido pelo nº de participantes daquele mês.
-var FIXO_PARTICIPACAO_PCT = 0.20;
+// Modelo de probabilidade por modalidade (31/10, confirmado pelo usuário —
+// números aproximados, não dado oficial de nenhum grupo real da Porto):
+// as 3 modalidades concorrem com fatias diferentes do mesmo pool de "cotas
+// disponíveis" (`sorteioDrawPool`, cotas do grupo ainda não contempladas,
+// o mesmo baralho sem reposição usado pelo sorteio automático).
+// - Sorteio: concorre com o pool inteiro (puro aleatório, "1 cota de N") —
+//   ver sorteioCotaLabel()/card Sorteio, não usa lanceChance().
+// - Lance Fixo: historicamente só ~30% dos cotistas usam essa modalidade,
+//   então a disputa de cada mês é só entre essa fatia do pool (ex.: pool de
+//   999 → ~300 participantes, "1 cota de 300").
+// - Lance Livre: os outros ~70% dos lances contemplados são dessa
+//   modalidade, então a disputa é entre ~70% do pool (ex.: pool de 999 →
+//   ~700 participantes).
+var FIXO_PARTICIPACAO_PCT = 0.30;
+var LIVRE_PARTICIPACAO_PCT = 0.70;
 
 function lanceChance(kind, totalPct){
   // nunca é mostrado na tela — só usado internamente pra sortear uma disputa
   // real contra o resto do grupo, não um número arbitrário solto.
-  if (kind === 'fixo'){
-    var participantesFixo = Math.max(1, Math.round(sorteioDrawPool.length * FIXO_PARTICIPACAO_PCT));
-    return Math.min(100, 100 / participantesFixo);
-  }
-  // lance livre = quanto maior o seu %, menor a chance de ainda ter alguém
-  // competindo igual ou mais alto, então o "pool" de concorrentes encolhe.
-  var pool = GROUP_SIZE * LANCE_BID_FRACTION;
-  var t = (totalPct - LANCE_LIVRE_MIN) / (LANCE_LIVRE_MAX - LANCE_LIVRE_MIN);
-  t = Math.max(0, Math.min(1, t));
-  pool = pool * (1 - t * 0.8);
-  pool = Math.max(1, pool);
-  return Math.min(100, 100 / pool);
+  var pct = (kind === 'fixo') ? FIXO_PARTICIPACAO_PCT : LIVRE_PARTICIPACAO_PCT;
+  var participantes = Math.max(1, Math.round(sorteioDrawPool.length * pct));
+  return Math.min(100, 100 / participantes);
 }
 
 function contemplate(bridgeMonthAdvance){
