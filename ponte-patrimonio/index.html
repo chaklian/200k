@@ -311,7 +311,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   </div>
 
   <div class="foot">
-    Protótipo conceitual &middot; 17 vãos (200 meses: 16 anos de 12 meses + o último ano com 8 meses) simulando o prazo total do consórcio. 3 vãos de aproximação de cada lado, 11 vãos suspensos entre os pilares. Dados fictícios.
+    Protótipo conceitual &middot; 17 vãos de 12 meses (anos completos) simulando o prazo do consórcio — 200 parcelas reais; os últimos 4 blocos do 17º vão são só visuais, caem junto com a 200ª parcela, fechando o ano. 3 vãos de aproximação de cada lado, 11 vãos suspensos entre os pilares. Dados fictícios.
   </div>
 </div>
 
@@ -501,7 +501,7 @@ function investorX(n){
   // anterior pulava direto pra FINISH_X nesse ponto, e como a transição
   // CSS só dura .5s pra qualquer distância, uma passada maior que o normal
   // parecia um "teleporte" em vez de caminhada)
-  var i = Math.max(0, Math.min(TOTAL, Math.round(n)));
+  var i = Math.max(0, Math.min(DISPLAY_TOTAL, Math.round(n)));
   var frontier = monthX[i] != null ? monthX[i] : X0;
   var bridgeStart = monthX[0] != null ? monthX[0] : X0;
   // ele mantém sempre essa mesma distância (chão → início da ponte) atrás da
@@ -532,17 +532,24 @@ function cableY(x){
   return TOWER_TOP + 120 * 4 * t * (1 - t);
 }
 
-// 200 meses no total: os primeiros 16 vãos têm 12 meses (anos completos),
-// o último vão (17º) tem só 8 — mesma distribuição visual dos vãos, só a
-// laje do último é subdividida em 8 blocos em vez de 12.
-function monthsInSpan(i){ return (i === SPAN_COUNT - 1) ? 8 : 12; }
+// 31/10: os 17 vãos voltam a ter 12 blocos cada (ano completo, visualmente
+// uniforme) — 17×12 = 204 blocos no total desenhado (DISPLAY_TOTAL). Mas o
+// consórcio real só tem 200 parcelas (TOTAL) — os últimos 4 blocos do 17º
+// vão não correspondem a nenhuma parcela real, são só visuais, pra fechar
+// o ano em 12/12. Eles ficam suspensos (como os demais, não pagos) até a
+// 200ª parcela (a última real) ser paga — nesse instante, caem junto com o
+// bloco real nº 200: 5 blocos de uma vez, completando o ano e o caminho da
+// ponte (ver paint(), que faz essa distinção entre progresso real `n` e
+// progresso visual `displayN`).
+function monthsInSpan(i){ return 12; }
 var spanStarts = [];
 (function(){
   var acc = 0;
   for (var i = 0; i < SPAN_COUNT; i++){ spanStarts.push(acc); acc += monthsInSpan(i); }
-  spanStarts.push(acc); // total ao final
+  spanStarts.push(acc); // total visual ao final
 })();
-var TOTAL = spanStarts[SPAN_COUNT];   // 200 parcelas no total
+var DISPLAY_TOTAL = spanStarts[SPAN_COUNT]; // 204 blocos desenhados (17×12)
+var TOTAL = 200;                            // parcelas reais do consórcio
 var WAIT_Y = 40;                // altura onde os blocos ficam suspensos, no alto
 var DROP = SLAB_Y - WAIT_Y;     // distância de queda até a laje
 var paidMonths = 0;    // progresso visual na ponte (blocos caídos) — avança com parcela paga E com lance
@@ -684,7 +691,7 @@ function clearFinishWalk(){
 }
 function walkToFinish(){
   clearFinishWalk();
-  var startX = investorX(TOTAL); // borda da ponte, mesma posição de sempre
+  var startX = investorX(DISPLAY_TOTAL); // borda da ponte, mesma posição de sempre
   var stepDist = (FINISH_X - startX) / FINISH_WALK_STEPS;
   var k = 0;
   function nextStep(){
@@ -1090,8 +1097,14 @@ function applyBlockStyle(b){
 function paint(n, opts){
   opts = opts || {};
   n = Math.max(0, Math.min(TOTAL, Math.round(n)));
-  for (var i = 0; i < TOTAL; i++){
-    var shouldBeActive = i < n;
+  // displayN é o progresso VISUAL (0..204): igual ao real (n) enquanto n <
+  // 200, mas pula direto pro total visual (204) assim que a última parcela
+  // real é paga — é isso que faz os 4 blocos extras (só visuais, sem
+  // parcela correspondente) caírem junto com o bloco real nº 200, numa
+  // cascata só (ver explicação em DISPLAY_TOTAL acima).
+  var displayN = (n >= TOTAL) ? DISPLAY_TOTAL : n;
+  for (var i = 0; i < DISPLAY_TOTAL; i++){
+    var shouldBeActive = i < displayN;
     var b = blockEls[i];
     if (shouldBeActive !== b._active){
       b._active = shouldBeActive;
@@ -1106,7 +1119,7 @@ function paint(n, opts){
   paidMonths = n;
   for (var s = 0; s < SPAN_COUNT; s++){
     var total = monthsInSpan(s);
-    var filled = Math.max(0, Math.min(total, n - spanStarts[s]));
+    var filled = Math.max(0, Math.min(total, displayN - spanStarts[s]));
     var complete = filled >= total;
     spanBorderEls[s].setAttribute('stroke-width', complete ? '1.5' : '1');
     spanBorderEls[s].setAttribute('stroke-dasharray', complete ? 'none' : '3 2');
@@ -1114,7 +1127,7 @@ function paint(n, opts){
     // vira sólida — ou seja, quando aquele ano de pagamentos é concluído
     if (yearLabelEls[s]) yearLabelEls[s].style.opacity = complete ? '1' : '0';
   }
-  updateInvestor(n);
+  updateInvestor(displayN);
   updateKpis();
   // concluiu a travessia (200/200): dispara os fogos uma única vez, até o
   // "Cancelar Carta"/"Zerar tudo" resetar tudo de novo (stopFireworks lá embaixo)
