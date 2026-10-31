@@ -193,7 +193,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="parcelaCard">
       <h3>Parcela</h3>
       <div class="big"><span id="paidLabel">0</span>/200</div>
-      <div class="sub" id="kpiParcelaReduzida">parcela reduzida: R$ 700,00</div>
+      <div class="sub" id="kpiParcelaReduzida">parcela pré contemplação: R$ 700,00</div>
       <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
 
@@ -1332,10 +1332,20 @@ function updateKpis(){
   // creditoAt()/currentCredit() acima — nunca congela, só troca de índice).
   // a parcela é calculada sobre o crédito NOMINAL (cheio) — o embutido não a reduz,
   // só reduz a carta líquida que o investidor efetivamente recebe pra usar.
-  // antes da contemplação a parcela é reduzida; depois, vira a parcela cheia.
+  // antes da contemplação, só existe a parcela "pré"; depois, a "pré" para de
+  // reajustar (trava no valor do mês da contemplação) e só a "pós" segue
+  // reajustando — ver nota na linha da parcela pré abaixo.
   var nominalCredit = currentCredit();
   var liquidCredit = Math.max(0, nominalCredit - embutidoUsedTotal);
-  var parcelaReduzida = nominalCredit * PARCELA_PCT;
+  // 31/10 (ajuste, a pedido do usuário): "parcela pré contemplação" deixa de
+  // ser recalculada a cada atualização depois que a cota é contemplada — ela
+  // fica travada no valor do mês exato da contemplação (crédito vigente
+  // NAQUELE mês, via creditoAt(contemplationMonthsElapsed)), porque na
+  // prática ela deixa de existir/ser cobrada a partir dali (só a "pós"
+  // continua sendo paga e reajustando). Antes da contemplação, continua
+  // sendo recalculada normalmente a cada ano fechado (acompanha o INCC).
+  var parcelaPreBase = contemplated ? creditoAt(contemplationMonthsElapsed) : nominalCredit;
+  var parcelaReduzida = parcelaPreBase * PARCELA_PCT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
   var creditIndexHintEl = document.getElementById('kpiCreditIndexHint');
   if (contemplated){
@@ -1345,7 +1355,7 @@ function updateKpis(){
   } else {
     creditIndexHintEl.style.display = 'none';
   }
-  document.getElementById('kpiParcelaReduzida').textContent = 'parcela reduzida: ' + formatBRL(parcelaReduzida);
+  document.getElementById('kpiParcelaReduzida').textContent = 'parcela pré contemplação: ' + formatBRL(parcelaReduzida);
   // só mostra um valor real nessa linha depois que a contemplação de fato
   // acontece — placeholder genérico ("—") antes disso. Bug corrigido em
   // 29/10: o valor agora é RECALCULADO aqui a cada atualização (não lido de
