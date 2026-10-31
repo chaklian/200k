@@ -77,19 +77,18 @@ svg{display:block;width:100%;height:auto}
   color:var(--ink);margin-bottom:6px}
 .contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
 
-.pay-pulse{background:var(--paid);border-color:var(--paid-ink);color:var(--paid-ink);
+/* 31/10: todos os botões voltam a ser brancos (cor "concreto", igual aos
+   blocos) — removidos os overrides de cor própria do Cancelar (vermelho),
+   Dar Lance (âmbar) e Pagar Parcela (verde). O pulso do botão Pagar
+   continua existindo, só com o brilho recolorido pra branco em vez de
+   verde, pra não sobrar nenhum resquício de cor. */
+.pay-pulse{background:var(--concrete);border-color:var(--concrete-ink);color:var(--concrete-ink);
   font-weight:600;animation:payPulse 1.6s ease-in-out infinite}
-.pay-pulse:hover{background:var(--paid);border-color:var(--paid-ink)}
+.pay-pulse:hover{background:var(--concrete);border-color:var(--concrete-ink)}
 @keyframes payPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(111,191,115,.55)}
-  50%{box-shadow:0 0 0 9px rgba(111,191,115,0)}
+  0%,100%{box-shadow:0 0 0 0 rgba(228,235,241,.65)}
+  50%{box-shadow:0 0 0 9px rgba(228,235,241,0)}
 }
-
-#restartBtn{background:var(--redline);border-color:var(--redline);color:#fff}
-#restartBtn:hover{background:var(--redline);border-color:var(--redline)}
-
-#lanceBtn{background:var(--amber);border-color:var(--amber-ink);color:var(--amber-ink);font-weight:600}
-#lanceBtn:hover{background:var(--amber);border-color:var(--amber-ink)}
 
 /* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
    prolongado como scroll/seleção de texto/menu de contexto no celular */
@@ -131,8 +130,8 @@ input[type=number]{font-family:inherit;font-size:12px;background:var(--canvas-de
   border:1px solid var(--ink-faint);color:var(--ink);padding:7px 8px;border-radius:3px;width:64px}
 button{font-family:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
   padding:9px 12px;border-radius:3px;border:1px solid var(--ink-faint);
-  background:var(--canvas-deep);color:var(--ink);cursor:pointer}
-button:hover{border-color:var(--ink-dim)}
+  background:var(--concrete);color:var(--concrete-ink);cursor:pointer}
+button:hover{border-color:var(--concrete-ink)}
 button.danger{color:var(--redline);border-color:var(--redline)}
 
 .foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--grid);
@@ -244,10 +243,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="sorteioCard">
       <h3>Sorteio</h3>
       <p class="hint" style="margin-top:0">Vale pra todo o grupo adimplente, sem precisar dar lance: estando com a parcela em dia, você já concorre automaticamente, todo mês, no sorteio apurado pela Loteria Federal (realizado pela Caixa).</p>
-      <details class="adv">
-        <summary>Como funciona</summary>
-        <p>Ao começar a simulação, sua cota recebe um número — é essa cota que concorre, mês a mês, enquanto você paga parcela. A cada assembleia, se houver caixa disponível no fundo comum, algumas cotas são contempladas entre quem está em dia; é a única modalidade que não depende de oferecer lance — continua rodando mesmo que você nunca dê lance fixo ou livre. Ninguém fica de fora: conforme o grupo inteiro avança nas parcelas, a lista de quem ainda não foi contemplado vai encolhendo até não sobrar ninguém — ou seja, toda cota (inclusive a sua) acaba sendo contemplada até o fim do prazo, por sorteio ou por lance.</p>
-      </details>
       <div class="lance-result" style="margin-top:14px">
         <div>Sua cota neste sorteio: <b id="sorteioCotaOut">001</b></div>
         <div>Seu status: <b id="sorteioStatusOut">Concorrendo</b></div>
@@ -261,7 +256,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div class="linha" id="contLinha3">—</div>
         <div class="linha" id="contLinha4">—</div>
       </div>
-      <div class="lance-feedback" id="sorteioFeedback"></div>
     </div>
 
     <div class="kcard locked" id="fixoCard">
@@ -1085,13 +1079,12 @@ function applyBlockStyle(b){
     b.setAttribute('stroke', 'var(--ink-faint)');
     return;
   }
-  if (b._kind === 'embutido'){
-    b.setAttribute('fill', 'var(--amber)');
-    b.setAttribute('stroke', 'var(--amber-ink)');
-  } else {
-    b.setAttribute('fill', 'var(--paid)');
-    b.setAttribute('stroke', 'var(--paid-ink)');
-  }
+  // 31/10: blocos pagos voltam a ser brancos (cor "concreto"), tanto os
+  // pagos por parcela normal quanto os pagos via lance/embutido — sem
+  // distinção de cor entre os dois tipos (antes: verde pra parcela, âmbar
+  // pra embutido).
+  b.setAttribute('fill', 'var(--concrete)');
+  b.setAttribute('stroke', 'var(--concrete-ink)');
 }
 
 function paint(n, opts){
@@ -1450,6 +1443,7 @@ function resetSimulation(){
   clearFinishWalk();
   ['sorteioFeedback', 'fixoFeedback', 'livreFeedback'].forEach(function(id){
     var el = document.getElementById(id);
+    if (!el) return; // sorteioFeedback foi removido do card Sorteio (31/10) — ainda vem nessa lista
     el.classList.remove('show', 'win', 'lose');
     el.innerHTML = '';
   });
