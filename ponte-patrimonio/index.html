@@ -95,8 +95,6 @@ svg{display:block;width:100%;height:auto}
    .canvas-wrap com container query) e passa a usar tamanhos normais, iguais
    ao resto do texto do card. */
 .contemplados-painel{margin-top:14px}
-.contemplados-painel .sua-cota{font-size:12px;font-weight:600;
-  color:var(--ink);margin-bottom:6px}
 .contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
 
 /* 31/10: todos os botões voltam a ser brancos (cor "concreto", igual aos
@@ -201,7 +199,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="statusCard">
       <h3>Status</h3>
       <div class="big" id="kpiStatus">Não contemplado</div>
-      <div class="sub" id="kpiStatusHint">Concorrendo ao sorteio</div>
+      <div class="sub" id="kpiStatusHint">Sua cota: 431</div>
       <div class="sub" id="kpiStatusCota">Concorrendo ao sorteio: 1 cota de 999</div>
     </div>
   </div>
@@ -290,7 +288,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Sorteio</h3>
       <p class="hint" style="margin-top:0">Vale para todo o grupo adimplente, sem precisar dar lance. Sorteio realizado todo mês pela Loteria Federal.</p>
       <div class="contemplados-painel" id="contempladosOverlay">
-        <div class="sua-cota">Sua cota: <span id="suaCotaPainelOut">—</span></div>
         <div class="linha" id="contLinha0">—</div>
         <div class="linha" id="contLinha1">—</div>
         <div class="linha" id="contLinha2">—</div>
@@ -694,8 +691,8 @@ function sorteioCotaLabel(n){
 // papel separado: é só rótulo pra deixar claro de onde cada número "veio".
 var SORTEIO_ROLES = ['Sorteio', 'lance fixo', 'lance livre', 'lance livre', 'lance livre'];
 function updateContempladosPainel(drawn){
-  var cotaEl = document.getElementById('suaCotaPainelOut');
-  if (cotaEl && investorCotaNumber != null) cotaEl.textContent = sorteioCotaLabel(investorCotaNumber);
+  // 31/10: "Sua cota" não aparece mais aqui — já foi mostrada lá em cima no
+  // card Status (ver updateContemplationUI), sem duplicar a mesma informação.
   for (var i = 0; i < 5; i++){
     var line = document.getElementById('contLinha' + i);
     if (!line) continue;
@@ -925,7 +922,11 @@ function updateContemplationUI(){
     hintEl.textContent = 'Modalidade: ' + (MODALIDADE_LABEL[contemplationMethod] || '—');
   } else {
     statusEl.textContent = 'Não contemplado';
-    hintEl.textContent = 'Concorrendo ao sorteio';
+    // 31/10: "Concorrendo ao sorteio" deu lugar ao número da cota do
+    // investidor nesta linha — a frase "Concorrendo ao sorteio" continua
+    // existindo, só desceu pra linha de baixo (kpiStatusCota), que já diz
+    // isso junto com a contagem do baralho.
+    hintEl.textContent = 'Sua cota: ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
   }
   var cotaEl = document.getElementById('kpiStatusCota');
   if (cotaEl){
@@ -1073,28 +1074,34 @@ function buildDeck(){
 // eles afundam no mar em sequência do ÚLTIMO pro PRIMEIRO (como se a ponte
 // desmoronasse a partir da ponta onde o investidor está), e o investidor
 // também afunda — reaparecendo normal na posição inicial só depois do reset
-// 31/10: a queda agora tem DUAS fases — pedido do usuário pra parecer uma
-// queda "sólida" na água de verdade, não um fade genérico:
-//   fase 1 (sólido): cai 100% opaco até a borda INFERIOR encostar na
-//   superfície da água (WATER_Y) — nenhuma transição de opacity rodando.
-//   fase 2 (afundando + sumindo): só a PARTIR desse encostar é que começa a
-//   sumir, continuando a cair a MESMA altura do bloco/boneco (ou seja, até a
-//   borda SUPERIOR também passar da linha d'água — "submerso por inteiro")
-//   — exatamente quando a opacidade chega a 0.
-// Os blocos são todos iguais (mesma largura/altura, mesmo Y de repouso), daí
-// as duas distâncias abaixo valerem pra qualquer bloco, sem precisar
-// recalcular por elemento.
-var BLOCK_WATER_TOUCH_DIST = WATER_Y - (SLAB_Y + SLAB_H); // até a base do bloco tocar a água
-var BLOCK_SUBMERGE_DIST = BLOCK_WATER_TOUCH_DIST + SLAB_H; // + a própria altura = submerso por inteiro
+// 31/10: a queda do bloco/boneco é UM movimento só, de uma ponta a outra —
+// nunca duas velocidades diferentes (bug da versão anterior: a 1ª fase
+// usava uma curva de easing e a 2ª virava "linear", criando um salto de
+// velocidade bem visível exatamente em cima da água). Agora:
+//   • POSIÇÃO: uma única transição de transform, com a MESMA curva, do
+//     início até o FUNDO DO MAR (GROUND_BOTTOM) — nunca para na água, o
+//     bloco/boneco afunda até encostar no fundo de verdade.
+//   • OPACIDADE: uma transição SEPARADA, com seu próprio delay — começa a
+//     contar só quando a borda inferior do bloco (ou os pés do boneco)
+//     cruza a linha d'água (WATER_Y), e dali em diante o fade dura o resto
+//     inteiro da queda, terminando exatamente quando ele chega no fundo.
+// As duas transições rodam ao mesmo tempo (mesmo elemento, mesma chamada de
+// style), só com delay/duração diferentes — por isso nunca "pulam" entre
+// si: é uma curva de posição contínua com um fade sobreposto na 2ª metade.
+var BLOCK_REST_BOTTOM = SLAB_Y + SLAB_H;        // borda inferior do bloco, em repouso
+var BLOCK_WATER_TOUCH_DIST = WATER_Y - BLOCK_REST_BOTTOM;   // até tocar a água
+var BLOCK_FLOOR_DIST = GROUND_BOTTOM - BLOCK_REST_BOTTOM;   // até tocar o FUNDO do mar
 
 // o boneco usa o MESMO baseY (SLAB_Y) como datum dos PÉS (a base da figura,
-// ver buildWalker) — então o cálculo espelha o do bloco, só trocando a
-// "altura" pela altura aproximada do corpo inteiro (H em buildWalker).
-var INVESTOR_HEIGHT = 48; // == H em buildWalker() — pés até o topo da cabeça
-var INVESTOR_WATER_TOUCH_DIST = WATER_Y - SLAB_Y;               // até os pés tocarem a água
-var INVESTOR_SUBMERGE_DIST = INVESTOR_WATER_TOUCH_DIST + INVESTOR_HEIGHT; // + a altura dele = submerso por inteiro
+// ver buildWalker) — mesmo cálculo, só trocando o datum de referência.
+var INVESTOR_WATER_TOUCH_DIST = WATER_Y - SLAB_Y;      // até os pés tocarem a água
+var INVESTOR_FLOOR_DIST = GROUND_BOTTOM - SLAB_Y;      // até os pés tocarem o fundo
 
-var FALL_MS = 600; // duração total da queda (fase 1 + fase 2 somadas), por elemento
+// velocidade de queda (px/ms) — a MESMA pros blocos e pro boneco, calculada
+// uma vez, então a duração de cada queda escala com a distância de cada um
+// (o boneco tem um pouco mais de chão pra percorrer que o bloco, porque o
+// datum dele — os pés — fica 10px acima da borda inferior do bloco).
+var FALL_SPEED = 0.14; // px/ms
 // sem teto de atraso — antes, um SINK_MAX_DELAY=400ms fazia todo bloco além
 // do ~22º (400/18) cair no mesmo instante, em bloco só, em vez de manter a
 // cascata sequencial até o fim. Agora cada bloco sempre cai um pouco depois
@@ -1138,30 +1145,29 @@ function collapseIntoSea(onDone){
   var INVESTOR_SINK_MIN_MONTHS = 8;
   var investorX0 = investorX(paidMonths);
   var investorOverBridge = paidMonths >= INVESTOR_SINK_MIN_MONTHS;
-  // fração do percurso total (em distância) que cabe dentro da fase 1 —
-  // determina quantos ms de FALL_MS vão pra cada fase, mantendo a MESMA
-  // velocidade de queda (px/ms) nas duas fases, só muda o que acontece com
-  // a opacidade em cada uma
-  var investorTouchFrac = INVESTOR_WATER_TOUCH_DIST / INVESTOR_SUBMERGE_DIST;
-  var investorPhase1Ms = Math.round(FALL_MS * investorTouchFrac);
-  var investorPhase2Ms = FALL_MS - investorPhase1Ms;
+  // posição: UMA transição só, do topo até o fundo do mar (sem parar na
+  // água). opacidade: transição separada, atrasada até o instante em que os
+  // pés cruzam a linha d'água, durando o resto da queda até o fundo.
+  var investorTotalMs = Math.round(INVESTOR_FLOOR_DIST / FALL_SPEED);
+  var investorTouchMs = Math.round(INVESTOR_WATER_TOUCH_DIST / FALL_SPEED);
+  var investorFadeMs = investorTotalMs - investorTouchMs;
   if (investorOverBridge){
-    // fase 1: sólido até os pés encostarem na água — sem transição de opacity
-    investorG.style.transition = 'transform ' + investorPhase1Ms + 'ms cubic-bezier(.4,0,.2,1)';
-    investorG.style.transitionDelay = INVESTOR_SINK_DELAY + 'ms';
-    investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + INVESTOR_WATER_TOUCH_DIST + 'px)';
-    setTimeout(function(){
-      // fase 2: continua afundando + some, até a altura toda dele passar
-      // da linha d'água (submerso por inteiro = opacidade 0)
-      investorG.style.transition = 'transform ' + investorPhase2Ms + 'ms linear, opacity ' + investorPhase2Ms + 'ms linear';
-      investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + INVESTOR_SUBMERGE_DIST + 'px)';
-      investorG.style.opacity = '0';
-    }, INVESTOR_SINK_DELAY + investorPhase1Ms);
+    investorG.style.transition =
+      'transform ' + investorTotalMs + 'ms cubic-bezier(.4,0,.2,1) ' + INVESTOR_SINK_DELAY + 'ms, ' +
+      'opacity ' + investorFadeMs + 'ms linear ' + (INVESTOR_SINK_DELAY + investorTouchMs) + 'ms';
+    // NUNCA atribuir transitionDelay='' depois disso: o delay de cada
+    // propriedade já está embutido no shorthand acima (um valor diferente
+    // por propriedade) — setar transitionDelay separadamente depois
+    // sobrescreve/zera os dois, quebrando o atraso da fase de fade (bug
+    // encontrado via debug: os delays simplesmente desapareciam do estilo
+    // computado).
+    investorG.style.transform = 'translateX(' + investorX0 + 'px) translateY(' + INVESTOR_FLOOR_DIST + 'px)';
+    investorG.style.opacity = '0';
   }
 
-  var blockTouchFrac = BLOCK_WATER_TOUCH_DIST / BLOCK_SUBMERGE_DIST;
-  var blockPhase1Ms = Math.round(FALL_MS * blockTouchFrac);
-  var blockPhase2Ms = FALL_MS - blockPhase1Ms;
+  var blockTotalMs = Math.round(BLOCK_FLOOR_DIST / FALL_SPEED);
+  var blockTouchMs = Math.round(BLOCK_WATER_TOUCH_DIST / FALL_SPEED);
+  var blockFadeMs = blockTotalMs - blockTouchMs;
   var maxDelay = 0;
   falling.forEach(function(b, i){
     // cascata invertida: o ÚLTIMO bloco (maior índice) cai primeiro, o
@@ -1169,16 +1175,18 @@ function collapseIntoSea(onDone){
     var order = falling.length - 1 - i;
     var delay = order * SINK_STEP_MS;
     maxDelay = Math.max(maxDelay, delay);
-    // fase 1: sólido até a base do bloco encostar na água
-    b.style.transition = 'transform ' + blockPhase1Ms + 'ms cubic-bezier(.4,0,.2,1), fill .3s ease, stroke .3s ease';
-    b.style.transitionDelay = delay + 'ms';
-    b.style.transform = 'translateY(' + BLOCK_WATER_TOUCH_DIST + 'px)';
-    setTimeout(function(){
-      // fase 2: continua afundando + some, até o bloco ficar submerso por inteiro
-      b.style.transition = 'transform ' + blockPhase2Ms + 'ms linear, opacity ' + blockPhase2Ms + 'ms linear';
-      b.style.transform = 'translateY(' + BLOCK_SUBMERGE_DIST + 'px)';
-      b.style.opacity = '0';
-    }, delay + blockPhase1Ms);
+    // mesma lógica do investidor: 1 transição de posição (delay = só o
+    // atraso da cascata) + 1 transição de opacidade separada, com delay
+    // adicional até a borda inferior cruzar a água, com duração = o
+    // restante da queda até o fundo
+    b.style.transition =
+      'transform ' + blockTotalMs + 'ms cubic-bezier(.4,0,.2,1) ' + delay + 'ms, ' +
+      'opacity ' + blockFadeMs + 'ms linear ' + (delay + blockTouchMs) + 'ms, ' +
+      'fill .3s ease, stroke .3s ease';
+    // (ver comentário equivalente acima, no bloco do investidor) — nunca
+    // setar transitionDelay à parte aqui, os delays já estão no shorthand.
+    b.style.transform = 'translateY(' + BLOCK_FLOOR_DIST + 'px)';
+    b.style.opacity = '0';
   });
 
   setTimeout(function(){
@@ -1191,7 +1199,7 @@ function collapseIntoSea(onDone){
     investorG.style.transition = INVESTOR_TRANSITION;
     investorG.style.transitionDelay = '';
     onDone();
-  }, Math.max(maxDelay + FALL_MS + 50, investorOverBridge ? INVESTOR_SINK_DELAY + FALL_MS + 50 : 0));
+  }, Math.max(maxDelay + blockTotalMs + 50, investorOverBridge ? INVESTOR_SINK_DELAY + investorTotalMs + 50 : 0));
 }
 
 function applyBlockStyle(b){
