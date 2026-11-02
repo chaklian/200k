@@ -368,7 +368,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     </div>
 
     <!-- CARD 7: Lance Fixo -->
-    <div class="kcard locked" id="fixoCard">
+    <div class="kcard" id="fixoCard">
       <h3>Lance Fixo</h3>
       <div class="lance-donut-grid">
         <div class="lance-donut-col">
@@ -423,7 +423,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     </div>
 
     <!-- CARD 8: Lance Livre -->
-    <div class="kcard locked" id="livreCard">
+    <div class="kcard" id="livreCard">
       <h3>Lance Livre</h3>
       <div class="lance-donut-grid">
         <div class="lance-donut-col">
@@ -1945,8 +1945,11 @@ var lanceUnlocked = false;
 var lanceUsedThisRound = false;
 var lanceBtn = document.getElementById('lanceBtn');
 function updateLanceUnlockUI(){
-  document.getElementById('fixoCard').classList.toggle('locked', !lanceUnlocked);
-  document.getElementById('livreCard').classList.toggle('locked', !lanceUnlocked);
+  // 01/11, a pedido do usuário: cards de lance deixam de ficar travados
+  // (opacos/sem clique) à espera do botão "Dar Lance" — ficam sempre
+  // visíveis e clicáveis desde o início. O botão "Dar Lance" continua
+  // existindo e com seu próprio estado (ver btnOff abaixo), só não
+  // controla mais a aparência/clicabilidade dos dois cards.
   var btnOff = contemplated || lanceUnlocked || lanceUsedThisRound;
   lanceBtn.disabled = btnOff;
   lanceBtn.style.opacity = btnOff ? '0.5' : '1';
