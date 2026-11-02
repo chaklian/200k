@@ -108,6 +108,15 @@ svg{display:block;width:100%;height:auto}
 .contemplados-painel{margin-top:14px}
 .contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
 
+/* CARD 2 (31/10): "Total pago" virou "Pago / A pagar" — duas metades lado a
+   lado, separadas por uma linha vertical (border-left na metade direita),
+   cada uma com label pequeno + valor grande. Reaproveita .big/.sub de
+   .kcard pros valores — só o layout em 2 colunas é novo. */
+.split-kpi{display:flex;flex:1}
+.split-kpi-half{flex:1 1 0;min-width:0}
+.split-kpi-half + .split-kpi-half{padding-left:14px;margin-left:14px;border-left:1px solid var(--grid)}
+.split-kpi-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+
 
 /* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
    prolongado como scroll/seleção de texto/menu de contexto no celular */
@@ -179,14 +188,20 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="sub">INCC = 6,5% a.a. / Selic = 13,75% a.a / IPCA = 4,5% a.a</div>
-      <div class="sub" id="kpiCreditIndexHint" style="display:none"></div>
+      <div class="sub">Taxa Adm = 19% / Fundo de Reserva = 2%</div>
     </div>
 
-    <!-- CARD 2: Total pago -->
+    <!-- CARD 2: Total pago / A pagar -->
     <div class="kcard" id="totalPagoCard">
-      <h3>Total pago</h3>
-      <div class="big" id="kpiTotalPaid">R$ 0,00</div>
-      <div class="sub">Soma das parcelas pagas + recurso próprio dos lances</div>
+      <h3>Pago / A pagar</h3>
+      <div class="split-kpi">
+        <div class="split-kpi-half">
+          <div class="big" id="kpiTotalPaid">R$ 0,00</div>
+        </div>
+        <div class="split-kpi-half">
+          <div class="big" id="kpiTotalToPay">R$ 0,00</div>
+        </div>
+      </div>
     </div>
 
     <!-- CARD 3: Parcela -->
@@ -609,21 +624,29 @@ var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga 
 
 var CREDIT_BASE = 200000;       // valor da carta 200k
 var PARCELA_PCT = 0.0036;       // parcela = 0,36% do valor do crédito (R$720,00 sobre R$200k)
-var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela cheia pós-contemplação = dobro da reduzida
-                                 // (remove o redutor de 50% do item 6) — modelo ABAC (29/10,
-                                 // regras-consorcio-conferencia.md item 15): % fixo sobre o
-                                 // crédito vigente, NÃO mais saldo devedor ÷ meses restantes.
-                                 // 31/10 (item 19): esse valor fixo agora só é usado quando a
-                                 // contemplação foi por SORTEIO (sem pagamento extra). Quando foi
-                                 // por LANCE, a parcela pós-contemplação é recalculada de verdade
-                                 // — ver parcelaPctPos, calculado em contemplate().
+var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela CHEIA (sem o redutor de 50% do item 6) —
+                                 // é a base de toda parcela pós-contemplação, mas (31/10, 2ª
+                                 // correção) nunca é usada sozinha — ver contemplate(): no
+                                 // sorteio, soma-se um adicional pra recuperar o desconto já
+                                 // aproveitado; no lance, recalcula-se de verdade sobre o saldo.
 var INCC_PCT = 6.5;              // referência anual, travado em 6,5% — não editável (bate com o
-                                 // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...")
-                                 // — usado pra reajustar o crédito SÓ até a contemplação.
-var SELIC_PCT = 13.75;           // referência anual, mesma do card "Valor do crédito" ("Selic = 13,75% a.a").
-var POS_CONTEMP_INDEX_PCT = SELIC_PCT * 0.90; // 31/10, confirmado pelo usuário: depois de
-                                 // contemplada, a carta passa a render 90% da Selic (12,375% a.a.)
-                                 // em vez de continuar pelo INCC — ver creditoAt() abaixo.
+                                 // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...").
+                                 // Usado SÓ até a contemplação — ver CDI_PCT_ANUAL abaixo pro que
+                                 // acontece depois.
+var CDI_PCT_ANUAL = 13.75;       // 31/10 (3ª correção, item 22 do doc de regras): decisão de produto
+                                 // do usuário — a PARTIR da contemplação, o crédito passa a render
+                                 // 80% do CDI (referência anual aqui, capitalizado mês a mês — ver
+                                 // creditoAt()), em vez de continuar só pelo INCC. Antes da
+                                 // contemplação, o crédito reajusta só pelo INCC, anual (mantém a
+                                 // correção do item 21). Nota de pesquisa: o regulamento da Porto
+                                 // (art. 29.1/29.2) confirma que o crédito de quem já foi contemplado
+                                 // e ainda não usou a carta fica aplicado financeiramente, rastreado
+                                 // por consorciado — mas o art. 29.3 diz que o PRODUTO desse
+                                 // rendimento reverte ao fundo comum do grupo, não necessariamente à
+                                 // carta individual (exceto em caso de exclusão/cancelamento, art.
+                                 // 11/11.1). Ou seja, este 80% do CDI aplicado à carta individual é
+                                 // uma escolha de modelagem do usuário, não uma regra 100% confirmada
+                                 // letra-por-letra no regulamento — documentado como ⚠️ no item 22.
 var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
 var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
 var LANCE_LIVRE_MIN = 40;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
@@ -661,12 +684,15 @@ var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mos
 // calcular a parcela pós-contemplação, calculada de verdade uma única vez,
 // no instante da contemplação — ver contemplate(). Quando a contemplação foi
 // por LANCE (fixo ou livre), o investidor já pagou algo extra (o lance), então
-// em vez de simplesmente dobrar a parcela (PARCELA_PCT_CHEIA, regra antiga),
 // recalculamos o ritmo necessário pra terminar de pagar o que falta do
 // crédito nos meses que restam do plano — confirmado com um caso real (cota
 // 134, regras-consorcio-conferencia.md item 19): bate com precisão de 4 casas
-// decimais. Quando foi por SORTEIO (sem pagamento extra, sem amortização
-// extraordinária), mantém a regra simples de dobrar. Fica null até a
+// decimais. Quando foi por SORTEIO (sem pagamento extra), a fórmula mudou
+// (31/10, 2ª correção, item 21): NÃO é mais "dobrar" a parcela — é a parcela
+// cheia + um adicional que recupera o "déficit" do redutor já aproveitado
+// (diferença entre parcela cheia e reduzida, acumulada mês a mês até a
+// contemplação), diluído nos meses restantes — fórmula e exemplo numérico
+// confirmados na Cartilha de Boas-Vindas da Porto Seguro. Fica null até a
 // contemplação acontecer.
 var parcelaPctPos = null;
 
@@ -868,43 +894,42 @@ function currentCredit(){
   // definição, enquanto essa dinâmica não existir, o crédito nunca para de
   // reajustar — nem na contemplação, nem depois.
   //
-  // 31/10: o ÍNDICE usado pra reajustar muda na contemplação (continua
-  // nunca congelando): até lá, segue o INCC normalmente; a partir do mês
-  // em que a cota é contemplada, a carta passa a render 90% da Selic
-  // (`POS_CONTEMP_INDEX_PCT`) em vez do INCC — ver creditoAt() abaixo, que
-  // faz a troca de índice no mês exato (`contemplationMonthsElapsed`).
-  // Serve tanto pro card "Valor do crédito" quanto pros cálculos de lance
-  // E pela parcela pós-contemplação (que usa o mesmo crédito vigente, só
-  // com o percentual cheio em vez do reduzido — ver PARCELA_PCT_CHEIA).
+  // 31/10 (3ª correção, item 22 do doc de regras): ANTES da contemplação, o
+  // índice é só o INCC, anual (igual sempre foi). A PARTIR da contemplação,
+  // o crédito passa a render 80% do CDI, capitalizado mês a mês — decisão
+  // de produto do usuário (ver nota em CDI_PCT_ANUAL acima pra fonte e
+  // ressalva). Serve tanto pro card "Valor do crédito" quanto pros cálculos
+  // de lance e da parcela pós-contemplação (que usa o mesmo crédito
+  // vigente, só com o percentual cheio/recalculado em vez do reduzido).
   return creditoAt(monthsElapsed);
+}
+
+function creditoAtIncc(months){
+  // crédito reajustado SÓ pelo INCC, a cada ano fechado (12 parcelas) —
+  // usado isoladamente pra achar o valor "ancorado" no instante exato da
+  // contemplação (ver creditoAt() abaixo).
+  var years = Math.floor(months / 12);
+  return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
 }
 
 function creditoAt(months){
   // mesma ideia de currentCredit(), mas parametrizada por `months` — usada
-  // em totalPaidValue() pra pegar o crédito vigente em cada mês já pago m
-  // (não necessariamente o monthsElapsed atual).
+  // em totalPaidValue()/totalToPayValue() pra pegar o crédito vigente em
+  // cada mês m (não necessariamente o monthsElapsed atual).
   //
-  // 31/10: troca de índice na contemplação. Até o mês da contemplação
-  // (`contemplationMonthsElapsed`), o crédito segue reajustado pelo INCC,
-  // como sempre. A partir daí, o índice muda pra 90% da Selic
-  // (`POS_CONTEMP_INDEX_PCT`) — a carta contemplada passa a render como
-  // uma aplicação financeira, não mais pelo índice de obra. O valor na
-  // virada (`creditoNaContemplacao`) é "travado" como base pro novo
-  // índice, igual uma correção monetária em 2 tramos.
-  if (contemplationMonthsElapsed != null && months > contemplationMonthsElapsed){
-    var anosAteContemplacao = Math.floor(contemplationMonthsElapsed / 12);
-    var creditoNaContemplacao = CREDIT_BASE * Math.pow(1 + INCC_PCT/100, anosAteContemplacao);
-    // 31/10 (ajuste): pós-contemplação não espera fechar o ano — reajusta
-    // mês a mês, juros compostos com taxa mensal simplificada (taxa anual
-    // ÷ 12, não a equivalente composta exata) — confirmado pelo usuário:
-    // "se fosse 12% ao ano, já contabiliza 1% ao mês". Antes disso só
-    // reajustava fechando anos inteiros, igual o INCC pré-contemplação.
-    var mesesDepoisContemplacao = months - contemplationMonthsElapsed;
-    var taxaMensal = POS_CONTEMP_INDEX_PCT / 100 / 12;
-    return creditoNaContemplacao * Math.pow(1 + taxaMensal, mesesDepoisContemplacao);
+  // 31/10 (3ª correção, item 22): se `months` já está na fase pós-
+  // contemplação, o crédito não segue mais o INCC — ancora no valor
+  // reajustado por INCC até o instante exato da contemplação
+  // (`creditoAtIncc(contemplationMonthsElapsed)`), e a partir dali
+  // capitaliza mês a mês a 80% do CDI (CDI_PCT_ANUAL). Antes da
+  // contemplação (ou se nunca contemplado), segue só o INCC, anual.
+  if (contemplated && months >= contemplationMonthsElapsed){
+    var creditoNaContemplacao = creditoAtIncc(contemplationMonthsElapsed);
+    var mesesDesdeContemplacao = months - contemplationMonthsElapsed;
+    var taxaMensalCDI = Math.pow(1 + (CDI_PCT_ANUAL/100) * 0.80, 1/12) - 1;
+    return creditoNaContemplacao * Math.pow(1 + taxaMensalCDI, mesesDesdeContemplacao);
   }
-  var years = Math.floor(months / 12);
-  return CREDIT_BASE * Math.pow(1 + INCC_PCT/100, years);
+  return creditoAtIncc(months);
 }
 
 function rollSorteio(chancePct){
@@ -966,16 +991,19 @@ function contemplate(){
   // reajustando normalmente — não existe ainda uma dinâmica de "usar a carta"
   // que o faria parar.
   //
-  // 31/10 (item 19): o PERCENTUAL em si também muda de regra aqui, dependendo
-  // de como a contemplação aconteceu:
+  // 31/10 (item 19, e correção do item 21): o PERCENTUAL em si também muda
+  // de regra aqui, dependendo de como a contemplação aconteceu:
   // - Por LANCE (fixo ou livre): o investidor já pagou algo extra
   //   (embutidoUsedTotal + recursoUsedTotal, o lance vencedor). Isso é uma
   //   amortização real do crédito, então recalculamos o ritmo mensal
   //   necessário pra cobrir o que ainda falta, nos meses que restam do
   //   plano — em vez de um multiplicador fixo que ignora o tamanho do lance.
-  // - Por SORTEIO (sem lance, sem pagamento extra): não houve amortização
-  //   extraordinária nenhuma, então mantém a regra simples de dobrar
-  //   (PARCELA_PCT_CHEIA) — não tem saldo nenhum pra "descontar".
+  // - Por SORTEIO (sem lance, sem pagamento extra): NÃO é mais "dobrar"
+  //   (regra antiga, revertida) — é a fórmula real da Cartilha de
+  //   Boas-Vindas da Porto Seguro (exemplo "Ramon", ver item 21 do doc de
+  //   regras): parcela cheia (sem o redutor) + um adicional que recupera o
+  //   "déficit" do redutor já aproveitado (diferença entre parcela cheia e
+  //   reduzida, acumulada mês a mês até aqui), diluído nos meses restantes.
   if (contemplationMethod === 'fixo' || contemplationMethod === 'livre'){
     var lanceTotalVencedor = embutidoUsedTotal + recursoUsedTotal;
     var creditoNoMomento = currentCredit();
@@ -985,7 +1013,16 @@ function contemplate(){
     var mesesRestantes = Math.max(1, TOTAL - monthsElapsed);
     parcelaPctPos = pctRestante / mesesRestantes;
   } else {
-    parcelaPctPos = PARCELA_PCT_CHEIA;
+    var deficitAcumulado = 0;
+    for (var mm = 0; mm < monthsElapsed; mm++){
+      deficitAcumulado += creditoAt(mm) * (PARCELA_PCT_CHEIA - PARCELA_PCT);
+    }
+    var mesesRestantesSorteio = Math.max(1, TOTAL - monthsElapsed);
+    var creditoNaContemplacaoSorteio = creditoAt(monthsElapsed);
+    var pctTopUp = creditoNaContemplacaoSorteio > 0
+      ? (deficitAcumulado / mesesRestantesSorteio / creditoNaContemplacaoSorteio)
+      : 0;
+    parcelaPctPos = PARCELA_PCT_CHEIA + pctTopUp;
   }
   parcelaPosContempValue = currentCredit() * parcelaPctPos;
   updateContemplationUI();
@@ -1365,6 +1402,23 @@ function totalPaidValue(){
   return total;
 }
 
+function totalToPayValue(){
+  // espelha totalPaidValue() acima, mas soma as parcelas AINDA NÃO pagas —
+  // do mês corrente (monthsElapsed) até o fim do prazo (TOTAL), usando o
+  // mesmo crédito projetado mês a mês (creditoAt) e o percentual vigente em
+  // cada mês. É uma projeção (já embute os reajustes futuros do índice até
+  // o fim do plano) — por isso pago+a_pagar pode passar de 100% do crédito
+  // original, igual aos extratos reais (ver itens 13.1/13.2 do doc de
+  // regras: "A pagar" lá também passa de 100% pelo mesmo motivo).
+  var total = 0;
+  for (var m = monthsElapsed; m < TOTAL; m++){
+    var credAtM = creditoAt(m);
+    var pct = (contemplated && m >= contemplationMonthsElapsed) ? (parcelaPctPos != null ? parcelaPctPos : PARCELA_PCT_CHEIA) : PARCELA_PCT;
+    total += credAtM * pct;
+  }
+  return total;
+}
+
 function updateKpis(){
   // a cada ano completo de parcelas pagas, o crédito e a parcela são reajustados
   // — pelo INCC até a contemplação, e por 90% da Selic a partir dela (ver
@@ -1386,14 +1440,6 @@ function updateKpis(){
   var parcelaPreBase = contemplated ? creditoAt(contemplationMonthsElapsed) : nominalCredit;
   var parcelaReduzida = parcelaPreBase * PARCELA_PCT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
-  var creditIndexHintEl = document.getElementById('kpiCreditIndexHint');
-  if (contemplated){
-    creditIndexHintEl.style.display = '';
-    creditIndexHintEl.textContent = 'Pós-contemplação: reajuste passa a ser 90% da Selic = ' +
-      POS_CONTEMP_INDEX_PCT.toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3}) + '% a.a.';
-  } else {
-    creditIndexHintEl.style.display = 'none';
-  }
   document.getElementById('kpiParcelaReduzida').textContent = 'parcela pré contemplação: ' + formatBRL(parcelaReduzida);
   // só mostra um valor real nessa linha depois que a contemplação de fato
   // acontece — placeholder genérico ("—") antes disso. Bug corrigido em
@@ -1405,6 +1451,7 @@ function updateKpis(){
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
+  document.getElementById('kpiTotalToPay').textContent = formatBRL(totalToPayValue());
   if (!contemplated){
     updateFixoPreview();
     updateLivrePreview();
