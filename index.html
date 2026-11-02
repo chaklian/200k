@@ -177,12 +177,12 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-donut-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0}
 .lance-donut-col .dlabel{font-size:10px;color:var(--ink-faint);text-align:center;
   text-transform:uppercase;letter-spacing:.05em;line-height:1.3;display:flex;align-items:center;gap:4px}
-.lance-donut-wrap{position:relative;width:52px;height:52px;flex:none}
-.lance-donut-wrap svg{width:52px;height:52px;transform:rotate(-90deg);display:block}
-.lance-donut-track{fill:none;stroke:var(--grid);stroke-width:7}
-.lance-donut-progress{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .3s ease}
+.lance-donut-wrap{position:relative;width:68px;height:68px;flex:none}
+.lance-donut-wrap svg{width:68px;height:68px;transform:rotate(-90deg);display:block}
+.lance-donut-track{fill:none;stroke:var(--grid);stroke-width:8}
+.lance-donut-progress{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .3s ease}
 .lance-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+  font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
 .lance-donut-stepper{display:flex;gap:8px}
 .lance-donut-stepper button{width:22px;height:22px;border-radius:50%;border:1px solid var(--ink-faint);
   background:var(--canvas-deep);color:var(--ink);font-size:13px;cursor:pointer;line-height:1;padding:0}
@@ -372,9 +372,9 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div class="lance-donut-col">
           <div class="dlabel">% do lance</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="fixoTotalDonut" cx="26" cy="26" r="20" stroke="var(--ink)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="fixoTotalDonut" cx="34" cy="34" r="26" stroke="var(--ink)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="fixoTotalPctVal">40</span>%</div>
           </div>
@@ -382,31 +382,31 @@ button.danger{color:var(--redline);border-color:var(--redline)}
             <button type="button" disabled>&minus;</button>
             <button type="button" disabled>+</button>
           </div>
-          <div class="valor-out">Lance: <b id="fixoTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="fixoTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
         </div>
         <div class="lance-donut-col">
           <div class="dlabel"><span class="dot" style="background:var(--amber)"></span>Embutido</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="fixoEmbutidoDonut" cx="26" cy="26" r="20" stroke="var(--amber)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="fixoEmbutidoDonut" cx="34" cy="34" r="26" stroke="var(--amber)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="fixoEmbutidoVal">30</span>%</div>
           </div>
           <div class="lance-donut-stepper" id="fixoEmbutidoStepper"></div>
-          <div class="valor-out">Embutido: <b id="fixoEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="fixoEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
         </div>
         <div class="lance-donut-col">
           <div class="dlabel"><span class="dot" style="background:var(--paid)"></span>Recurso</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="fixoRecursoDonut" cx="26" cy="26" r="20" stroke="var(--paid)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="fixoRecursoDonut" cx="34" cy="34" r="26" stroke="var(--paid)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="fixoRecursoVal">10</span>%</div>
           </div>
           <div class="lance-donut-stepper" id="fixoRecursoStepper"></div>
-          <div class="valor-out">Bolso: <b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
         </div>
       </div>
       <input type="range" id="fixoTotalPct" min="0" max="40" step="1" value="40" disabled class="lance-range-hidden">
@@ -427,38 +427,38 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div class="lance-donut-col">
           <div class="dlabel">% do lance</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="livreTotalDonut" cx="26" cy="26" r="20" stroke="var(--ink)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="livreTotalDonut" cx="34" cy="34" r="26" stroke="var(--ink)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="livrePctVal">60</span>%</div>
           </div>
           <div class="lance-donut-stepper" id="livreTotalStepper"></div>
-          <div class="valor-out">Lance: <b id="livreTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="livreTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
         </div>
         <div class="lance-donut-col">
           <div class="dlabel"><span class="dot" style="background:var(--amber)"></span>Embutido</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="livreEmbutidoDonut" cx="26" cy="26" r="20" stroke="var(--amber)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="livreEmbutidoDonut" cx="34" cy="34" r="26" stroke="var(--amber)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="livreEmbutidoVal">30</span>%</div>
           </div>
           <div class="lance-donut-stepper" id="livreEmbutidoStepper"></div>
-          <div class="valor-out">Embutido: <b id="livreEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="livreEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
         </div>
         <div class="lance-donut-col">
           <div class="dlabel"><span class="dot" style="background:var(--paid)"></span>Recurso</div>
           <div class="lance-donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
-              <circle class="lance-donut-progress" id="livreRecursoDonut" cx="26" cy="26" r="20" stroke="var(--paid)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            <svg viewBox="0 0 68 68">
+              <circle class="lance-donut-track" cx="34" cy="34" r="26"/>
+              <circle class="lance-donut-progress" id="livreRecursoDonut" cx="34" cy="34" r="26" stroke="var(--paid)" stroke-dasharray="163.363" stroke-dashoffset="0"/>
             </svg>
             <div class="lance-donut-center"><span id="livreRecursoVal">30</span>%</div>
           </div>
           <div class="lance-donut-stepper" id="livreRecursoStepper"></div>
-          <div class="valor-out">Bolso: <b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
+          <div class="valor-out"><b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
         </div>
       </div>
       <input type="range" id="livrePct" min="40" max="80" step="1" value="60" class="lance-range-hidden">
@@ -1609,7 +1609,7 @@ function fmtPct(v, intOnly){
 // stepper (attachStepper) só escreve no input e dispara 'input', deixando
 // TODA a lógica de negócio (wireEmbutidoRecursoSliders, calcLance,
 // updateLanceCard) exatamente como já era.
-var LANCE_DONUT_CIRC = 125.664; // 2*pi*20 (r=20) — mesmo raio do donut do Card 2
+var LANCE_DONUT_CIRC = 163.363; // 2*pi*26 (r=26) — donuts dos cards de lance aumentados (01/11)
 var LANCE_TOTAL_INPUT_ID = {fixo:'fixoTotalPct', livre:'livrePct'};
 
 function setDonutFraction(svgId, frac){
