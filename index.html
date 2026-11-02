@@ -128,7 +128,7 @@ svg{display:block;width:100%;height:auto}
 .donut-track{fill:none;stroke:var(--grid);stroke-width:7}
 .donut-progress{fill:none;stroke:var(--ink);stroke-width:7;stroke-linecap:round;
   transition:stroke-dashoffset .5s ease}
-.donut-pct{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.donut-pct{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
 .donut-caption{font-size:11px;color:var(--ink-faint);line-height:1.5}
 
 
@@ -1486,7 +1486,7 @@ function updateKpis(){
   var paidPct = paidDenom > 0 ? (paidSoFar / paidDenom) : 0;
   var DONUT_CIRC = 125.664;
   document.getElementById('donutProgress').style.strokeDashoffset = (DONUT_CIRC * (1 - paidPct)).toFixed(3);
-  document.getElementById('kpiPagoPct').textContent = Math.round(paidPct * 100) + '%';
+  document.getElementById('kpiPagoPct').textContent = (paidPct * 100).toFixed(2).replace('.', ',') + '%';
   if (!contemplated){
     updateFixoPreview();
     updateLivrePreview();
