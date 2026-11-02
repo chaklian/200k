@@ -123,10 +123,10 @@ svg{display:block;width:100%;height:auto}
    stroke-dashoffset), girados -90deg pra começar no topo. Tamanho pensado
    pra caber ao lado do número grande da metade esquerda sem desequilibrar
    a altura do card. */
-.donut-wrap{display:flex;align-items:center;gap:10px}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:100%}
 .donut-wrap svg{flex:none;width:52px;height:52px;transform:rotate(-90deg)}
 .donut-track{fill:none;stroke:var(--grid);stroke-width:7}
-.donut-progress{fill:none;stroke:var(--paid);stroke-width:7;stroke-linecap:round;
+.donut-progress{fill:none;stroke:var(--ink);stroke-width:7;stroke-linecap:round;
   transition:stroke-dashoffset .5s ease}
 .donut-pct{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
 .donut-caption{font-size:11px;color:var(--ink-faint);line-height:1.5}
@@ -207,7 +207,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
     <!-- CARD 2: Total pago + % do total (donut) -->
     <div class="kcard" id="totalPagoCard">
-      <h3>Pago</h3>
+      <h3>Valor a pagar</h3>
       <div class="split-kpi">
         <div class="split-kpi-half">
           <div class="big" id="kpiTotalPaid">R$ 0,00</div>
@@ -390,7 +390,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <p class="lance-result-line">Novo valor da carta: <b id="livreCartaLiquidaOut">R$ 0,00</b></p>
       <div class="lance-row">
         <button id="livreBtn">Aplicar Lance Livre</button>
-        <button id="resetBtn" class="danger">Zerar Tudo</button>
       </div>
       <div class="lance-feedback" id="livreFeedback"></div>
     </div>
@@ -1823,11 +1822,6 @@ function resetSimulation(){
   updateLanceUnlockUI();
   updatePayBtn();
 }
-document.getElementById('resetBtn').addEventListener('click', function(){
-  stopFireworks(); // corta de imediato, não espera a animação de afundar terminar
-  clearFinishWalk();
-  collapseIntoSea(resetSimulation);
-});
 document.getElementById('restartBtn').addEventListener('click', function(){
   stopFireworks();
   clearFinishWalk();
