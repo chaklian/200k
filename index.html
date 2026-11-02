@@ -104,9 +104,16 @@ svg{display:block;width:100%;height:auto}
    flutuante sobre o SVG da ponte pra dentro do card "Sorteio", a pedido do
    usuário. Deixa de ser position:absolute/cqw (não está mais dentro do
    .canvas-wrap com container query) e passa a usar tamanhos normais, iguais
-   ao resto do texto do card. */
-.contemplados-painel{margin-top:14px}
-.contemplados-painel .linha{font-size:12px;color:var(--ink-dim);line-height:1.6}
+   ao resto do texto do card. 02/11: o card virou "Cotas contempladas" (era
+   "Sorteio") e passa a ter 3 blocos verticais fixos — Sorteio (1 cota),
+   Lance Fixo (1 cota) e Lance Livre (até 3 cotas) — em vez das 5 linhas
+   "Papel: nº cota" de antes. */
+.contemplados-grid{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+.contemplados-sec{padding-top:12px;border-top:1px solid var(--grid)}
+.contemplados-sec:first-child{padding-top:0;border-top:none}
+.contemplados-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em}
+.contemplados-valores{font-size:16px;color:var(--ink);font-weight:600;margin-top:5px;
+  font-variant-numeric:tabular-nums}
 
 /* CARD 2 (31/10): "Total pago" virou "Pago / A pagar" — duas metades lado a
    lado, separadas por uma linha vertical (border-left na metade direita),
@@ -376,16 +383,22 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   </div>
 
   <div class="kanban">
-    <!-- CARD 6: Sorteio -->
+    <!-- CARD 6: Cotas contempladas -->
     <div class="kcard" id="sorteioCard">
-      <h3>Sorteio</h3>
-      <p class="hint" style="margin-top:0">Vale para todo o grupo adimplente, sem precisar dar lance. Sorteio realizado todo mês pela Loteria Federal.</p>
-      <div class="contemplados-painel" id="contempladosOverlay">
-        <div class="linha" id="contLinha0">—</div>
-        <div class="linha" id="contLinha1">—</div>
-        <div class="linha" id="contLinha2">—</div>
-        <div class="linha" id="contLinha3">—</div>
-        <div class="linha" id="contLinha4">—</div>
+      <h3>Cotas contempladas</h3>
+      <div class="contemplados-grid" id="contempladosOverlay">
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Sorteio</div>
+          <div class="contemplados-valores" id="contSorteio">—</div>
+        </div>
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Lance Fixo</div>
+          <div class="contemplados-valores" id="contFixo">—</div>
+        </div>
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Lance Livre</div>
+          <div class="contemplados-valores" id="contLivre">—</div>
+        </div>
       </div>
     </div>
 
@@ -860,23 +873,23 @@ function sorteioCotaLabel(n){
   return String(n).padStart(3, '0');
 }
 
-// painel "cotas contempladas" no card da ponte (29/10): mostra a cota da
-// simulação e, logo abaixo, a quais das 5 contemplações do mês (1 sorteio +
-// 1 fixo + 3 livre) cada número sorteado corresponde — posições fixas no
-// array `drawn` (sempre a ordem em que saem do baralho), não um sorteio de
-// papel separado: é só rótulo pra deixar claro de onde cada número "veio".
-var SORTEIO_ROLES = ['Sorteio', 'lance fixo', 'lance livre', 'lance livre', 'lance livre'];
+// painel "cotas contempladas" no card da ponte (29/10): mostra a quais das
+// 5 contemplações do mês (1 sorteio + 1 fixo + 3 livre) cada número
+// sorteado corresponde — posições fixas no array `drawn` (sempre a ordem
+// em que saem do baralho), não um sorteio de papel separado. 02/11: em vez
+// de 5 linhas "papel: nº", os números vão pros 3 blocos fixos do HTML
+// (Sorteio = drawn[0], Lance Fixo = drawn[1], Lance Livre = drawn[2..4]).
 function updateContempladosPainel(drawn){
   // 31/10: "Sua cota" não aparece mais aqui — já foi mostrada lá em cima no
   // card Status (ver updateContemplationUI), sem duplicar a mesma informação.
-  for (var i = 0; i < 5; i++){
-    var line = document.getElementById('contLinha' + i);
-    if (!line) continue;
-    if (drawn && drawn[i] != null){
-      line.textContent = SORTEIO_ROLES[i] + ': ' + sorteioCotaLabel(drawn[i]);
-    } else {
-      line.textContent = '—';
-    }
+  var sorteioEl = document.getElementById('contSorteio');
+  var fixoEl = document.getElementById('contFixo');
+  var livreEl = document.getElementById('contLivre');
+  if (sorteioEl) sorteioEl.textContent = (drawn && drawn[0] != null) ? sorteioCotaLabel(drawn[0]) : '—';
+  if (fixoEl) fixoEl.textContent = (drawn && drawn[1] != null) ? sorteioCotaLabel(drawn[1]) : '—';
+  if (livreEl){
+    var vals = drawn ? [drawn[2], drawn[3], drawn[4]].filter(function(v){ return v != null; }).map(sorteioCotaLabel) : [];
+    livreEl.textContent = vals.length ? vals.join(', ') : '—';
   }
 }
 // texto exibido no card Status — a pedido do usuário (29/10), a chance
