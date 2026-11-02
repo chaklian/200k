@@ -195,12 +195,27 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-result b{color:var(--ink);font-variant-numeric:tabular-nums}
 .lance-result-line{margin-top:14px;font-size:14px;color:var(--ink-dim)}
 .lance-result-line b{color:var(--amber);font-variant-numeric:tabular-nums}
-.lance-result-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
-.lance-result-row .lance-result-line{margin-top:0}
+/* 01/11, a pedido do usuário: texto "Novo valor da carta..." e a caixa de
+   feedback ("Lance vencedor!...") saem da tela. O <p> continua no DOM (só
+   oculto) porque o JS escreve nele sem checar null (ver updateLanceCard);
+   a div de feedback foi removida direto do HTML, já que showLanceFeedback
+   e o reset já tratam elemento ausente com segurança (if (!el) return). */
+.lance-value-hidden{display:none}
 .lance-feedback{font-size:12px;margin-top:10px;padding:8px 10px;border-radius:4px;display:none;line-height:1.5}
 .lance-feedback.show{display:block}
 .lance-feedback.win{background:#143a19;border:1px solid var(--paid);color:var(--paid)}
 .lance-feedback.lose{background:#2a2410;border:1px solid var(--ink-faint);color:var(--ink-dim)}
+
+/* botão "Dar Lance" dos cards Lance Fixo/Livre (01/11): substitui o antigo
+   "Aplicar" + texto ao lado. Ocupa toda a largura do card e fica encostado
+   na borda de baixo — como o .kcard é flex-column, margin-top:auto empurra
+   o botão pro fim do card (não importa a altura do conteúdo acima); as
+   margens negativas laterais/inferior cancelam o padding:16px do .kcard
+   nesse lado, fazendo o botão esticar até as bordas reais do card; o
+   border-radius é zerado em cima (onde encosta no conteúdo) e mantido
+   embaixo (acompanhando o arredondamento do próprio card). */
+.lance-apply-btn{margin:auto -16px -16px;width:calc(100% + 32px);
+  border-radius:0 0 8px 8px;padding:14px 12px;text-align:center}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -415,11 +430,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" class="lance-range-hidden">
       <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" class="lance-range-hidden">
 
-      <div class="lance-result-row">
-        <p class="lance-result-line">Novo valor da carta: <b id="fixoCartaLiquidaOut">R$ 0,00</b></p>
-        <button id="fixoBtn">Aplicar</button>
-      </div>
-      <div class="lance-feedback" id="fixoFeedback"></div>
+      <p class="lance-result-line lance-value-hidden">Novo valor da carta: <b id="fixoCartaLiquidaOut">R$ 0,00</b></p>
+      <button id="fixoBtn" class="lance-apply-btn">Dar Lance</button>
     </div>
 
     <!-- CARD 8: Lance Livre -->
@@ -467,11 +479,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <input type="range" id="livreEmbutidoPct" min="0" max="30" step="1" value="30" class="lance-range-hidden">
       <input type="range" id="livreRecursoPct" min="10" max="80" step="1" value="30" class="lance-range-hidden">
 
-      <div class="lance-result-row">
-        <p class="lance-result-line">Novo valor da carta: <b id="livreCartaLiquidaOut">R$ 0,00</b></p>
-        <button id="livreBtn">Aplicar</button>
-      </div>
-      <div class="lance-feedback" id="livreFeedback"></div>
+      <p class="lance-result-line lance-value-hidden">Novo valor da carta: <b id="livreCartaLiquidaOut">R$ 0,00</b></p>
+      <button id="livreBtn" class="lance-apply-btn">Dar Lance</button>
     </div>
   </div>
 
