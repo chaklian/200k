@@ -18,14 +18,14 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
-  padding-left:max(16px, env(safe-area-inset-left,0px));
-  padding-right:max(16px, env(safe-area-inset-right,0px));}
-.wrap{max-width:none;margin:0 auto;padding-block:32px 60px}
+  padding-left:max(20px, env(safe-area-inset-left,0px));
+  padding-right:max(20px, env(safe-area-inset-right,0px));}
+.wrap{max-width:none;margin:0 auto;padding-block:20px 60px}
 .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
 h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 .lede{color:var(--ink-dim);font-size:12px;line-height:1.6;max-width:58ch;margin-top:10px}
 
-.kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;align-items:stretch}
+.kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:20px;align-items:stretch}
 .kcard{background:var(--canvas);border:1px solid var(--grid);border-radius:8px;padding:16px;
   display:flex;flex-direction:column;min-height:190px}
 .kcard .step{font-size:12px;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
@@ -40,12 +40,12 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 @media (max-width:1000px){.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.kanban{grid-template-columns:1fr}}
 
-.kanban-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px;align-items:stretch}
+.kanban-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:20px;align-items:stretch}
 .kanban-4 .kcard{min-height:120px}
 @media (max-width:1000px){.kanban-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.kanban-4{grid-template-columns:1fr}}
 
-.canvas-wrap{margin-top:22px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
+.canvas-wrap{margin-top:20px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
   padding:4px;overflow:hidden;container-type:inline-size;container-name:bridge}
 svg{display:block;width:100%;height:auto}
 
@@ -215,7 +215,7 @@ button:hover{border-color:var(--concrete-ink)}
 button.danger{color:var(--redline);border-color:var(--redline)}
 
 .foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--grid);
-  font-size:12px;color:var(--ink-faint);line-height:1.7}
+  font-size:12px;color:var(--ink-faint);line-height:1.7;text-align:center}
 .span-g{cursor:pointer}
 </style>
 
