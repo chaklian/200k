@@ -83,6 +83,12 @@ svg{display:block;width:100%;height:auto}
 .pay-overlay #restartBtn,.pay-overlay #payBtn{font-size:min(2.24cqw,32px)}
 .pay-overlay button:hover{opacity:.7;background:none}
 .pay-overlay button:disabled{opacity:.4}
+/* 02/11: o botão "Dar Lance" do meio do overlay deu lugar à cota do
+   investidor (texto puro, não clicável) — mesma info que já existe no
+   card Status, só que também visível direto na ponte. Reaproveita o
+   mesmo tamanho/peso de fonte do texto "Dar Lance" que ocupava esse
+   lugar antes. */
+.ponte-cota-label{font-size:min(1.68cqw,24px);font-weight:700;color:var(--ink);white-space:nowrap}
 
 /* seta ">>>" piscando progressiva (31/10): cada ">" é um <span> próprio
    (ver updatePayBtn no JS) com a MESMA animação de opacidade, só que
@@ -235,6 +241,11 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
   border-radius:0 0 8px 8px;padding:14px 12px;text-align:center;
   background:var(--canvas-deep);color:var(--ink-dim);border:1px solid var(--grid)}
 .lance-apply-btn:hover{border-color:var(--ink-faint);background:var(--canvas-deep)}
+/* 02/11: estado "Contemplado" do botão do card Cotas contempladas — mesmo
+   verde de destaque já usado em .lance-feedback.win, aplicado via JS
+   (updateContemplationUI) assim que contemplated vira true. */
+.lance-apply-btn.contemplado{background:#143a19;color:var(--paid);border-color:var(--paid)}
+.lance-apply-btn.contemplado:hover{border-color:var(--paid);background:#143a19}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -312,7 +323,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="ponte-titulo">Consórcio de Imóvel</div>
     <div class="pay-overlay" id="payOverlay">
       <button id="restartBtn" aria-label="Cancelar carta">&lt; &lt; &lt;</button>
-      <button id="lanceBtn">Dar Lance</button>
+      <div class="ponte-cota-label" id="ponteCotaLabel">Sua cota: —</div>
       <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
@@ -1203,6 +1214,24 @@ function updateContemplationUI(){
   livreBtn.disabled = contemplated;
   fixoBtn.style.opacity = contemplated ? '0.5' : '1';
   livreBtn.style.opacity = contemplated ? '0.5' : '1';
+
+  // 02/11: cota do investidor exibida direto no card da ponte (onde antes
+  // ficava o botão "Dar Lance") — mesmo número de kpiStatusHint, só que
+  // sempre visível, contemplado ou não.
+  var ponteCotaEl = document.getElementById('ponteCotaLabel');
+  if (ponteCotaEl){
+    ponteCotaEl.textContent = 'Sua cota: ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
+  }
+
+  // 02/11: botão "Dar Lance" do card "Cotas contempladas" (ainda sem
+  // função própria) passa a mostrar o status de contemplação do
+  // investidor, com cor de destaque (mesmo verde de .lance-feedback.win)
+  // assim que ele é contemplado, por sorteio ou por lance.
+  var cotasBtn = document.getElementById('cotasBtn');
+  if (cotasBtn){
+    cotasBtn.textContent = contemplated ? 'Contemplado' : 'Não contemplado';
+    cotasBtn.classList.toggle('contemplado', contemplated);
+  }
 }
 
 var deckG = document.getElementById('deck');
@@ -1981,23 +2010,26 @@ document.getElementById('livreBtn').addEventListener('click', function(){
 // a próxima parcela real ser paga.
 var lanceUnlocked = false;
 var lanceUsedThisRound = false;
+// 02/11: o botão "Dar Lance" saiu do card da ponte (virou o texto "Sua
+// cota: ..."), então #lanceBtn não existe mais no HTML — lanceBtn fica
+// null e as duas funções abaixo viram no-op com segurança. lanceUnlocked/
+// lanceUsedThisRound continuam existindo só porque lanceUsedThisRound
+// ainda limita a 1 lance por parcela paga (ver fixoBtn/livreBtn acima).
 var lanceBtn = document.getElementById('lanceBtn');
 function updateLanceUnlockUI(){
-  // 01/11, a pedido do usuário: cards de lance deixam de ficar travados
-  // (opacos/sem clique) à espera do botão "Dar Lance" — ficam sempre
-  // visíveis e clicáveis desde o início. O botão "Dar Lance" continua
-  // existindo e com seu próprio estado (ver btnOff abaixo), só não
-  // controla mais a aparência/clicabilidade dos dois cards.
+  if (!lanceBtn) return;
   var btnOff = contemplated || lanceUnlocked || lanceUsedThisRound;
   lanceBtn.disabled = btnOff;
   lanceBtn.style.opacity = btnOff ? '0.5' : '1';
   lanceBtn.style.cursor = btnOff ? 'default' : 'pointer';
 }
-lanceBtn.addEventListener('click', function(){
-  if (contemplated || lanceUnlocked || lanceUsedThisRound) return;
-  lanceUnlocked = true;
-  updateLanceUnlockUI();
-});
+if (lanceBtn){
+  lanceBtn.addEventListener('click', function(){
+    if (contemplated || lanceUnlocked || lanceUsedThisRound) return;
+    lanceUnlocked = true;
+    updateLanceUnlockUI();
+  });
+}
 
 function resetSimulation(){
   embutidoUsedTotal = 0;
