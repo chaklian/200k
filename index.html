@@ -117,6 +117,20 @@ svg{display:block;width:100%;height:auto}
 .split-kpi-half + .split-kpi-half{padding-left:14px;margin-left:14px;border-left:1px solid var(--grid)}
 .split-kpi-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 
+/* donut "% pago" do Card 2 (01/11) — substitui o valor "A pagar" em R$ por
+   um gráfico de rosquinha com o percentual já pago no centro. Dois
+   <circle> sobrepostos (trilha cinza fixa + progresso verde animado via
+   stroke-dashoffset), girados -90deg pra começar no topo. Tamanho pensado
+   pra caber ao lado do número grande da metade esquerda sem desequilibrar
+   a altura do card. */
+.donut-wrap{display:flex;align-items:center;gap:10px}
+.donut-wrap svg{flex:none;width:52px;height:52px;transform:rotate(-90deg)}
+.donut-track{fill:none;stroke:var(--grid);stroke-width:7}
+.donut-progress{fill:none;stroke:var(--paid);stroke-width:7;stroke-linecap:round;
+  transition:stroke-dashoffset .5s ease}
+.donut-pct{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.donut-caption{font-size:11px;color:var(--ink-faint);line-height:1.5}
+
 
 /* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
    prolongado como scroll/seleção de texto/menu de contexto no celular */
@@ -191,15 +205,25 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="sub">Taxa Adm = 19% / Fundo de Reserva = 2%</div>
     </div>
 
-    <!-- CARD 2: Total pago / A pagar -->
+    <!-- CARD 2: Total pago + % do total (donut) -->
     <div class="kcard" id="totalPagoCard">
-      <h3>Pago / A pagar</h3>
+      <h3>Pago</h3>
       <div class="split-kpi">
         <div class="split-kpi-half">
           <div class="big" id="kpiTotalPaid">R$ 0,00</div>
         </div>
         <div class="split-kpi-half">
-          <div class="big" id="kpiTotalToPay">R$ 0,00</div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="donut-track" cx="26" cy="26" r="20"/>
+              <circle class="donut-progress" id="donutProgress" cx="26" cy="26" r="20"
+                stroke-dasharray="125.664" stroke-dashoffset="125.664"/>
+            </svg>
+            <div>
+              <div class="donut-pct" id="kpiPagoPct">0%</div>
+              <div class="donut-caption">do total</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1451,7 +1475,19 @@ function updateKpis(){
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
-  document.getElementById('kpiTotalToPay').textContent = formatBRL(totalToPayValue());
+  // donut "% pago" (01/11): paidSoFar / (paidSoFar + aindaAPagar) — mesma
+  // base de valores que antes alimentava os dois números lado a lado
+  // (Pago / A pagar), só que agora como fração visual em vez de um 2º
+  // valor em R$. DONUT_CIRC é a circunferência do círculo (r=20) do SVG
+  // acima: 2*pi*20 ≈ 125.664 — dashoffset vai de "cheio" (0% pago) a 0
+  // (100% pago).
+  var paidSoFar = totalPaidValue() + recursoUsedTotal;
+  var aindaAPagar = totalToPayValue();
+  var paidDenom = paidSoFar + aindaAPagar;
+  var paidPct = paidDenom > 0 ? (paidSoFar / paidDenom) : 0;
+  var DONUT_CIRC = 125.664;
+  document.getElementById('donutProgress').style.strokeDashoffset = (DONUT_CIRC * (1 - paidPct)).toFixed(3);
+  document.getElementById('kpiPagoPct').textContent = Math.round(paidPct * 100) + '%';
   if (!contemplated){
     updateFixoPreview();
     updateLivrePreview();
