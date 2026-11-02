@@ -105,15 +105,20 @@ svg{display:block;width:100%;height:auto}
    usuário. Deixa de ser position:absolute/cqw (não está mais dentro do
    .canvas-wrap com container query) e passa a usar tamanhos normais, iguais
    ao resto do texto do card. 02/11: o card virou "Cotas contempladas" (era
-   "Sorteio") e passa a ter 3 blocos verticais fixos — Sorteio (1 cota),
-   Lance Fixo (1 cota) e Lance Livre (até 3 cotas) — em vez das 5 linhas
-   "Papel: nº cota" de antes. */
-.contemplados-grid{display:flex;flex-direction:column;gap:14px;margin-top:4px}
-.contemplados-sec{padding-top:12px;border-top:1px solid var(--grid)}
-.contemplados-sec:first-child{padding-top:0;border-top:none}
+   "Sorteio") e os 3 blocos — Sorteio (1 cota), Lance Fixo (1 cota) e Lance
+   Livre (até 3 cotas) — passam de empilhados (coluna) pra lado a lado
+   (linha), com uma borda vertical separando cada um, no mesmo espírito dos
+   3 donuts dos cards de lance ao lado. Ganha também um botão "Dar Lance"
+   igual ao dos outros dois cards (mesma classe .lance-apply-btn), só que
+   ainda sem handler de clique — reservado pra uma função futura. */
+.contemplados-grid{display:flex;flex-direction:row;margin-top:4px}
+.contemplados-sec{flex:1 1 0;min-width:0;padding:0 10px;text-align:center;
+  border-left:1px solid var(--grid)}
+.contemplados-sec:first-child{padding-left:0;border-left:none}
+.contemplados-sec:last-child{padding-right:0}
 .contemplados-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em}
-.contemplados-valores{font-size:16px;color:var(--ink);font-weight:600;margin-top:5px;
-  font-variant-numeric:tabular-nums}
+.contemplados-valores{font-size:14px;color:var(--ink);font-weight:600;margin-top:6px;
+  line-height:1.4;font-variant-numeric:tabular-nums}
 
 /* CARD 2 (31/10): "Total pago" virou "Pago / A pagar" — duas metades lado a
    lado, separadas por uma linha vertical (border-left na metade direita),
@@ -400,6 +405,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
           <div class="contemplados-valores" id="contLivre">—</div>
         </div>
       </div>
+      <div class="lance-spacer"></div>
+      <button id="cotasBtn" class="lance-apply-btn">Dar Lance</button>
     </div>
 
     <!-- CARD 7: Lance Fixo -->
