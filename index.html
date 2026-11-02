@@ -1718,13 +1718,15 @@ function updateLivrePreview(){
 function showLanceFeedback(prefix, won){
   var el = document.getElementById(prefix + 'Feedback');
   if (!el) return;
-  el.classList.add('show');
   if (won){
+    el.classList.add('show');
     el.classList.remove('lose'); el.classList.add('win');
     el.innerHTML = '🎉 <b>Lance vencedor!</b> Você foi sorteado entre o grupo. Contemplado.';
   } else {
-    el.classList.remove('win'); el.classList.add('lose');
-    el.innerHTML = 'Não foi sorteado desta vez — seu dinheiro não foi usado. Continue pagando as parcelas e tente de novo no próximo mês.';
+    // 01/11: a pedido do usuário, lance perdido deixou de mostrar mensagem
+    // ("Não foi sorteado desta vez...") — só o vencedor segue aparecendo.
+    el.classList.remove('show', 'win', 'lose');
+    el.innerHTML = '';
   }
 }
 
