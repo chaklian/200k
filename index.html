@@ -207,7 +207,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
     <!-- CARD 2: Total pago + % do total (donut) -->
     <div class="kcard" id="totalPagoCard">
-      <h3>Valor a pagar</h3>
+      <h3>Valor pago</h3>
       <div class="split-kpi">
         <div class="split-kpi-half">
           <div class="big" id="kpiTotalPaid">R$ 0,00</div>
@@ -340,8 +340,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 7: Lance Fixo -->
     <div class="kcard locked" id="fixoCard">
       <h3>Lance Fixo</h3>
-      <p class="hint" style="margin-top:0">Todo o grupo oferece o mesmo percentual — quem ganha é <b>sorteado</b>. Travado pela assembleia, não editável:</p>
-
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="fixoTotalPctVal">40</span>%</b></div>
         <input type="range" id="fixoTotalPct" min="0" max="40" step="1" value="40" disabled>
@@ -368,8 +366,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 8: Lance Livre -->
     <div class="kcard locked" id="livreCard">
       <h3>Lance Livre</h3>
-      <p class="hint" style="margin-top:0">Quanto maior, maior a chance de ser contemplado — mas não é garantido. Faixa de 40% a 80% (não é um limite oficial do regulamento, é a faixa que consideramos ideal), com 60% como sugestão inicial — aproximadamente a média da maioria dos grupos hoje:</p>
-
       <div class="lance-slider-block">
         <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60</span>%</b></div>
         <input type="range" id="livrePct" min="40" max="80" step="1" value="60">
