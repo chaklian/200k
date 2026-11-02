@@ -128,28 +128,17 @@ svg{display:block;width:100%;height:auto}
 .contemplados-chance{font-size:11px;color:var(--ink-faint);margin-top:4px;
   font-variant-numeric:tabular-nums}
 
-/* CARD 2 (31/10): "Total pago" virou "Pago / A pagar" — duas metades lado a
-   lado, separadas por uma linha vertical (border-left na metade direita),
-   cada uma com label pequeno + valor grande. Reaproveita .big/.sub de
-   .kcard pros valores — só o layout em 2 colunas é novo. */
-.split-kpi{display:flex;flex:1}
-.split-kpi-half{flex:1 1 0;min-width:0}
-.split-kpi-half + .split-kpi-half{padding-left:14px;margin-left:14px;border-left:1px solid var(--grid)}
-.split-kpi-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-
-/* donut "% pago" do Card 2 (01/11) — substitui o valor "A pagar" em R$ por
-   um gráfico de rosquinha com o percentual já pago no centro. Dois
-   <circle> sobrepostos (trilha cinza fixa + progresso verde animado via
-   stroke-dashoffset), girados -90deg pra começar no topo. Tamanho pensado
-   pra caber ao lado do número grande da metade esquerda sem desequilibrar
-   a altura do card. */
-.donut-wrap{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:100%}
-.donut-wrap svg{flex:none;width:52px;height:52px;transform:rotate(-90deg)}
-.donut-track{fill:none;stroke:var(--grid);stroke-width:7}
-.donut-progress{fill:none;stroke:var(--ink);stroke-width:7;stroke-linecap:round;
-  transition:stroke-dashoffset .5s ease}
-.donut-pct{font-size:20px;font-weight:600;color:var(--ink-faint);font-variant-numeric:tabular-nums}
-.donut-caption{font-size:11px;color:var(--ink-faint);line-height:1.5}
+/* CARD 2 (02/11): a rosquinha "% pago" deu lugar a uma barra de progresso
+   horizontal encostada na parte de baixo do card — pedido do usuário. A
+   porcentagem, que antes ficava no centro do donut, sobe pra mesma linha
+   do valor pago (kpiTotalPaid), justificada à direita via
+   justify-content:space-between. O .lance-spacer (já usado nos cards de
+   lance) empurra a barra pro fim do card, garantindo um respiro mínimo. */
+.valor-pago-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.valor-pago-pct{font-size:18px;font-weight:600;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.progress-bar-track{width:100%;height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.progress-bar-fill{height:100%;width:0%;background:var(--ink);border-radius:4px;
+  transition:width .5s ease}
 
 
 /* segurar pra pagar repetido (ver JS) — impede que o navegador trate o toque
@@ -280,26 +269,16 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="sub">Taxa Adm = 19% / Fundo de Reserva = 2%</div>
     </div>
 
-    <!-- CARD 2: Total pago + % do total (donut) -->
+    <!-- CARD 2: Total pago + barra de progresso -->
     <div class="kcard" id="totalPagoCard">
       <h3>Valor pago</h3>
-      <div class="split-kpi">
-        <div class="split-kpi-half">
-          <div class="big" id="kpiTotalPaid">R$ 0,00</div>
-        </div>
-        <div class="split-kpi-half">
-          <div class="donut-wrap">
-            <svg viewBox="0 0 52 52">
-              <circle class="donut-track" cx="26" cy="26" r="20"/>
-              <circle class="donut-progress" id="donutProgress" cx="26" cy="26" r="20"
-                stroke-dasharray="125.664" stroke-dashoffset="125.664"/>
-            </svg>
-            <div>
-              <div class="donut-pct" id="kpiPagoPct">0%</div>
-              <div class="donut-caption">do total</div>
-            </div>
-          </div>
-        </div>
+      <div class="valor-pago-row">
+        <div class="big" id="kpiTotalPaid">R$ 0,00</div>
+        <div class="valor-pago-pct" id="kpiPagoPct">0%</div>
+      </div>
+      <div class="lance-spacer"></div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="pagoProgressFill"></div>
       </div>
     </div>
 
@@ -1656,18 +1635,14 @@ function updateKpis(){
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
-  // donut "% pago" (01/11): paidSoFar / (paidSoFar + aindaAPagar) — mesma
-  // base de valores que antes alimentava os dois números lado a lado
-  // (Pago / A pagar), só que agora como fração visual em vez de um 2º
-  // valor em R$. DONUT_CIRC é a circunferência do círculo (r=20) do SVG
-  // acima: 2*pi*20 ≈ 125.664 — dashoffset vai de "cheio" (0% pago) a 0
-  // (100% pago).
+  // barra de progresso "% pago" (02/11, era donut até 01/11): paidSoFar /
+  // (paidSoFar + aindaAPagar) — mesma base de valores de sempre, só a
+  // representação visual mudou (largura da barra em vez de dashoffset).
   var paidSoFar = totalPaidValue() + recursoUsedTotal;
   var aindaAPagar = totalToPayValue();
   var paidDenom = paidSoFar + aindaAPagar;
   var paidPct = paidDenom > 0 ? (paidSoFar / paidDenom) : 0;
-  var DONUT_CIRC = 125.664;
-  document.getElementById('donutProgress').style.strokeDashoffset = (DONUT_CIRC * (1 - paidPct)).toFixed(3);
+  document.getElementById('pagoProgressFill').style.width = (paidPct * 100).toFixed(2) + '%';
   document.getElementById('kpiPagoPct').textContent = (paidPct * 100).toFixed(2).replace('.', ',') + '%';
   if (!contemplated){
     updateFixoPreview();
