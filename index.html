@@ -292,8 +292,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="progress-bar-track">
         <div class="progress-bar-fill" id="parcelaProgressFill"></div>
       </div>
-      <div class="sub" id="kpiParcelaReduzida">parcela pré contemplação: R$ 720,00</div>
-      <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
 
     <!-- CARD 4: Status -->
@@ -1630,20 +1628,22 @@ function updateKpis(){
   var parcelaPreBase = contemplated ? creditoAt(contemplationMonthsElapsed) : nominalCredit;
   var parcelaReduzida = parcelaPreBase * PARCELA_PCT;
   document.getElementById('kpiCredit').textContent = formatBRL(liquidCredit);
-  document.getElementById('kpiParcelaReduzida').textContent = 'parcela pré contemplação: ' + formatBRL(parcelaReduzida);
-  // só mostra um valor real nessa linha depois que a contemplação de fato
-  // acontece — placeholder genérico ("—") antes disso. Bug corrigido em
-  // 29/10: o valor agora é RECALCULADO aqui a cada atualização (não lido de
-  // um valor travado no instante da contemplação) — assim ele acompanha o
-  // INCC continuando a reajustar o índice até o fim do prazo, em vez de
-  // ficar parado pra sempre a partir do mês em que a carta foi contemplada.
+  // 02/11: as 2 linhas de texto "parcela pré/pós contemplação" saíram da
+  // tela (a pedido do usuário) — o card passou a mostrar só o valor da
+  // parcela "atual" em destaque, direto no big number, sem a explicação
+  // textual de qual fase é cada valor. O cálculo em si (pré vs pós) não
+  // muda, só deixou de ter 2 linhas próprias no DOM.
+  // só existe um valor real de "pós" depois que a contemplação de fato
+  // acontece. Bug corrigido em 29/10: o valor agora é RECALCULADO aqui a
+  // cada atualização (não lido de um valor travado no instante da
+  // contemplação) — assim ele acompanha o INCC continuando a reajustar o
+  // índice até o fim do prazo, em vez de ficar parado pra sempre a partir
+  // do mês em que a carta foi contemplada.
   parcelaPosContempValue = contemplated ? (currentCredit() * (parcelaPctPos != null ? parcelaPctPos : PARCELA_PCT_CHEIA)) : null;
-  document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
-    (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
   // valor da parcela "atual" (big number do card 3, no lugar do contador de
   // parcelas, que foi pro canto direito) — pré contemplação, enquanto não
-  // contemplado; pós, a partir da contemplação (mesma lógica das 2 linhas
-  // "sub" abaixo, só que resumida num único número em destaque).
+  // contemplado; pós, a partir da contemplação. Único indicador textual
+  // dessa transição agora é esse próprio número mudando de valor.
   document.getElementById('kpiParcelaAtual').textContent =
     formatBRL(contemplated ? parcelaPosContempValue : parcelaReduzida);
   // barra de progresso de parcelas pagas (02/11): paidMonths / TOTAL, mesmo
