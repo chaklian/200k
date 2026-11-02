@@ -164,6 +164,32 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-slider-block + .lance-slider-block{margin-top:16px}
 .lance-slider-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink);margin-bottom:5px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+/* donuts de Lance Fixo/Livre (01/11) — substituem as 3 réguas por donuts
+   compactos com stepper +/- embaixo (testado antes como mockup no chat,
+   opção B). A lógica de negócio (wireEmbutidoRecursoSliders, calcLance,
+   updateLanceCard) continua INTOCADA: os <input type=range> originais
+   seguem existindo no DOM (só ficam ocultos via .lance-range-hidden) e
+   continuam sendo a fonte da verdade — os donuts só leem value/min/max
+   deles pra desenhar, e os steppers só escrevem neles + disparam 'input',
+   deixando os listeners de sempre fazerem o resto. */
+.lance-donut-grid{display:flex;justify-content:space-between;gap:10px;margin-top:4px}
+.lance-donut-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0}
+.lance-donut-col .dlabel{font-size:10px;color:var(--ink-faint);text-align:center;
+  text-transform:uppercase;letter-spacing:.05em;line-height:1.3;display:flex;align-items:center;gap:4px}
+.lance-donut-wrap{position:relative;width:52px;height:52px;flex:none}
+.lance-donut-wrap svg{width:52px;height:52px;transform:rotate(-90deg);display:block}
+.lance-donut-track{fill:none;stroke:var(--grid);stroke-width:7}
+.lance-donut-progress{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .3s ease}
+.lance-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.lance-donut-stepper{display:flex;gap:8px}
+.lance-donut-stepper button{width:22px;height:22px;border-radius:50%;border:1px solid var(--ink-faint);
+  background:var(--canvas-deep);color:var(--ink);font-size:13px;cursor:pointer;line-height:1;padding:0}
+.lance-donut-stepper button:hover:not(:disabled){border-color:var(--ink)}
+.lance-donut-stepper button:disabled{opacity:.3;cursor:default}
+.lance-donut-col .valor-out{font-size:11px;color:var(--ink-faint);text-align:center}
+.lance-range-hidden{display:none}
 .lance-result{background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px;
   padding:10px 12px;margin-top:14px;font-size:12px;line-height:1.85;color:var(--ink-dim)}
 .lance-result b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -340,21 +366,46 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 7: Lance Fixo -->
     <div class="kcard locked" id="fixoCard">
       <h3>Lance Fixo</h3>
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="fixoTotalPctVal">40</span>%</b></div>
-        <input type="range" id="fixoTotalPct" min="0" max="40" step="1" value="40" disabled>
-        <p class="hint">Valor do lance: <b id="fixoTotalValorOut" style="color:var(--ink)">R$ 0,00</b></p>
+      <div class="lance-donut-grid">
+        <div class="lance-donut-col">
+          <div class="dlabel">% do lance</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="fixoTotalDonut" cx="26" cy="26" r="20" stroke="var(--ink)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="fixoTotalPctVal">40</span>%</div>
+          </div>
+          <div class="valor-out">Lance: <b id="fixoTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
+        </div>
+        <div class="lance-donut-col">
+          <div class="dlabel"><span class="dot" style="background:var(--amber)"></span>Embutido</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="fixoEmbutidoDonut" cx="26" cy="26" r="20" stroke="var(--amber)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="fixoEmbutidoVal">30</span>%</div>
+          </div>
+          <div class="lance-donut-stepper" id="fixoEmbutidoStepper"></div>
+          <div class="valor-out">Embutido: <b id="fixoEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
+        </div>
+        <div class="lance-donut-col">
+          <div class="dlabel"><span class="dot" style="background:var(--paid)"></span>Recurso</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="fixoRecursoDonut" cx="26" cy="26" r="20" stroke="var(--paid)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="fixoRecursoVal">10</span>%</div>
+          </div>
+          <div class="lance-donut-stepper" id="fixoRecursoStepper"></div>
+          <div class="valor-out">Bolso: <b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
+        </div>
       </div>
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="fixoEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Valor embutido: <b id="fixoEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></p>
-      </div>
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="fixoRecursoVal">10</span>%</b></div>
-        <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" style="accent-color:var(--paid)">
-        <p class="hint">Valor do seu bolso: <b id="fixoRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
-      </div>
+      <input type="range" id="fixoTotalPct" min="0" max="40" step="1" value="40" disabled class="lance-range-hidden">
+      <input type="range" id="fixoEmbutidoPct" min="0" max="30" step="1" value="30" class="lance-range-hidden">
+      <input type="range" id="fixoRecursoPct" min="10" max="40" step="1" value="10" class="lance-range-hidden">
 
       <p class="lance-result-line">Novo valor da carta: <b id="fixoCartaLiquidaOut">R$ 0,00</b></p>
       <div class="lance-row">
@@ -366,22 +417,47 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 8: Lance Livre -->
     <div class="kcard locked" id="livreCard">
       <h3>Lance Livre</h3>
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span>Percentual do lance</span><b><span id="livrePctVal">60</span>%</b></div>
-        <input type="range" id="livrePct" min="40" max="80" step="1" value="60">
-        <p class="hint">Valor do lance: <b id="livreTotalValorOut" style="color:var(--ink)">R$ 0,00</b></p>
+      <div class="lance-donut-grid">
+        <div class="lance-donut-col">
+          <div class="dlabel">% do lance</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="livreTotalDonut" cx="26" cy="26" r="20" stroke="var(--ink)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="livrePctVal">60</span>%</div>
+          </div>
+          <div class="lance-donut-stepper" id="livreTotalStepper"></div>
+          <div class="valor-out">Lance: <b id="livreTotalValorOut" style="color:var(--ink)">R$ 0,00</b></div>
+        </div>
+        <div class="lance-donut-col">
+          <div class="dlabel"><span class="dot" style="background:var(--amber)"></span>Embutido</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="livreEmbutidoDonut" cx="26" cy="26" r="20" stroke="var(--amber)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="livreEmbutidoVal">30</span>%</div>
+          </div>
+          <div class="lance-donut-stepper" id="livreEmbutidoStepper"></div>
+          <div class="valor-out">Embutido: <b id="livreEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></div>
+        </div>
+        <div class="lance-donut-col">
+          <div class="dlabel"><span class="dot" style="background:var(--paid)"></span>Recurso</div>
+          <div class="lance-donut-wrap">
+            <svg viewBox="0 0 52 52">
+              <circle class="lance-donut-track" cx="26" cy="26" r="20"/>
+              <circle class="lance-donut-progress" id="livreRecursoDonut" cx="26" cy="26" r="20" stroke="var(--paid)" stroke-dasharray="125.664" stroke-dashoffset="0"/>
+            </svg>
+            <div class="lance-donut-center"><span id="livreRecursoVal">30</span>%</div>
+          </div>
+          <div class="lance-donut-stepper" id="livreRecursoStepper"></div>
+          <div class="valor-out">Bolso: <b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></div>
+        </div>
       </div>
-
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--amber)"></span>Embutido</span><b><span id="livreEmbutidoVal">30</span>%</b></div>
-        <input type="range" id="livreEmbutidoPct" min="0" max="30" step="1" value="30" style="accent-color:var(--amber)">
-        <p class="hint">Valor embutido: <b id="livreEmbutidoValorOut" style="color:var(--amber)">R$ 0,00</b></p>
-      </div>
-      <div class="lance-slider-block">
-        <div class="lance-slider-label"><span><span class="dot" style="background:var(--paid)"></span>Recurso Próprio</span><b><span id="livreRecursoVal">30</span>%</b></div>
-        <input type="range" id="livreRecursoPct" min="10" max="80" step="1" value="30" style="accent-color:var(--paid)">
-        <p class="hint">Valor do seu bolso: <b id="livreRecursoValorOut" style="color:var(--paid)">R$ 0,00</b></p>
-      </div>
+      <input type="range" id="livrePct" min="40" max="80" step="1" value="60" class="lance-range-hidden">
+      <input type="range" id="livreEmbutidoPct" min="0" max="30" step="1" value="30" class="lance-range-hidden">
+      <input type="range" id="livreRecursoPct" min="10" max="80" step="1" value="30" class="lance-range-hidden">
 
       <p class="lance-result-line">Novo valor da carta: <b id="livreCartaLiquidaOut">R$ 0,00</b></p>
       <div class="lance-row">
@@ -1521,6 +1597,80 @@ function fmtPct(v, intOnly){
   return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// donuts de Lance Fixo/Livre (01/11) — camada puramente visual em cima dos
+// <input type=range> originais (agora ocultos, .lance-range-hidden), que
+// continuam sendo a fonte da verdade. setDonutFraction só desenha; o
+// stepper (attachStepper) só escreve no input e dispara 'input', deixando
+// TODA a lógica de negócio (wireEmbutidoRecursoSliders, calcLance,
+// updateLanceCard) exatamente como já era.
+var LANCE_DONUT_CIRC = 125.664; // 2*pi*20 (r=20) — mesmo raio do donut do Card 2
+var LANCE_TOTAL_INPUT_ID = {fixo:'fixoTotalPct', livre:'livrePct'};
+
+function setDonutFraction(svgId, frac){
+  var el = document.getElementById(svgId);
+  if (!el) return;
+  frac = Math.max(0, Math.min(1, isFinite(frac) ? frac : 0));
+  el.style.strokeDashoffset = (LANCE_DONUT_CIRC * (1 - frac)).toFixed(3);
+}
+
+function updateStepperDisabled(stepperId, input){
+  var wrap = document.getElementById(stepperId);
+  if (!wrap || !input) return;
+  var val = parseFloat(input.value) || 0;
+  var min = parseFloat(input.min) || 0;
+  var max = parseFloat(input.max) || 0;
+  var minus = wrap.querySelector('.donut-step-minus');
+  var plus = wrap.querySelector('.donut-step-plus');
+  if (minus) minus.disabled = val <= min;
+  if (plus) plus.disabled = val >= max;
+}
+
+function attachStepper(stepperId, inputId, step){
+  var wrap = document.getElementById(stepperId);
+  var input = document.getElementById(inputId);
+  if (!wrap || !input) return;
+  var minus = document.createElement('button');
+  minus.type = 'button'; minus.className = 'donut-step-minus'; minus.setAttribute('aria-label', 'Diminuir'); minus.textContent = '−';
+  var plus = document.createElement('button');
+  plus.type = 'button'; plus.className = 'donut-step-plus'; plus.setAttribute('aria-label', 'Aumentar'); plus.textContent = '+';
+  function bump(delta){
+    var val = parseFloat(input.value) || 0;
+    var min = parseFloat(input.min) || 0;
+    var max = parseFloat(input.max) || 0;
+    val = Math.max(min, Math.min(max, val + delta));
+    input.value = val;
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  minus.addEventListener('click', function(){ bump(-step); });
+  plus.addEventListener('click', function(){ bump(step); });
+  wrap.appendChild(minus);
+  wrap.appendChild(plus);
+}
+
+// chamada no fim de updateLanceCard() — redesenha os 3 donuts e os estados
+// disabled dos steppers a partir do valor/min/max ATUAIS dos inputs (que a
+// lógica de negócio já deixou corretos a essa altura).
+function refreshLanceDonuts(prefix){
+  var totalInput = document.getElementById(LANCE_TOTAL_INPUT_ID[prefix]);
+  if (totalInput){
+    var tv = parseFloat(totalInput.value) || 0, tmin = parseFloat(totalInput.min) || 0, tmax = parseFloat(totalInput.max) || 0;
+    setDonutFraction(prefix + 'TotalDonut', (tmax - tmin) > 0 ? (tv - tmin) / (tmax - tmin) : 1);
+    updateStepperDisabled(prefix + 'TotalStepper', totalInput);
+  }
+  var embInput = document.getElementById(prefix + 'EmbutidoPct');
+  if (embInput){
+    var ev = parseFloat(embInput.value) || 0, emax = parseFloat(embInput.max) || 0;
+    setDonutFraction(prefix + 'EmbutidoDonut', emax > 0 ? ev / emax : 0);
+    updateStepperDisabled(prefix + 'EmbutidoStepper', embInput);
+  }
+  var rpInput = document.getElementById(prefix + 'RecursoPct');
+  if (rpInput){
+    var rv = parseFloat(rpInput.value) || 0, rmin = parseFloat(rpInput.min) || 0, rmax = parseFloat(rpInput.max) || 0;
+    setDonutFraction(prefix + 'RecursoDonut', (rmax - rmin) > 0 ? (rv - rmin) / (rmax - rmin) : 0);
+    updateStepperDisabled(prefix + 'RecursoStepper', rpInput);
+  }
+}
+
 function updateLanceCard(prefix, totalPct, intPct){
   var embInput = document.getElementById(prefix + 'EmbutidoPct');
   // mesma correção de calcLance() acima: o teto do slider de embutido é
@@ -1540,6 +1690,8 @@ function updateLanceCard(prefix, totalPct, intPct){
   document.getElementById(prefix + 'TotalValorOut').textContent = formatBRL(r.lanceTotal);
   document.getElementById(prefix + 'EmbutidoValorOut').textContent = formatBRL(r.valorEmbutido);
   document.getElementById(prefix + 'RecursoValorOut').textContent = formatBRL(r.valorRecurso);
+
+  refreshLanceDonuts(prefix);
 
   return r;
 }
@@ -1738,12 +1890,18 @@ function wireEmbutidoRecursoSliders(prefix, getTotal, onChange){
 
 var fixoResync = wireEmbutidoRecursoSliders('fixo', function(){ return FIXO_PCT; }, updateFixoPreview);
 fixoResync();
+attachStepper('fixoEmbutidoStepper', 'fixoEmbutidoPct', 1);
+attachStepper('fixoRecursoStepper', 'fixoRecursoPct', 1);
+// fixoTotalPct não ganha stepper — travado pela assembleia em FIXO_PCT (40%), não editável.
 
 function livreTotal(){
   return Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
 }
 var livreResync = wireEmbutidoRecursoSliders('livre', livreTotal, updateLivrePreview);
 livreResync();
+attachStepper('livreTotalStepper', 'livrePct', 1);
+attachStepper('livreEmbutidoStepper', 'livreEmbutidoPct', 1);
+attachStepper('livreRecursoStepper', 'livreRecursoPct', 1);
 
 document.getElementById('livrePct').addEventListener('input', function(){
   livreResync();
