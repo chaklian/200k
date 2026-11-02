@@ -285,7 +285,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <!-- CARD 3: Parcela -->
     <div class="kcard" id="parcelaCard">
       <h3>Parcela</h3>
-      <div class="big"><span id="paidLabel">0</span>/200</div>
+      <div class="valor-pago-row">
+        <div class="big" id="kpiParcelaAtual">R$ 720,00</div>
+        <div class="valor-pago-pct"><span id="paidLabel">0</span>/200</div>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="parcelaProgressFill"></div>
+      </div>
       <div class="sub" id="kpiParcelaReduzida">parcela pré contemplação: R$ 720,00</div>
       <div class="sub" id="kpiParcelaPosContemp">parcela pós contemplação: —</div>
     </div>
@@ -1634,6 +1640,16 @@ function updateKpis(){
   parcelaPosContempValue = contemplated ? (currentCredit() * (parcelaPctPos != null ? parcelaPctPos : PARCELA_PCT_CHEIA)) : null;
   document.getElementById('kpiParcelaPosContemp').textContent = 'parcela pós contemplação: ' +
     (parcelaPosContempValue != null ? formatBRL(parcelaPosContempValue) : '—');
+  // valor da parcela "atual" (big number do card 3, no lugar do contador de
+  // parcelas, que foi pro canto direito) — pré contemplação, enquanto não
+  // contemplado; pós, a partir da contemplação (mesma lógica das 2 linhas
+  // "sub" abaixo, só que resumida num único número em destaque).
+  document.getElementById('kpiParcelaAtual').textContent =
+    formatBRL(contemplated ? parcelaPosContempValue : parcelaReduzida);
+  // barra de progresso de parcelas pagas (02/11): paidMonths / TOTAL, mesmo
+  // padrão visual da barra "% pago" do card 2.
+  var parcelaPct = TOTAL > 0 ? (paidMonths / TOTAL) : 0;
+  document.getElementById('parcelaProgressFill').style.width = (parcelaPct * 100).toFixed(2) + '%';
   document.getElementById('kpiTotalPaid').textContent = formatBRL(totalPaidValue() + recursoUsedTotal);
   // barra de progresso "% pago" (02/11, era donut até 01/11): paidSoFar /
   // (paidSoFar + aindaAPagar) — mesma base de valores de sempre, só a
