@@ -20,7 +20,7 @@
 body{margin:0;background:var(--bg);color:var(--ink);
   padding-left:max(20px, env(safe-area-inset-left,0px));
   padding-right:max(20px, env(safe-area-inset-right,0px));}
-.wrap{max-width:none;margin:0 auto;padding-block:20px 60px}
+.wrap{max-width:1440px;margin:0 auto;padding-block:20px 60px}
 .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
 h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 .lede{color:var(--ink-dim);font-size:12px;line-height:1.6;max-width:58ch;margin-top:10px}
@@ -281,7 +281,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <button id="lanceBtn">Dar Lance</button>
       <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span></button>
     </div>
-    <svg id="bridge" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
+    <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
           <path d="M24 0H0V24" fill="none" stroke="#1d4a74" stroke-width="0.5" opacity="0.5"/>
@@ -313,12 +313,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         </pattern>
       </defs>
 
-      <rect x="0" y="0" width="1200" height="460" fill="var(--canvas)"/>
-      <rect x="0" y="0" width="1200" height="460" fill="url(#grid)"/>
+      <rect x="0" y="0" width="1200" height="417" fill="var(--canvas)"/>
+      <rect x="0" y="0" width="1200" height="417" fill="url(#grid)"/>
       <!-- altura da água aumentada em 50% (31/10), pra baixo — y fica igual
            (372), só a height cresce (30 -> 45); GROUND_BOTTOM (JS, abaixo)
            acompanha pra o chão/pilares de ancoragem continuarem batendo
-           exatamente no fundo da água, sem sobrar nem faltar. -->
+           exatamente no fundo da água, sem sobrar nem faltar. viewBox
+           cortado (01/11) de 460 pra 417 = WATER_Y+WATER_H, eliminando a
+           faixa vazia que sobrava abaixo da água até o fim do card. -->
       <rect id="water" x="90" y="372" width="1020" height="45" fill="var(--water-base)" opacity="0.55"/>
       <rect x="90" y="372" width="1020" height="45" fill="url(#water)"/>
 
