@@ -125,6 +125,8 @@ svg{display:block;width:100%;height:auto}
 .contemplados-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em}
 .contemplados-valores{font-size:14px;color:var(--ink);font-weight:600;margin-top:6px;
   line-height:1.4;font-variant-numeric:tabular-nums}
+.contemplados-chance{font-size:11px;color:var(--ink-faint);margin-top:4px;
+  font-variant-numeric:tabular-nums}
 
 /* CARD 2 (31/10): "Total pago" virou "Pago / A pagar" — duas metades lado a
    lado, separadas por uma linha vertical (border-left na metade direita),
@@ -323,7 +325,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="ponte-titulo">Consórcio de Imóvel</div>
     <div class="pay-overlay" id="payOverlay">
       <button id="restartBtn" aria-label="Cancelar carta">&lt; &lt; &lt;</button>
-      <div class="ponte-cota-label" id="ponteCotaLabel">Sua cota: —</div>
+      <div class="ponte-cota-label" id="ponteCotaLabel">Cota —</div>
       <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
@@ -406,14 +408,17 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <div class="contemplados-sec">
           <div class="contemplados-label">Sorteio</div>
           <div class="contemplados-valores" id="contSorteio">—</div>
+          <div class="contemplados-chance" id="contSorteioChance">—</div>
         </div>
         <div class="contemplados-sec">
           <div class="contemplados-label">Lance Fixo</div>
           <div class="contemplados-valores" id="contFixo">—</div>
+          <div class="contemplados-chance" id="contFixoChance">—</div>
         </div>
         <div class="contemplados-sec">
           <div class="contemplados-label">Lance Livre</div>
           <div class="contemplados-valores" id="contLivre">—</div>
+          <div class="contemplados-chance" id="contLivreChance">—</div>
         </div>
       </div>
       <div class="lance-spacer"></div>
@@ -909,6 +914,30 @@ function updateContempladosPainel(drawn){
     var vals = drawn ? [drawn[2], drawn[3], drawn[4]].filter(function(v){ return v != null; }).map(sorteioCotaLabel) : [];
     livreEl.textContent = vals.length ? vals.join(', ') : '—';
   }
+  updateContempladosChances();
+}
+
+// 02/11: probabilidade de cada modalidade, exibida embaixo da(s) cota(s)
+// de cada bloco do card "Cotas contempladas". Sorteio e Lance Fixo usam a
+// MESMA conta já usada em sorteioChanceLabel()/lanceChance('fixo', ...)
+// (pool de cotas ainda no baralho, ~30% dele pro Lance Fixo) — só o texto
+// final muda ("1 de N" em vez de "1 cota de N"). Lance Livre não tem pool
+// (é escada de chance sobre o % que o investidor escolhe, ver lanceChance),
+// então mostra % mesmo, lido direto do slider oculto #livrePct. Chamada
+// sempre que o painel de cotas atualiza (pool mudou) e a cada refresh do
+// card Lance Livre (updateLanceCard), pra acompanhar o % em tempo real.
+function updateContempladosChances(){
+  var sorteioEl = document.getElementById('contSorteioChance');
+  var fixoEl = document.getElementById('contFixoChance');
+  var livreEl = document.getElementById('contLivreChance');
+  var poolN = Math.max(CONTEMPLACOES_POR_ASSEMBLEIA, sorteioDrawPool.length);
+  if (sorteioEl) sorteioEl.textContent = '1 de ' + poolN;
+  var participantes = Math.max(1, Math.round(sorteioDrawPool.length * FIXO_PARTICIPACAO_PCT));
+  if (fixoEl) fixoEl.textContent = '1 de ' + participantes;
+  if (livreEl){
+    var totalPct = Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
+    livreEl.textContent = Math.round(lanceChance('livre', totalPct)) + '% de chance';
+  }
 }
 // texto exibido no card Status — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
@@ -1220,7 +1249,7 @@ function updateContemplationUI(){
   // sempre visível, contemplado ou não.
   var ponteCotaEl = document.getElementById('ponteCotaLabel');
   if (ponteCotaEl){
-    ponteCotaEl.textContent = 'Sua cota: ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
+    ponteCotaEl.textContent = 'Cota ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
   }
 
   // 02/11: botão "Dar Lance" do card "Cotas contempladas" (ainda sem
@@ -1767,6 +1796,11 @@ function updateLanceCard(prefix, totalPct, intPct){
   document.getElementById(prefix + 'RecursoValorOut').textContent = formatBRL(r.valorRecurso);
 
   refreshLanceDonuts(prefix);
+
+  // 02/11: Lance Livre mexe na chance em tempo real (depende do % que o
+  // investidor escolhe) — atualiza o texto embaixo da cota de Lance Livre
+  // no card "Cotas contempladas" a cada ajuste do stepper.
+  if (prefix === 'livre') updateContempladosChances();
 
   return r;
 }
