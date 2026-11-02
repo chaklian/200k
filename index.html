@@ -934,10 +934,12 @@ function updateContempladosChances(){
   if (sorteioEl) sorteioEl.textContent = '1 de ' + poolN;
   var participantes = Math.max(1, Math.round(sorteioDrawPool.length * FIXO_PARTICIPACAO_PCT));
   if (fixoEl) fixoEl.textContent = '1 de ' + participantes;
-  if (livreEl){
-    var totalPct = Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
-    livreEl.textContent = Math.round(lanceChance('livre', totalPct)) + '% de chance';
-  }
+  // 02/11: a pedido do usuário, o Lance Livre deixa de mostrar a % de
+  // chance calculada (lanceChance('livre', ...) continua existindo e
+  // sendo usada pra sortear o resultado de verdade — só o texto na tela
+  // muda) e passa a mostrar só "Leilão", já que essa modalidade não é
+  // sorte pura como as outras duas (quem oferece mais tem mais chance).
+  if (livreEl) livreEl.textContent = 'Leilão';
 }
 // texto exibido no card Status — a pedido do usuário (29/10), a chance
 // passou a ser mostrada na tela (antes era regra do produto nunca mostrar
@@ -1255,10 +1257,14 @@ function updateContemplationUI(){
   // 02/11: botão "Dar Lance" do card "Cotas contempladas" (ainda sem
   // função própria) passa a mostrar o status de contemplação do
   // investidor, com cor de destaque (mesmo verde de .lance-feedback.win)
-  // assim que ele é contemplado, por sorteio ou por lance.
+  // assim que ele é contemplado, por sorteio ou por lance — e, a partir de
+  // agora, também qual foi a modalidade ("Contemplado: Sorteio" etc.),
+  // reaproveitando o mesmo MODALIDADE_LABEL já usado em kpiStatusHint.
   var cotasBtn = document.getElementById('cotasBtn');
   if (cotasBtn){
-    cotasBtn.textContent = contemplated ? 'Contemplado' : 'Não contemplado';
+    cotasBtn.textContent = contemplated
+      ? ('Contemplado: ' + (MODALIDADE_LABEL[contemplationMethod] || '—'))
+      : 'Não contemplado';
     cotasBtn.classList.toggle('contemplado', contemplated);
   }
 }
