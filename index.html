@@ -564,7 +564,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
     <!-- CARD 7: Lance Fixo -->
     <div class="kcard" id="fixoCard">
-      <h3>Lance Fixo</h3>
+      <div class="kcard-title-row">
+        <h3>Lance Fixo</h3>
+        <!-- 03/11: marco "Lance Fixo" — mesmo ícone "i" da jornada guiada,
+             agora dentro do card, abre a mesma caixa fixa (ver
+             #markerTooltipFixed/showMarkerTooltipFixed). -->
+        <span class="card-marker-icon" id="marcoLanceFixo" data-marker="lance-fixo">i</span>
+      </div>
       <div class="lance-donut-grid">
         <div class="lance-donut-col">
           <div class="dlabel">% do lance</div>
@@ -617,7 +623,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
     <!-- CARD 8: Lance Livre -->
     <div class="kcard" id="livreCard">
-      <h3>Lance Livre</h3>
+      <div class="kcard-title-row">
+        <h3>Lance Livre</h3>
+        <!-- 03/11: marco "Lance Livre" — mesmo ícone "i" da jornada guiada,
+             agora dentro do card, abre a mesma caixa fixa (ver
+             #markerTooltipFixed/showMarkerTooltipFixed). -->
+        <span class="card-marker-icon" id="marcoLanceLivre" data-marker="lance-livre">i</span>
+      </div>
       <div class="lance-donut-grid">
         <div class="lance-donut-col">
           <div class="dlabel">% do lance</div>
@@ -1814,18 +1826,6 @@ var bridgeMarkers = [
     text: 'A cada ano fechado de parcelas pagas o valor da carta e das parcelas são corrigidos monetariamente. Aqui foi utilizado o INCC (Índice Nacional de Custo da Construção).'
   },
   {
-    id: 'lance-fixo',
-    month: 24, // fim do Ano 2 / início do Ano 3
-    title: 'Lance Fixo',
-    text: 'Todos ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
-  },
-  {
-    id: 'lance-livre',
-    month: 36, // fim do Ano 3 / início do Ano 4
-    title: 'Lance Livre',
-    text: 'Percentual livre sobre o valor da carta. Vence quem oferecer o maior percentual, contemplando quantas cotas o fundo comum do grupo permitir naquela assembleia.'
-  },
-  {
     id: 'taxa-adm',
     month: 84, // fim do Ano 7 / início do Ano 8
     title: 'Taxa adm',
@@ -1847,9 +1847,9 @@ var bridgeMarkers = [
 
 // 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
 // ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
-// 3 ("Parcela") e 4 ("Cotas contempladas"), na mesma linha do título — o
-// conteúdo continua abrindo na mesma caixa fixa compartilhada dos outros
-// marcos (#markerTooltipFixed).
+// 3 ("Parcela"), 4 ("Cotas contempladas"), 7 ("Lance Fixo") e 8 ("Lance
+// Livre"), na mesma linha do título — o conteúdo continua abrindo na mesma
+// caixa fixa compartilhada dos outros marcos (#markerTooltipFixed).
 var parcelaReduzidaMarker = {
   id: 'parcela-reduzida',
   title: 'Parcela reduzida',
@@ -1859,6 +1859,16 @@ var sorteioMarker = {
   id: 'sorteio-mensal',
   title: 'Sorteio',
   text: 'Todo mês o consorciado adimplente concorre por sorteio, normalmente realizado pela Loteria Federal. É preciso ter recurso suficiente no fundo comum para liberar o crédito.'
+};
+var lanceFixoMarker = {
+  id: 'lance-fixo',
+  title: 'Lance Fixo',
+  text: 'Todos ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
+};
+var lanceLivreMarker = {
+  id: 'lance-livre',
+  title: 'Lance Livre',
+  text: 'Percentual livre sobre o valor da carta. Vence quem oferecer o maior percentual, contemplando quantas cotas o fundo comum do grupo permitir naquela assembleia.'
 };
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
@@ -1969,13 +1979,16 @@ function buildMarkers(){
   });
 }
 
-// 03/11: ícones "i" dos marcos "Parcela reduzida" (card 3) e "Sorteio"
-// (card 4) — mesmo comportamento de toggle/troca dos marcos da ponte, só
-// que a partir de um elemento HTML fixo no card, não de um ícone no SVG.
+// 03/11: ícones "i" dos marcos "Parcela reduzida" (card 3), "Sorteio"
+// (card 4), "Lance Fixo" (card 7) e "Lance Livre" (card 8) — mesmo
+// comportamento de toggle/troca dos marcos da ponte, só que a partir de um
+// elemento HTML fixo no card, não de um ícone no SVG.
 function buildCardMarkers(){
   [
     {elId: 'marcoParcelaReduzida', marker: parcelaReduzidaMarker},
-    {elId: 'marcoSorteio', marker: sorteioMarker}
+    {elId: 'marcoSorteio', marker: sorteioMarker},
+    {elId: 'marcoLanceFixo', marker: lanceFixoMarker},
+    {elId: 'marcoLanceLivre', marker: lanceLivreMarker}
   ].forEach(function(entry){
     var icon = document.getElementById(entry.elId);
     if (!icon) return;
