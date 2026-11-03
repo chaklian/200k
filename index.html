@@ -9,6 +9,7 @@
   --redline:#e2543d; --redline-fill:#3a1d16;
   --amber:#eeab3c; --amber-ink:#2a1a04;
   --gold:#e8c468;
+  --marker-orange:#ef7f2e; /* 02/11: cor dos ícones "i" da jornada guiada — trocada de âmbar pra laranja a pedido do usuário */
   --concrete:#e4ebf1; --concrete-ink:#0a2744;
   --paid:#6fbf73; --paid-ink:#173a1b;
   --future:#5b6b7a;
@@ -171,6 +172,11 @@ svg{display:block;width:100%;height:auto}
   background:var(--canvas-deep);border:1px solid var(--amber);border-radius:6px;
   padding:10px 12px;box-shadow:0 10px 26px rgba(0,0,0,.4)}
 .marker-tooltip-title{font-size:12px;font-weight:600;color:var(--amber);margin-bottom:5px;letter-spacing:.01em}
+/* marcos da jornada guiada (ícones "i" da ponte): laranja em vez de âmbar,
+   escopado só pra esses balões — o balão do PIN (contemplação) continua
+   usando as classes base acima, em âmbar */
+.marker-tooltip-journey{border-color:var(--marker-orange)}
+.marker-tooltip-title-journey{color:var(--marker-orange)}
 .marker-tooltip-text{font-size:11px;line-height:1.55;color:var(--ink-dim)}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
@@ -1727,11 +1733,11 @@ function buildMarkers(){
 
     // leve halo + círculo do ícone
     wrap.appendChild(el('circle', {cx:mx, cy:my, r:12.5, fill:'var(--canvas-deep)', opacity:'0.001'}));
-    var dot = el('circle', {cx:mx, cy:my, r:9, fill:'var(--canvas-deep)', stroke:'var(--amber)', 'stroke-width':'1.4'});
+    var dot = el('circle', {cx:mx, cy:my, r:9, fill:'var(--canvas-deep)', stroke:'var(--marker-orange)', 'stroke-width':'1.4'});
     wrap.appendChild(dot);
     var label = el('text', {x:mx, y:my + 3.6, 'text-anchor':'middle',
       'font-family':"'IBM Plex Mono',monospace", 'font-size':'11', 'font-weight':'700',
-      fill:'var(--amber)', 'pointer-events':'none'});
+      fill:'var(--marker-orange)', 'pointer-events':'none'});
     label.textContent = 'i';
     wrap.appendChild(label);
 
@@ -1757,17 +1763,17 @@ function buildMarkers(){
     var tip = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .15s ease'});
 
     tip.appendChild(el('line', {x1:anchorX, y1:boxBottomY, x2:mx, y2:my - 10,
-      stroke:'var(--amber)', 'stroke-width':'1.25', 'stroke-dasharray':'2.5 2.5'}));
-    tip.appendChild(el('circle', {cx:mx, cy:my - 10, r:1.8, fill:'var(--amber)'}));
+      stroke:'var(--marker-orange)', 'stroke-width':'1.25', 'stroke-dasharray':'2.5 2.5'}));
+    tip.appendChild(el('circle', {cx:mx, cy:my - 10, r:1.8, fill:'var(--marker-orange)'}));
 
     var fo = el('foreignObject', {x:boxX, y:boxY, width:boxW, height:boxBottomY - boxY, style:'overflow:visible'});
     var anchor = document.createElement('div');
     anchor.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
     anchor.style.cssText = 'height:100%;display:flex;flex-direction:column;justify-content:flex-end';
     var div = document.createElement('div');
-    div.className = 'marker-tooltip';
+    div.className = 'marker-tooltip marker-tooltip-journey';
     var titleEl = document.createElement('div');
-    titleEl.className = 'marker-tooltip-title';
+    titleEl.className = 'marker-tooltip-title marker-tooltip-title-journey';
     titleEl.textContent = mk.title;
     var textEl = document.createElement('div');
     textEl.className = 'marker-tooltip-text';
@@ -2322,14 +2328,24 @@ function doPay(){
 
   // mesmo sem lance nenhum, todo mês saem 5 números do baralho do sorteio —
   // então a contemplação também pode vir sem lance. Sempre roda e mostra o
-  // resultado no card "Sorteio" (que nunca trava, porque essa modalidade não
-  // depende de dar lance), ganhando ou não. Sorteio sem reposição: garante
-  // que a cota simulada é contemplada até a 200ª parcela, o mais tardar.
+  // resultado no card "Cotas contempladas" (que nunca trava, porque essa
+  // modalidade não depende de dar lance), ganhando ou não. Sorteio sem
+  // reposição: garante que a cota simulada é contemplada até a 200ª
+  // parcela, o mais tardar.
+  // 02/11: o sorteio do GRUPO continua rodando e aparecendo no card "Cotas
+  // contempladas" mesmo depois que O INVESTIDOR já foi contemplado (por
+  // sorteio ou por lance) — outras cotas do grupo continuam sendo sorteadas
+  // normalmente até o fim do prazo, já que a cota dele agora só está lá
+  // "mostrando a cor do pin", não precisa mais concorrer. Por isso o sorteio
+  // em si (`sorteioDrawPool.splice`/`updateContempladosPainel`) saiu do
+  // `if (!contemplated)` — só a lógica de CONTEMPLAR O INVESTIDOR continua
+  // condicionada a `!contemplated`, pra não sobrescrever a modalidade/mês já
+  // registrados numa contemplação anterior (por lance, por exemplo).
+  var drawn = sorteioDrawPool.splice(0, CONTEMPLACOES_POR_ASSEMBLEIA);
+  updateContempladosPainel(drawn);
   if (!contemplated){
-    var drawn = sorteioDrawPool.splice(0, CONTEMPLACOES_POR_ASSEMBLEIA);
     var sorteioWon = drawn.indexOf(investorCotaNumber) !== -1;
     showSorteioFeedback(sorteioWon, drawn);
-    updateContempladosPainel(drawn);
     if (sorteioWon){
       contemplationMethod = 'sorteio';
       contemplate(); // contemplação não mexe na ponte — ela segue avançando só com parcela real
