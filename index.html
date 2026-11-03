@@ -407,7 +407,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          livre + chance). O texto de status (#statusInfo) saiu daqui e foi
          pro card 6 (ver abaixo). -->
     <div class="kcard" id="statusCard">
-      <h3>Cotas contempladas</h3>
+      <div class="kcard-title-row">
+        <h3>Cotas contempladas</h3>
+        <!-- 03/11: marco "Sorteio" — mesmo ícone "i" da jornada guiada,
+             agora dentro do card, abre a mesma caixa fixa (ver
+             #markerTooltipFixed/showMarkerTooltipFixed). -->
+        <span class="card-marker-icon" id="marcoSorteio" data-marker="sorteio-mensal">i</span>
+      </div>
       <!-- 02/11: virou 3 linhas verticais ("Sorteio: 999" etc.), no lugar
            dos 3 blocos lado a lado de antes — label e valor no mesmo
            elemento (não tem mais contemplados-label/contemplados-sec
@@ -1802,12 +1808,6 @@ function buildDeck(){
 // outro ponto da jornada (ex.: contemplação, fim do prazo, etc.).
 var bridgeMarkers = [
   {
-    id: 'sorteio-mensal',
-    x: X0, // bem na divisa entre o chão e o 1º mês, na mesma linha da ponte
-    title: 'Sorteio',
-    text: 'Todo mês o consorciado adimplente concorre por sorteio, normalmente realizado pela Loteria Federal. É preciso ter recurso suficiente no fundo comum para liberar o crédito.'
-  },
-  {
     id: 'incc-ano1',
     month: 12, // fim do Ano 1 / início do Ano 2 — um marco por ano fechado
     title: 'Reajuste anual',
@@ -1845,14 +1845,20 @@ var bridgeMarkers = [
   }
 ];
 
-// 03/11: marco "Parcela reduzida" saiu da ponte (não tem mais ícone "i"
-// sobre os blocos) e virou o ícone "i" dentro do próprio card 3 ("Parcela"),
-// na mesma linha do título — mas o conteúdo continua abrindo na mesma caixa
-// fixa compartilhada dos outros marcos (#markerTooltipFixed).
+// 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
+// ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
+// 3 ("Parcela") e 4 ("Cotas contempladas"), na mesma linha do título — o
+// conteúdo continua abrindo na mesma caixa fixa compartilhada dos outros
+// marcos (#markerTooltipFixed).
 var parcelaReduzidaMarker = {
   id: 'parcela-reduzida',
   title: 'Parcela reduzida',
   text: 'Nesta simulação começamos pagando um valor de parcela reduzida e após a contemplação da carta o valor é recalculado considerando o que ainda falta pagar do crédito.'
+};
+var sorteioMarker = {
+  id: 'sorteio-mensal',
+  title: 'Sorteio',
+  text: 'Todo mês o consorciado adimplente concorre por sorteio, normalmente realizado pela Loteria Federal. É preciso ter recurso suficiente no fundo comum para liberar o crédito.'
 };
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
@@ -1963,17 +1969,22 @@ function buildMarkers(){
   });
 }
 
-// 03/11: ícone "i" do marco "Parcela reduzida", agora dentro do card 3 —
-// mesmo comportamento de toggle/troca dos marcos da ponte, só que a partir
-// de um elemento HTML fixo no card, não de um ícone no SVG.
+// 03/11: ícones "i" dos marcos "Parcela reduzida" (card 3) e "Sorteio"
+// (card 4) — mesmo comportamento de toggle/troca dos marcos da ponte, só
+// que a partir de um elemento HTML fixo no card, não de um ícone no SVG.
 function buildCardMarkers(){
-  var icon = document.getElementById('marcoParcelaReduzida');
-  if (!icon) return;
-  icon.addEventListener('click', function(e){
-    e.stopPropagation();
-    var wasOpenSame = openMarkerId === parcelaReduzidaMarker.id;
-    closeAllMarkerTooltips();
-    if (!wasOpenSame) showMarkerTooltipFixed(parcelaReduzidaMarker);
+  [
+    {elId: 'marcoParcelaReduzida', marker: parcelaReduzidaMarker},
+    {elId: 'marcoSorteio', marker: sorteioMarker}
+  ].forEach(function(entry){
+    var icon = document.getElementById(entry.elId);
+    if (!icon) return;
+    icon.addEventListener('click', function(e){
+      e.stopPropagation();
+      var wasOpenSame = openMarkerId === entry.marker.id;
+      closeAllMarkerTooltips();
+      if (!wasOpenSame) showMarkerTooltipFixed(entry.marker);
+    });
   });
 }
 
