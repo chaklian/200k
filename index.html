@@ -1717,7 +1717,7 @@ function updatePinTooltipContent(){
   if (!pinTooltip) return;
   if (creditUsed){
     pinTooltip.titleEl.textContent = 'Carta utilizada';
-    pinTooltip.textEl.textContent = 'Carta utilizada. Aquisição do imóvel no valor de ' +
+    pinTooltip.textEl.textContent = 'Aquisição do imóvel no valor de ' +
       formatBRL(creditFrozenValue) + ' no mês ' + creditUsedMonthsElapsed + ' de ' + TOTAL + '.';
     return;
   }
