@@ -182,6 +182,13 @@ svg{display:block;width:100%;height:auto}
 .marker-tooltip-journey{border-color:var(--marker-orange)}
 .marker-tooltip-title-journey{color:var(--marker-orange)}
 .marker-tooltip-text{font-size:11px;line-height:1.55;color:var(--ink-dim)}
+/* 03/11: caixa única e fixa pros marcos da jornada guiada — tamanho definido
+   em px (não responsivo por cqw de propósito, a pedido do usuário), sempre
+   centralizada logo abaixo do título "Simulador de Consórcio", qualquer
+   marco que for clicado. */
+.marker-tooltip-fixed{position:absolute;left:50%;top:60px;transform:translateX(-50%);
+  width:320px;height:120px;max-width:90%;box-sizing:border-box;overflow:auto;
+  opacity:0;pointer-events:none;transition:opacity .15s ease;z-index:6}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
   background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
@@ -395,6 +402,15 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          do painel de cima e foi pro chão (ver .ponte-cota-overlay abaixo). -->
     <div class="ponte-cota-overlay" id="ponteCotaOverlay">
       <div class="ponte-cota-label" id="ponteCotaLabel">Cota<br>—</div>
+    </div>
+    <!-- 03/11: balão dos marcos da jornada guiada deixou de nascer ao lado de
+         cada ícone "i" (dentro do SVG) e virou 1 caixa HTML só, de tamanho
+         fixo em px, sempre no mesmo lugar (centralizada, logo abaixo do
+         título "Simulador de Consórcio") — qualquer marco clicado preenche
+         essa mesma caixa, em vez de abrir um balão perto de si mesmo. -->
+    <div class="marker-tooltip marker-tooltip-journey marker-tooltip-fixed" id="markerTooltipFixed">
+      <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle"></div>
+      <div class="marker-tooltip-text" id="markerTooltipFixedText"></div>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1905,10 +1921,33 @@ function updatePinTooltipContent(){
     contemplationMonthsElapsed + ' de ' + TOTAL + '.';
 }
 
+// 03/11: só existe 1 caixa de balão pros marcos (fixa, fora do SVG — ver
+// .marker-tooltip-fixed/#markerTooltipFixed), então cada ícone só precisa
+// saber qual marco está aberto agora pra decidir abrir/fechar/trocar.
+var openMarkerId = null;
+
+function showMarkerTooltipFixed(mk){
+  var box = document.getElementById('markerTooltipFixed');
+  if (!box) return;
+  document.getElementById('markerTooltipFixedTitle').textContent = mk.title;
+  document.getElementById('markerTooltipFixedText').textContent = mk.text;
+  box.style.opacity = '1';
+  box.style.pointerEvents = 'auto';
+  openMarkerId = mk.id;
+}
+
+function hideMarkerTooltipFixed(){
+  var box = document.getElementById('markerTooltipFixed');
+  if (box){ box.style.opacity = '0'; box.style.pointerEvents = 'none'; }
+  openMarkerId = null;
+}
+
 function buildMarkers(){
   var g = document.getElementById('markers');
   g.innerHTML = '';
-  var boxW = 232;
+
+  var fixedBox = document.getElementById('markerTooltipFixed');
+  if (fixedBox) fixedBox.addEventListener('click', function(e){ e.stopPropagation(); });
 
   bridgeMarkers.forEach(function(mk){
     // marco pode fixar x diretamente (ex.: no chão, antes do 1º mês) ou
@@ -1929,58 +1968,14 @@ function buildMarkers(){
     label.textContent = 'i';
     wrap.appendChild(label);
 
-    // balão explicativo — sempre ACIMA do ícone E acima da cabeça do boneco
-    // (senão ele passaria por trás/em cima do balão ao caminhar), escondido
-    // por padrão, recentrado em x pra nunca estourar as bordas do viewBox
-    // (0..1200). Como o balão pode ficar deslocado do ícone perto das bordas
-    // (ex.: o marco rente à divisa chão/1º mês), um traço conecta o ponto
-    // mais próximo da base do balão até o topo do ícone, deixando claro a
-    // quem ele pertence mesmo quando não está centralizado.
-    // a altura do texto varia conforme o tamanho da explicação, então o
-    // foreignObject usa uma altura generosa e FIXA, com o conteúdo ancorado
-    // na base dela (flex + justify-content:flex-end) — assim a BORDA DE
-    // BAIXO do balão fica sempre exatamente em boxBottomY, nunca mais embaixo
-    // por causa de um texto maior, não importa quantas linhas ele tenha.
-    var boxX = Math.max(14, Math.min(1200 - 14 - boxW, mx - boxW / 2));
-    var FO_H = 240; // teto generoso pra qualquer texto razoável
-    var boxBottomY = Math.min(my - 18, WALKER_HEAD_TOP_Y - 14);
-    var boxY = Math.max(6, boxBottomY - FO_H);
-    var anchorX = Math.max(boxX + 12, Math.min(boxX + boxW - 12, mx));
-
-    // grupo único: traço + balão, escondidos/mostrados juntos
-    var tip = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .15s ease'});
-
-    tip.appendChild(el('line', {x1:anchorX, y1:boxBottomY, x2:mx, y2:my - 10,
-      stroke:'var(--marker-orange)', 'stroke-width':'1.25', 'stroke-dasharray':'2.5 2.5'}));
-    tip.appendChild(el('circle', {cx:mx, cy:my - 10, r:1.8, fill:'var(--marker-orange)'}));
-
-    var fo = el('foreignObject', {x:boxX, y:boxY, width:boxW, height:boxBottomY - boxY, style:'overflow:visible'});
-    var anchor = document.createElement('div');
-    anchor.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-    anchor.style.cssText = 'height:100%;display:flex;flex-direction:column;justify-content:flex-end';
-    var div = document.createElement('div');
-    div.className = 'marker-tooltip marker-tooltip-journey';
-    var titleEl = document.createElement('div');
-    titleEl.className = 'marker-tooltip-title marker-tooltip-title-journey';
-    titleEl.textContent = mk.title;
-    var textEl = document.createElement('div');
-    textEl.className = 'marker-tooltip-text';
-    textEl.textContent = mk.text;
-    div.appendChild(titleEl);
-    div.appendChild(textEl);
-    anchor.appendChild(div);
-    fo.appendChild(anchor);
-    tip.appendChild(fo);
-    wrap.appendChild(tip);
-
+    // clicar no marco só troca o conteúdo da caixa fixa (acima do título) —
+    // nenhum balão nasce perto do ícone em si. Clicar de novo no mesmo marco
+    // fecha a caixa; clicar em outro marco troca o conteúdo direto.
     wrap.addEventListener('click', function(e){
       e.stopPropagation();
-      var isOpen = tip.style.opacity === '1';
+      var wasOpenSame = openMarkerId === mk.id;
       closeAllMarkerTooltips();
-      if (!isOpen){
-        tip.style.opacity = '1';
-        tip.style.pointerEvents = 'auto';
-      }
+      if (!wasOpenSame) showMarkerTooltipFixed(mk);
     });
 
     g.appendChild(wrap);
@@ -1988,12 +1983,7 @@ function buildMarkers(){
 }
 
 function closeAllMarkerTooltips(){
-  document.querySelectorAll('#markers > g').forEach(function(wrap){
-    var tip = wrap.lastChild;
-    if (!tip || tip.tagName !== 'g') return;
-    tip.style.opacity = '0';
-    tip.style.pointerEvents = 'none';
-  });
+  hideMarkerTooltipFixed();
   // mesmo grupo "só 1 balão aberto por vez" vale pro balão do pin de dinheiro
   if (pinTooltip){
     pinTooltip.g.style.opacity = '0';
