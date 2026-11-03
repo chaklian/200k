@@ -276,8 +276,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="creditoCard">
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
-      <div class="sub">INCC = 6,5% a.a. / Selic = 13,75% a.a / IPCA = 4,5% a.a</div>
-      <div class="sub">Taxa Adm = 19% / Fundo de Reserva = 2%</div>
     </div>
 
     <!-- CARD 2: Total pago + barra de progresso -->
@@ -306,13 +304,12 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       </div>
     </div>
 
-    <!-- CARD 4: Status -->
-    <div class="kcard" id="statusCard">
-      <h3>Status</h3>
-      <div class="big" id="kpiStatus">Não contemplado</div>
-      <div class="sub" id="kpiStatusHint">Sua cota: 431</div>
-      <div class="sub" id="kpiStatusCota">Concorrendo ao sorteio: 1 cota de 999</div>
-    </div>
+    <!-- CARD 4: Status — 02/11: todos os textos removidos a pedido do
+         usuário (card mantido vazio no grid, sem título nem conteúdo). Os
+         elementos kpiStatus/kpiStatusHint/kpiStatusCota que o JS atualizava
+         não existem mais — updateContemplationUI() tem guards (if) pra não
+         quebrar quando getElementById retorna null. -->
+    <div class="kcard" id="statusCard"></div>
   </div>
 
   <!-- CARD 5: Ponte -->
@@ -1274,24 +1271,28 @@ function contemplate(){
 }
 
 function updateContemplationUI(){
+  // 02/11: os 3 elementos abaixo (kpiStatus/kpiStatusHint/kpiStatusCota)
+  // saíram do card "Status" (card ficou vazio, a pedido do usuário) — os
+  // getElementById agora retornam null, então todo acesso ganhou guard (if)
+  // pra não quebrar o resto de updateContemplationUI().
   var statusEl = document.getElementById('kpiStatus');
   var hintEl = document.getElementById('kpiStatusHint');
   // MODALIDADE_LABEL (mapa pro nome de exibição da modalidade que
   // contemplou) agora é var global — ver declaração perto de contemplationMethod
   setMoneyPinVisible(contemplated); // pin de dinheiro sobre a cabeça do boneco, só após contemplado
   if (contemplated){
-    statusEl.textContent = 'Contemplado';
+    if (statusEl) statusEl.textContent = 'Contemplado';
     // 31/10: "Parcela cheia (sem redutor)" deu lugar à modalidade que
     // contemplou (sorteio/lance fixo/lance livre) — informação mais útil
     // pro investidor do que o efeito na parcela, que já aparece noutro card.
-    hintEl.textContent = 'Modalidade: ' + (MODALIDADE_LABEL[contemplationMethod] || '—');
+    if (hintEl) hintEl.textContent = 'Modalidade: ' + (MODALIDADE_LABEL[contemplationMethod] || '—');
   } else {
-    statusEl.textContent = 'Não contemplado';
+    if (statusEl) statusEl.textContent = 'Não contemplado';
     // 31/10: "Concorrendo ao sorteio" deu lugar ao número da cota do
     // investidor nesta linha — a frase "Concorrendo ao sorteio" continua
     // existindo, só desceu pra linha de baixo (kpiStatusCota), que já diz
     // isso junto com a contagem do baralho.
-    hintEl.textContent = 'Sua cota: ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
+    if (hintEl) hintEl.textContent = 'Sua cota: ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
   }
   var cotaEl = document.getElementById('kpiStatusCota');
   if (cotaEl){
@@ -1503,7 +1504,7 @@ var bridgeMarkers = [
   },
   {
     id: 'fundo-reserva',
-    month: 108, // fim do Ano 9 / início do Ano 10
+    month: 120, // fim do Ano 10 / início do Ano 11
     title: 'Fundo de reserva',
     text: 'Calculado sobre o mesmo critério da taxa de adm, o fundo serve para cobrir eventuais faltas de caixa do grupo e perda do poder de compra.'
   },
