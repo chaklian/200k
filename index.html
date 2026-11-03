@@ -147,6 +147,17 @@ svg{display:block;width:100%;height:auto}
 
 .kcard.locked{opacity:.4;pointer-events:none;filter:saturate(.5)}
 
+/* marcos explicativos na ponte (02/11) — ícone "i" pequeno em pontos
+   específicos (ex.: virada do Ano 1 pro Ano 2), clicável a qualquer
+   momento; ao clicar, abre um balão (foreignObject) com um texto curto
+   explicando o evento. Cor âmbar pra destacar sem competir com o resto
+   da paleta (azul/verde) da ponte. */
+.marker-tooltip{font-family:'IBM Plex Mono',ui-monospace,monospace;
+  background:var(--canvas-deep);border:1px solid var(--amber);border-radius:6px;
+  padding:10px 12px;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.marker-tooltip-title{font-size:12px;font-weight:600;color:var(--amber);margin-bottom:5px;letter-spacing:.01em}
+.marker-tooltip-text{font-size:11px;line-height:1.55;color:var(--ink-dim)}
+
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
   background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
 .legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-dim)}
@@ -306,7 +317,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
   <!-- CARD 5: Ponte -->
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
-    <div class="ponte-titulo">Consórcio de Imóvel</div>
+    <div class="ponte-titulo">Simulador de Consórcio</div>
     <div class="pay-overlay" id="payOverlay">
       <button id="restartBtn" aria-label="Cancelar carta">&lt; &lt; &lt;</button>
       <div class="ponte-cota-label" id="ponteCotaLabel">Cota —</div>
@@ -373,6 +384,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <!-- investor walks on top of the slab/blocks, so it must be drawn after them -->
       <g id="investor"></g>
 
+      <!-- marcos explicativos ("jornada guiada"): ícones pequenos e clicáveis
+           em pontos específicos da ponte, cada um com um texto explicando um
+           evento do consórcio (ex.: reajuste pelo INCC ao fechar o ano).
+           Desenhados por cima de tudo (depois do investidor) pra ficarem
+           sempre clicáveis, em qualquer momento, independente do progresso. -->
+      <g id="markers"></g>
+
       <!-- dimension line / scale ruler (no label) -->
       <g id="dim" stroke="var(--ink-faint)" stroke-width="1"></g>
 
@@ -380,6 +398,9 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         .lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:var(--ink-faint);letter-spacing:.04em}
         .lbl-ink{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:var(--concrete-ink);letter-spacing:.04em}
         .year-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#4f7498;letter-spacing:.04em;font-weight:600}
+        .money-pin{opacity:0;transition:opacity .4s ease}
+        .money-pin.show{opacity:1;animation:moneyPinFloat 1.8s ease-in-out infinite}
+        @keyframes moneyPinFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
       </style>
     </svg>
   </div>
@@ -514,7 +535,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   </div>
 
   <div class="foot">
-    Ferramenta educacional, não um simulador oficial &middot; valores e cenários são ilustrativos, com dados fictícios, e não representam oferta, proposta comercial ou garantia de rentabilidade. Para valores e condições reais, consulte a administradora.
+    Simulador educativo com valores, taxas, rendimentos e resultados meramente ilustrativos. Não representa oferta de crédito, proposta comercial ou garantia de contemplação. As condições reais dependem da administradora e do contrato. A solicitação de cotação é opcional, sem compromisso de contratação.
   </div>
 </div>
 
@@ -641,6 +662,27 @@ function buildWalker(g, baseY){
   g._bodyG = bodyG;
   g._legBack = legBack; g._legFront = legFront;
   g._armBack = armBack; g._armFront = armFront;
+
+  // "pin" de dinheiro: aparece sobre a cabeça do boneco assim que ele é
+  // contemplado (ver setMoneyPinVisible/updateContemplationUI) e some num
+  // reset. Fica FORA do bodyG de propósito — não deve balançar/inclinar
+  // junto com o passo, só acompanhar o boneco horizontalmente (herdado do
+  // translateX do próprio <g id="investor">).
+  var pinY = headCY - r - 11;
+  var pin = el('g', {class:'money-pin'});
+  pin.appendChild(el('circle', {cx:0, cy:pinY, r:8, fill:'var(--paid)', stroke:'var(--canvas)', 'stroke-width':'1.5'}));
+  var pinLabel = el('text', {x:0, y:pinY + 3.6, 'text-anchor':'middle',
+    'font-family':"'IBM Plex Mono',monospace", 'font-size':'10', 'font-weight':'700',
+    fill:'var(--canvas)', 'pointer-events':'none'});
+  pinLabel.textContent = '$';
+  pin.appendChild(pinLabel);
+  g.appendChild(pin);
+  g._moneyPin = pin;
+}
+
+function setMoneyPinVisible(show){
+  if (!investorG._moneyPin) return;
+  investorG._moneyPin.classList.toggle('show', !!show);
 }
 
 function setWalkPose(g, pose){
@@ -1201,6 +1243,7 @@ function updateContemplationUI(){
   // mapa pro nome de exibição da modalidade que contemplou — chaves iguais
   // às usadas em contemplationMethod ('sorteio'/'fixo'/'livre')
   var MODALIDADE_LABEL = {sorteio:'Sorteio', fixo:'Lance Fixo', livre:'Lance Livre'};
+  setMoneyPinVisible(contemplated); // pin de dinheiro sobre a cabeça do boneco, só após contemplado
   if (contemplated){
     statusEl.textContent = 'Contemplado';
     // 31/10: "Parcela cheia (sem redutor)" deu lugar à modalidade que
@@ -1378,6 +1421,147 @@ function buildDeck(){
     spanEls.push(g);
   }
 }
+
+// MARCOS EXPLICATIVOS / "jornada guiada" (02/11) ---------------------------
+// Cada marco é um ponto fixo na ponte (em meses, não em x — assim continua
+// correto se X0/UNIT mudarem) com um ícone pequeno "i" sempre clicável,
+// independente de quanto o investidor já andou. Ao clicar, abre um balão
+// com título + texto curto explicando o que acontece ali. Pensado pra
+// crescer: é só adicionar um item neste array pra ter um novo marco em
+// outro ponto da jornada (ex.: contemplação, fim do prazo, etc.).
+var bridgeMarkers = [
+  {
+    id: 'sorteio-mensal',
+    x: X0, // bem na divisa entre o chão e o 1º mês, na mesma linha da ponte
+    title: 'Sorteio',
+    text: 'Todo mês o consorciado adimplente concorre por sorteio, normalmente realizado pela Loteria Federal. É preciso ter recurso suficiente no fundo comum para liberar o crédito.'
+  },
+  {
+    id: 'incc-ano1',
+    month: 12, // fim do Ano 1 / início do Ano 2 — um marco por ano fechado
+    title: 'Reajuste anual',
+    text: 'A cada ano fechado de parcelas pagas o valor da carta e das parcelas são corrigidos monetariamente. Aqui foi utilizado o INCC (Índice Nacional de Custo da Construção).'
+  },
+  {
+    id: 'lance-fixo',
+    month: 24, // fim do Ano 2 / início do Ano 3
+    title: 'Lance Fixo',
+    text: 'Todos ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
+  },
+  {
+    id: 'lance-livre',
+    month: 36, // fim do Ano 3 / início do Ano 4
+    title: 'Lance Livre',
+    text: 'Percentual livre sobre o valor da carta. Vence quem oferecer o maior percentual, contemplando quantas cotas o fundo comum do grupo permitir naquela assembleia.'
+  },
+  {
+    id: 'encerramento',
+    x: X1, // fim da ponte, entre o último bloco e o chão de chegada
+    title: 'Encerramento',
+    text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
+  }
+];
+
+// mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
+// pra qualquer mês, não só os múltiplos de 12
+function markerX(month){ return X0 + (month / 12) * UNIT; }
+
+// topo da cabeça do boneco (mesma geometria de buildWalker: baseY=SLAB_Y,
+// H=48, r=4.6, neckLen=3) — usado só pra garantir que o balão do marco
+// nunca fique na altura em que o investidor passa andando por baixo dele.
+var WALKER_HEAD_TOP_Y = SLAB_Y - (48 * 0.84 + 3 + 2 * 4.6);
+
+function buildMarkers(){
+  var g = document.getElementById('markers');
+  g.innerHTML = '';
+  var boxW = 232;
+
+  bridgeMarkers.forEach(function(mk){
+    // marco pode fixar x diretamente (ex.: no chão, antes do 1º mês) ou
+    // usar month (posição relativa à régua de anos da ponte)
+    var mx = (mk.x != null) ? mk.x : markerX(mk.month);
+    var my = SLAB_Y - 18; // logo acima da fileira de blocos, sem sobrepor o "Ano N"
+
+    var wrap = el('g', {'data-marker': mk.id});
+    wrap.style.cursor = 'pointer';
+
+    // leve halo + círculo do ícone
+    wrap.appendChild(el('circle', {cx:mx, cy:my, r:12.5, fill:'var(--canvas-deep)', opacity:'0.001'}));
+    var dot = el('circle', {cx:mx, cy:my, r:9, fill:'var(--canvas-deep)', stroke:'var(--amber)', 'stroke-width':'1.4'});
+    wrap.appendChild(dot);
+    var label = el('text', {x:mx, y:my + 3.6, 'text-anchor':'middle',
+      'font-family':"'IBM Plex Mono',monospace", 'font-size':'11', 'font-weight':'700',
+      fill:'var(--amber)', 'pointer-events':'none'});
+    label.textContent = 'i';
+    wrap.appendChild(label);
+
+    // balão explicativo — sempre ACIMA do ícone E acima da cabeça do boneco
+    // (senão ele passaria por trás/em cima do balão ao caminhar), escondido
+    // por padrão, recentrado em x pra nunca estourar as bordas do viewBox
+    // (0..1200). Como o balão pode ficar deslocado do ícone perto das bordas
+    // (ex.: o marco rente à divisa chão/1º mês), um traço conecta o ponto
+    // mais próximo da base do balão até o topo do ícone, deixando claro a
+    // quem ele pertence mesmo quando não está centralizado.
+    // a altura do texto varia conforme o tamanho da explicação, então o
+    // foreignObject usa uma altura generosa e FIXA, com o conteúdo ancorado
+    // na base dela (flex + justify-content:flex-end) — assim a BORDA DE
+    // BAIXO do balão fica sempre exatamente em boxBottomY, nunca mais embaixo
+    // por causa de um texto maior, não importa quantas linhas ele tenha.
+    var boxX = Math.max(14, Math.min(1200 - 14 - boxW, mx - boxW / 2));
+    var FO_H = 240; // teto generoso pra qualquer texto razoável
+    var boxBottomY = Math.min(my - 18, WALKER_HEAD_TOP_Y - 14);
+    var boxY = Math.max(6, boxBottomY - FO_H);
+    var anchorX = Math.max(boxX + 12, Math.min(boxX + boxW - 12, mx));
+
+    // grupo único: traço + balão, escondidos/mostrados juntos
+    var tip = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .15s ease'});
+
+    tip.appendChild(el('line', {x1:anchorX, y1:boxBottomY, x2:mx, y2:my - 10,
+      stroke:'var(--amber)', 'stroke-width':'1.25', 'stroke-dasharray':'2.5 2.5'}));
+    tip.appendChild(el('circle', {cx:mx, cy:my - 10, r:1.8, fill:'var(--amber)'}));
+
+    var fo = el('foreignObject', {x:boxX, y:boxY, width:boxW, height:boxBottomY - boxY, style:'overflow:visible'});
+    var anchor = document.createElement('div');
+    anchor.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    anchor.style.cssText = 'height:100%;display:flex;flex-direction:column;justify-content:flex-end';
+    var div = document.createElement('div');
+    div.className = 'marker-tooltip';
+    var titleEl = document.createElement('div');
+    titleEl.className = 'marker-tooltip-title';
+    titleEl.textContent = mk.title;
+    var textEl = document.createElement('div');
+    textEl.className = 'marker-tooltip-text';
+    textEl.textContent = mk.text;
+    div.appendChild(titleEl);
+    div.appendChild(textEl);
+    anchor.appendChild(div);
+    fo.appendChild(anchor);
+    tip.appendChild(fo);
+    wrap.appendChild(tip);
+
+    wrap.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = tip.style.opacity === '1';
+      closeAllMarkerTooltips();
+      if (!isOpen){
+        tip.style.opacity = '1';
+        tip.style.pointerEvents = 'auto';
+      }
+    });
+
+    g.appendChild(wrap);
+  });
+}
+
+function closeAllMarkerTooltips(){
+  document.querySelectorAll('#markers > g').forEach(function(wrap){
+    var tip = wrap.lastChild;
+    if (!tip || tip.tagName !== 'g') return;
+    tip.style.opacity = '0';
+    tip.style.pointerEvents = 'none';
+  });
+}
+document.addEventListener('click', closeAllMarkerTooltips);
 
 // ao cancelar a carta, os blocos já pagos (visíveis) não só desaparecem —
 // eles afundam no mar em sequência do ÚLTIMO pro PRIMEIRO (como se a ponte
@@ -2099,6 +2283,7 @@ document.getElementById('restartBtn').addEventListener('click', function(){
 
 drawStructure();
 buildDeck();
+buildMarkers();
 initSorteioPool();
 updateContempladosPainel(null);
 paint(0, {instant:true});
