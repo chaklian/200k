@@ -1892,7 +1892,7 @@ var bridgeMarkers = [
     month: 12, // fim do Ano 1 / início do Ano 2 — um marco por ano fechado
     below: true, // 03/11: desceu pra baixo da fileira de caixas dos anos
     title: 'Reajuste anual',
-    text: 'A cada ano fechado de parcelas pagas o valor da carta e das parcelas são corrigidos monetariamente. Aqui foi utilizado o INCC (Índice Nacional de Custo da Construção).'
+    text: 'O crédito e as parcelas são reajustados monetariamente a cada ano, conforme índice previsto em contrato. No simulador, adotamos o INCC (Índice Nacional de Custo da Construção).'
   },
   {
     id: 'indicadores',
@@ -1901,7 +1901,7 @@ var bridgeMarkers = [
                          // ficava na altura padrão dos marcos, na linha do
                          // tabuleiro)
     title: 'Indicadores',
-    text: 'Índices de referência usados nesta simulação: INCC (6,5% a.a.), que corrige o crédito até a contemplação, e CDI (13,75% a.a.), do qual 80% passa a render o crédito depois de contemplado.'
+    text: 'Valores de referência utilizados no simulador: INCC = 6,5% a.a. Selic = 13,75% a.a.'
   },
   {
     id: 'estrategia',
@@ -1910,8 +1910,8 @@ var bridgeMarkers = [
                          // do pin, e por isso o boneco com pin sobrepunha o
                          // ícone ao passar) — agora fica bem acima do topo do
                          // pin (pinY=SLAB_Y-67.52, raio 11), sem sobreposição
-    title: 'Estratégia',
-    text: 'É possível contratar mais de uma carta dentro do mesmo grupo para aumentar a chance de contemplação e compor o valor desejado do imóvel.'
+    title: 'Múltiplas cotas',
+    text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação. Além do sorteio, ofertar lances todo mês ajuda na probabilidade.'
   },
   {
     id: 'encerramento',
@@ -1919,7 +1919,7 @@ var bridgeMarkers = [
     // 03/11: voltou pra ACIMA dos blocos da ponte (below:true removido) —
     // usa o my padrão (SLAB_Y - 18) do buildMarkers()
     title: 'Encerramento',
-    text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
+    text: 'O prazo do grupo é planejado para contemplar todas as cotas ativas até a última assembleia. É preciso conferir as regras e recursos disponíveis.'
   }
 ];
 
@@ -1927,8 +1927,8 @@ var bridgeMarkers = [
 // pra ponte (bridgeMarkers acima), a pedido do usuário. "Fundo de reserva"
 // saiu da ponte e foi absorvido neste mesmo marco (título e texto juntos),
 // já que os dois mecanismos têm a mesma lógica de cobrança.
-var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxa de adm e fundo de reserva',
-  text: 'Incidem sobre o valor do crédito e são pagos nas parcelas: a taxa adm remunera a administradora pela gestão do grupo; o fundo de reserva cobre faltas de caixa e perda de poder de compra.'};
+var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxas e fundo de reserva',
+  text: 'A taxa de administração remunera a gestão do grupo. O fundo de reserva, quando previsto, cobre despesas e faltas ocasionais.'};
 
 // 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
 // ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
@@ -1938,7 +1938,7 @@ var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxa de adm e fundo de reserva',
 var parcelaReduzidaMarker = {
   id: 'parcela-reduzida',
   title: 'Parcela reduzida',
-  text: 'Nesta simulação começamos pagando um valor de parcela reduzida e após a contemplação da carta o valor é recalculado considerando o que ainda falta pagar do crédito.'
+  text: 'Nesta simulação as parcelas começam reduzidas. Após a contemplação, as parcelas são recalculadas considerando o restante do pagamento do crédito.'
 };
 var sorteioMarker = {
   id: 'sorteio-mensal',
@@ -1947,27 +1947,27 @@ var sorteioMarker = {
 };
 var lanceFixoMarker = {
   id: 'lance-fixo',
-  title: 'Lance Fixo',
-  text: 'Todos ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
+  title: 'Lance fixo',
+  text: 'Os participantes ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
 };
 var lanceLivreMarker = {
   id: 'lance-livre',
-  title: 'Lance Livre',
-  text: 'Percentual livre sobre o valor da carta. Vence quem oferecer o maior percentual, contemplando quantas cotas o fundo comum do grupo permitir naquela assembleia.'
+  title: 'Lance livre',
+  text: 'O participante escolhe qual valor ofertar. Vencem os maiores lances elegíveis, conforme as regras e os recursos do grupo.'
 };
 
 // 03/11: 1 marco por botão do card "Ações" (card 6) — textos ainda são
 // placeholder ("Texto a definir."), à espera do conteúdo definitivo.
-var pagarParcelaMarker = {id: 'pagar-parcela', title: 'Pagar parcela', text: 'Em algumas administradoras, manter-se em dia com o pagamento das parcelas abre uma nova possibilidade de contemplação na modalidade fidelidade.'};
-var cancelarReiniciarMarker = {id: 'cancelar-reiniciar', title: 'Cancelar / Reiniciar', text: 'A carta cancelada é reembolsada ao investidor no encerramento do grupo, normalmente com algum deságio.'};
-var venderNaoContempladaMarker = {id: 'vender-nao-contemplada', title: 'Vender carta não contemplada',
-  text: 'A cota ainda não contemplada pode ser negociada antes do prazo, mas normalmente só encontra comprador com deságio sobre o que já foi pago.'};
-var venderContempladaMarker = {id: 'vender-contemplada', title: 'Vender carta contemplada',
-  text: 'Vender a cota já contemplada é um instrumento de alavancagem financeira: o investidor acessa de uma vez o valor da carta conquistado no sorteio ou no lance.'};
-var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar Imóvel',
-  text: 'Pode ser para uso próprio ou para alavancagem patrimonial, quando a ideia é alugar o imóvel. Vale conferir custos como corretagem, ITBI e IPTU, que também pesam na decisão.'};
-var reducaoCartaMarker = {id: 'reducao-carta', title: 'Redução da carta',
-  text: 'Após ser contemplado utilizando o lance embutido, o valor do crédito é recalculado.'};
+var pagarParcelaMarker = {id: 'pagar-parcela', title: 'Pagar parcela', text: 'Manter as parcelas em dia permite participar dos sorteios e ofertar lances. Alguns grupos também oferecem sorteios de fidelidade.'};
+var cancelarReiniciarMarker = {id: 'cancelar-reiniciar', title: 'Cancelar / Reiniciar', text: 'Ao desistir, a devolução do valor pago normalmente sofre deduções e é feita no encerramento do grupo.'};
+var venderNaoContempladaMarker = {id: 'vender-nao-contemplada', title: 'Venda não contemplada',
+  text: 'É possível transferir uma cota não contemplada, com aprovação da administradora. O preço pode envolver ágio ou deságio.'};
+var venderContempladaMarker = {id: 'vender-contemplada', title: 'Venda contemplada',
+  text: 'A cota contemplada pode ser vendida após sorteio ou lance, mediante aprovação da administradora. O preço depende do crédito e das obrigações restantes.'};
+var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar imóvel',
+  text: 'Use o crédito contemplado para comprar um imóvel para morar ou alugar, após aprovação da administradora. Considere impostos e demais despesas.'};
+var reducaoCartaMarker = {id: 'reducao-carta', title: 'Lance embutido',
+  text: 'Após ser contemplado utilizando o lance embutido, o crédito reduz, pois parte do próprio valor foi usada para compor a oferta.'};
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
 // pra qualquer mês, não só os múltiplos de 12
