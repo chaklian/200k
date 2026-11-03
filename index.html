@@ -1404,6 +1404,11 @@ function contemplate(){
     parcelaPctPos = PARCELA_PCT_CHEIA + pctTopUp;
   }
   parcelaPosContempValue = currentCredit() * parcelaPctPos;
+  // 02/11: pin vira o envelope azul assim que a cota é contemplada (estado
+  // "carta contemplada", antes de comprar o imóvel ou vender a carta) —
+  // setPinIcon('key'/'money') em buyImovel()/sellCarta() sobrescreve depois,
+  // se o investidor agir sobre a contemplação.
+  setPinIcon('envelope');
   updateContemplationUI();
 }
 
@@ -1561,7 +1566,11 @@ function sellCarta(){
   if (!contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
   cartaSoldVia = 'contemplada';
-  setPinIcon('envelope');
+  // 02/11: "carta vendida contemplada" volta ao pin verde de dinheiro ($) —
+  // invertido a pedido do usuário (era o envelope azul; agora o envelope
+  // passou a representar o estado "carta contemplada" ainda não vendida,
+  // ver contemplate()).
+  setPinIcon('money');
   setMoneyPinVisible(true);
   updateBuyBtn();
   updateSellCartaBtn();
