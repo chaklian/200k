@@ -115,13 +115,6 @@ svg{display:block;width:100%;height:auto}
    lugar antes. */
 .ponte-cota-label{font-size:16px;font-weight:700;color:#fff;text-align:center;line-height:1.25;
   background:rgba(7,20,38,0.45);padding:4px 10px;border-radius:6px}
-/* 03/11: ícone do marco "Encerramento" sobre o bloco de ancoragem direito
-   (posição 200), espelhando a .ponte-cota-overlay do bloco esquerdo. */
-.ponte-encerramento-overlay{position:absolute;left:96.25%;top:84.4%;transform:translate(-50%,-50%);
-  display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;border-radius:50%;border:1.4px solid var(--marker-orange);
-  color:var(--marker-orange);font-family:'IBM Plex Mono',ui-monospace,monospace;
-  font-size:11px;font-weight:700;cursor:pointer;z-index:4}
 
 /* seta ">>>" piscando progressiva (31/10): cada ">" é um <span> próprio
    (ver updatePayBtn no JS) com a MESMA animação de opacidade, só que
@@ -466,11 +459,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="ponte-cota-overlay" id="ponteCotaOverlay">
       <div class="ponte-cota-label" id="ponteCotaLabel">Cota<br>—</div>
     </div>
-    <!-- 03/11: marco "Encerramento" saiu da ponte (SVG, x:X1) e virou um
-         ícone sobre o bloco de ancoragem direito (posição 200), espelhando
-         o .ponte-cota-overlay do bloco esquerdo (x:1110-1200, centro 1155/
-         1200 = 96.25%, mesma altura vertical 84.4%). -->
-    <div class="ponte-encerramento-overlay" id="marcoEncerramento" data-marker="encerramento">i</div>
     <!-- 03/11: balão dos marcos da jornada guiada deixou de nascer ao lado de
          cada ícone "i" (dentro do SVG) e virou 1 caixa HTML só, de tamanho
          fixo em px, sempre no mesmo lugar (centralizada, logo abaixo do
@@ -574,8 +562,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          Lance Fixo/Lance Livre) e o botão "Dar Lance" originais desse card
          foram pro card 4 ("Cotas contempladas") numa sessão anterior. -->
     <div class="kcard" id="sorteioCard">
-      <h3>Ações</h3>
-      <!-- 03/11: cada botão ganhou um ícone fixo à esquerda (dentro do
+      <!-- 03/11: título "Ações" removido a pedido do usuário — card mostra
+           só os 5 botões. 03/11: cada botão ganhou um ícone fixo à esquerda (dentro do
            próprio botão, via .acoes-btn-icon) e um marco "i" à direita
            (fora do botão, mesmo padrão dos ícones de marco nos outros
            cards) — ver .acoes-item/.acoes-marker e buildCardMarkers(). O
@@ -1916,18 +1904,19 @@ var bridgeMarkers = [
     month: 120, // fim do Ano 10 / início do Ano 11
     title: 'Fundo de reserva',
     text: 'Calculado sobre o mesmo critério da taxa de adm, o fundo serve para cobrir eventuais faltas de caixa do grupo e perda do poder de compra.'
+  },
+  {
+    id: 'encerramento',
+    x: X1, // fim da ponte, entre o último bloco e o chão de chegada — posição anterior
+    title: 'Encerramento',
+    text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
   }
 ];
 
-// 03/11: "Taxa adm" migrou pro card 2 (Valor pago) e "Encerramento" virou
-// um ícone fixo sobre o bloco de ancoragem direito (posição 200) — ambos
-// saíram do array bridgeMarkers (que só guarda os marcos ainda desenhados
-// na própria ponte) e viraram marcos "soltos", iguais aos outros marcos de
-// card, cuidados por buildCardMarkers().
+// 03/11: "Taxa adm" migrou pro card 2 (Valor pago) — "Encerramento" voltou
+// pra ponte (bridgeMarkers acima), a pedido do usuário.
 var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxa adm',
   text: 'Essa taxa remunera a administradora pela gestão do grupo. Incide sobre o valor do crédito. É definida no contrato e paga ao longo das parcelas.'};
-var encerramentoMarker = {id: 'encerramento', title: 'Encerramento',
-  text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'};
 
 // 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
 // ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
@@ -2093,8 +2082,7 @@ function buildCardMarkers(){
     {elId: 'marcoVenderContemplada', marker: venderContempladaMarker},
     {elId: 'marcoComprarImovel', marker: comprarImovelMarker},
     {elId: 'marcoReducaoCarta', marker: reducaoCartaMarker},
-    {elId: 'marcoTaxaAdm', marker: taxaAdmMarker},
-    {elId: 'marcoEncerramento', marker: encerramentoMarker}
+    {elId: 'marcoTaxaAdm', marker: taxaAdmMarker}
   ].forEach(function(entry){
     var icon = document.getElementById(entry.elId);
     if (!icon) return;
