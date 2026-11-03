@@ -269,6 +269,8 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
    (updateContemplationUI) assim que contemplated vira true. */
 .lance-apply-btn.contemplado{background:#143a19;color:var(--paid);border-color:var(--paid)}
 .lance-apply-btn.contemplado:hover{border-color:var(--paid);background:#143a19}
+.lance-apply-btn.imovel-comprado{background:#3a2a0f;color:var(--amber);border-color:var(--amber)}
+.lance-apply-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -1419,11 +1421,11 @@ function updateBuyBtn(){
   if (creditUsed){
     btn.disabled = true;
     btn.textContent = 'Imóvel comprado';
-    btn.classList.add('contemplado'); // reaproveita o verde de destaque já usado em cotasBtn
+    btn.classList.add('imovel-comprado'); // amarelo, cor própria — não reaproveita o verde de .contemplado
   } else {
     btn.disabled = !contemplated;
     btn.textContent = 'Comprar Imóvel';
-    btn.classList.remove('contemplado');
+    btn.classList.remove('imovel-comprado');
     btn.style.opacity = contemplated ? '1' : '0.5';
   }
 }
@@ -1707,10 +1709,18 @@ function repositionPinTooltip(){
 }
 
 // preenche o balão com a modalidade e o mês reais da contemplação — chamado
-// só na hora de abrir (clique no pin), nunca precisa ficar atualizando
-// sozinho porque esses 2 dados ficam fixos depois que a contemplação acontece.
+// só na hora de abrir (clique no pin). Enquanto o crédito não foi usado pra
+// comprar o imóvel, esses 2 dados ficam fixos (contemplação já aconteceu e
+// não muda mais). Depois do clique em "Comprar Imóvel" (creditUsed), o
+// conteúdo passa a refletir a compra em si, não mais a contemplação.
 function updatePinTooltipContent(){
   if (!pinTooltip) return;
+  if (creditUsed){
+    pinTooltip.titleEl.textContent = 'Carta utilizada';
+    pinTooltip.textEl.textContent = 'Carta utilizada. Aquisição do imóvel no valor de ' +
+      formatBRL(creditFrozenValue) + ' no mês ' + creditUsedMonthsElapsed + ' de ' + TOTAL + '.';
+    return;
+  }
   pinTooltip.titleEl.textContent = 'Contemplado!';
   var modalidade = MODALIDADE_LABEL[contemplationMethod] || '—';
   pinTooltip.textEl.textContent = 'Modalidade: ' + modalidade + '. Contemplado no mês ' +
