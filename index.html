@@ -185,10 +185,16 @@ svg{display:block;width:100%;height:auto}
 /* 03/11: caixa única e fixa pros marcos da jornada guiada — tamanho definido
    em px (não responsivo por cqw de propósito, a pedido do usuário), sempre
    centralizada logo abaixo do título "Simulador de Consórcio", qualquer
-   marco que for clicado. */
+   marco que for clicado. Sempre visível (nunca opacity:0) — opaca/apagada
+   (opacity baixa) quando nenhum marco está selecionado, e "acesa" (opacity
+   1) assim que um marco é clicado. max-width/max-height em % (relativos ao
+   próprio card da ponte) garantem que ela nunca extrapole o card conforme a
+   tela é redimensionada, mesmo com width/height fixos em px. */
 .marker-tooltip-fixed{position:absolute;left:50%;top:60px;transform:translateX(-50%);
-  width:320px;height:120px;max-width:90%;box-sizing:border-box;overflow:auto;
-  opacity:0;pointer-events:none;transition:opacity .15s ease;z-index:6}
+  width:360px;height:120px;max-width:calc(100% - 24px);max-height:calc(100% - 76px);
+  box-sizing:border-box;overflow:auto;
+  opacity:.35;pointer-events:none;transition:opacity .15s ease;z-index:6}
+.marker-tooltip-fixed.active{opacity:1;pointer-events:auto}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
   background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
@@ -409,8 +415,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          título "Simulador de Consórcio") — qualquer marco clicado preenche
          essa mesma caixa, em vez de abrir um balão perto de si mesmo. -->
     <div class="marker-tooltip marker-tooltip-journey marker-tooltip-fixed" id="markerTooltipFixed">
-      <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle"></div>
-      <div class="marker-tooltip-text" id="markerTooltipFixedText"></div>
+      <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle">Jornada guiada</div>
+      <div class="marker-tooltip-text" id="markerTooltipFixedText">Clique em um marco ("i") na ponte para ver a explicação de cada etapa do consórcio.</div>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1924,21 +1930,35 @@ function updatePinTooltipContent(){
 // 03/11: só existe 1 caixa de balão pros marcos (fixa, fora do SVG — ver
 // .marker-tooltip-fixed/#markerTooltipFixed), então cada ícone só precisa
 // saber qual marco está aberto agora pra decidir abrir/fechar/trocar.
+// A caixa fica SEMPRE visível (nunca opacity:0) — "apagada" (classe .active
+// ausente, opacity baixa via CSS) com um texto-convite quando nenhum marco
+// está selecionado, e "acesa" (.active, opacity 1) com o texto do marco
+// assim que ele é clicado.
 var openMarkerId = null;
+var markerTooltipPlaceholder = {
+  title: 'Jornada guiada',
+  text: 'Clique em um marco ("i") na ponte para ver a explicação de cada etapa do consórcio.'
+};
+
+function setMarkerTooltipFixedContent(mk){
+  document.getElementById('markerTooltipFixedTitle').textContent = mk.title;
+  document.getElementById('markerTooltipFixedText').textContent = mk.text;
+}
 
 function showMarkerTooltipFixed(mk){
   var box = document.getElementById('markerTooltipFixed');
   if (!box) return;
-  document.getElementById('markerTooltipFixedTitle').textContent = mk.title;
-  document.getElementById('markerTooltipFixedText').textContent = mk.text;
-  box.style.opacity = '1';
-  box.style.pointerEvents = 'auto';
+  setMarkerTooltipFixedContent(mk);
+  box.classList.add('active');
   openMarkerId = mk.id;
 }
 
 function hideMarkerTooltipFixed(){
   var box = document.getElementById('markerTooltipFixed');
-  if (box){ box.style.opacity = '0'; box.style.pointerEvents = 'none'; }
+  if (box){
+    box.classList.remove('active');
+    setMarkerTooltipFixedContent(markerTooltipPlaceholder);
+  }
   openMarkerId = null;
 }
 
