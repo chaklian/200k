@@ -36,6 +36,14 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
   border-radius:50%;background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink-dim);
   font-size:12px;margin-right:6px;font-weight:600}
 .kcard h3{font-size:16px;margin:0 0 10px;color:var(--ink-dim);font-weight:600;letter-spacing:.02em}
+/* 03/11: marco "Parcela reduzida" dentro do card 3 — mesma linha do título,
+   justificado à direita. */
+.kcard-title-row{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
+.kcard-title-row h3{margin:0}
+.card-marker-icon{display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;border:1.4px solid var(--marker-orange);
+  color:var(--marker-orange);font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:11px;font-weight:700;cursor:pointer;flex:none}
 .kcard .big{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
 /* 02/11: status de contemplação (#statusInfo, card "Valor do crédito") —
    branco quando contemplado, cor padrão (azul escuro, var(--ink-faint), já
@@ -194,6 +202,14 @@ svg{display:block;width:100%;height:auto}
   width:360px;height:120px;max-width:calc(100% - 24px);max-height:calc(100% - 76px);
   box-sizing:border-box;overflow:auto;
   opacity:.35;pointer-events:none;transition:opacity .15s ease;z-index:6}
+/* 03/11: enquanto apagada (nenhum marco clicado) não mostra nenhum texto —
+   só o contorno/fundo da caixa. */
+.marker-tooltip-fixed:not(.active) .marker-tooltip-title,
+.marker-tooltip-fixed:not(.active) .marker-tooltip-text{display:none}
+/* 03/11: título e texto centralizados quando a caixa está acesa (marco
+   clicado). */
+.marker-tooltip-fixed .marker-tooltip-title,
+.marker-tooltip-fixed .marker-tooltip-text{text-align:center}
 .marker-tooltip-fixed.active{opacity:1;pointer-events:auto}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
@@ -365,7 +381,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
     <!-- CARD 3: Parcela -->
     <div class="kcard" id="parcelaCard">
-      <h3>Parcela</h3>
+      <div class="kcard-title-row">
+        <h3>Parcela</h3>
+        <!-- 03/11: marco "Parcela reduzida" — mesmo ícone "i" da jornada
+             guiada, agora dentro do card, abre a mesma caixa fixa (ver
+             #markerTooltipFixed/showMarkerTooltipFixed). -->
+        <span class="card-marker-icon" id="marcoParcelaReduzida" data-marker="parcela-reduzida">i</span>
+      </div>
       <div class="valor-pago-row">
         <div class="big" id="kpiParcelaAtual">R$ 720,00</div>
         <div class="valor-pago-pct"><span id="paidLabel">0</span>/200</div>
@@ -415,8 +437,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          título "Simulador de Consórcio") — qualquer marco clicado preenche
          essa mesma caixa, em vez de abrir um balão perto de si mesmo. -->
     <div class="marker-tooltip marker-tooltip-journey marker-tooltip-fixed" id="markerTooltipFixed">
-      <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle">Jornada guiada</div>
-      <div class="marker-tooltip-text" id="markerTooltipFixedText">Clique em um marco ("i") na ponte para ver a explicação de cada etapa do consórcio.</div>
+      <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle"></div>
+      <div class="marker-tooltip-text" id="markerTooltipFixedText"></div>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1799,12 +1821,6 @@ var bridgeMarkers = [
     text: 'Percentual livre sobre o valor da carta. Vence quem oferecer o maior percentual, contemplando quantas cotas o fundo comum do grupo permitir naquela assembleia.'
   },
   {
-    id: 'parcela-reduzida',
-    month: 60, // fim do Ano 5 / início do Ano 6
-    title: 'Parcela reduzida',
-    text: 'Nesta simulação começamos pagando um valor de parcela reduzida e após a contemplação da carta o valor é recalculado considerando o que ainda falta pagar do crédito.'
-  },
-  {
     id: 'taxa-adm',
     month: 84, // fim do Ano 7 / início do Ano 8
     title: 'Taxa adm',
@@ -1823,6 +1839,16 @@ var bridgeMarkers = [
     text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
   }
 ];
+
+// 03/11: marco "Parcela reduzida" saiu da ponte (não tem mais ícone "i"
+// sobre os blocos) e virou o ícone "i" dentro do próprio card 3 ("Parcela"),
+// na mesma linha do título — mas o conteúdo continua abrindo na mesma caixa
+// fixa compartilhada dos outros marcos (#markerTooltipFixed).
+var parcelaReduzidaMarker = {
+  id: 'parcela-reduzida',
+  title: 'Parcela reduzida',
+  text: 'Nesta simulação começamos pagando um valor de parcela reduzida e após a contemplação da carta o valor é recalculado considerando o que ainda falta pagar do crédito.'
+};
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
 // pra qualquer mês, não só os múltiplos de 12
@@ -1931,14 +1957,11 @@ function updatePinTooltipContent(){
 // .marker-tooltip-fixed/#markerTooltipFixed), então cada ícone só precisa
 // saber qual marco está aberto agora pra decidir abrir/fechar/trocar.
 // A caixa fica SEMPRE visível (nunca opacity:0) — "apagada" (classe .active
-// ausente, opacity baixa via CSS) com um texto-convite quando nenhum marco
-// está selecionado, e "acesa" (.active, opacity 1) com o texto do marco
-// assim que ele é clicado.
+// ausente, opacity baixa via CSS) e SEM NENHUM TEXTO (CSS esconde título e
+// conteúdo enquanto não tem .active) quando nenhum marco está selecionado,
+// e "acesa" (.active, opacity 1, texto centralizado) com o título+texto do
+// marco assim que ele é clicado.
 var openMarkerId = null;
-var markerTooltipPlaceholder = {
-  title: 'Jornada guiada',
-  text: 'Clique em um marco ("i") na ponte para ver a explicação de cada etapa do consórcio.'
-};
 
 function setMarkerTooltipFixedContent(mk){
   document.getElementById('markerTooltipFixedTitle').textContent = mk.title;
@@ -1955,10 +1978,7 @@ function showMarkerTooltipFixed(mk){
 
 function hideMarkerTooltipFixed(){
   var box = document.getElementById('markerTooltipFixed');
-  if (box){
-    box.classList.remove('active');
-    setMarkerTooltipFixedContent(markerTooltipPlaceholder);
-  }
+  if (box) box.classList.remove('active');
   openMarkerId = null;
 }
 
@@ -1999,6 +2019,20 @@ function buildMarkers(){
     });
 
     g.appendChild(wrap);
+  });
+}
+
+// 03/11: ícone "i" do marco "Parcela reduzida", agora dentro do card 3 —
+// mesmo comportamento de toggle/troca dos marcos da ponte, só que a partir
+// de um elemento HTML fixo no card, não de um ícone no SVG.
+function buildCardMarkers(){
+  var icon = document.getElementById('marcoParcelaReduzida');
+  if (!icon) return;
+  icon.addEventListener('click', function(e){
+    e.stopPropagation();
+    var wasOpenSame = openMarkerId === parcelaReduzidaMarker.id;
+    closeAllMarkerTooltips();
+    if (!wasOpenSame) showMarkerTooltipFixed(parcelaReduzidaMarker);
   });
 }
 
@@ -2751,6 +2785,7 @@ document.getElementById('restartBtn').addEventListener('click', function(){
 drawStructure();
 buildDeck();
 buildMarkers();
+buildCardMarkers();
 buildPinTooltip();
 initSorteioPool();
 updateContempladosPainel(null);
