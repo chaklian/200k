@@ -126,6 +126,12 @@ svg{display:block;width:100%;height:auto}
    3 donuts dos cards de lance ao lado. Ganha também um botão "Dar Lance"
    igual ao dos outros dois cards (mesma classe .lance-apply-btn), só que
    ainda sem handler de clique — reservado pra uma função futura. */
+/* 02/11: .contemplados-lines/.contemplados-line substituem o antigo
+   .contemplados-grid (3 blocos lado a lado) por 3 linhas verticais
+   ("Sorteio: 999" etc.) no card "Cotas contempladas" */
+.contemplados-lines{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+.contemplados-line{font-size:14px;color:var(--ink-faint)}
+.contemplados-line span{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .contemplados-grid{display:flex;flex-direction:row;margin-top:4px}
 .contemplados-sec{flex:1 1 0;min-width:0;padding:0 10px;text-align:center;
   border-left:1px solid var(--grid)}
@@ -326,22 +332,20 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          pro card 6 (ver abaixo). -->
     <div class="kcard" id="statusCard">
       <h3>Cotas contempladas</h3>
-      <div class="contemplados-grid" id="contempladosOverlay">
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Sorteio</div>
-          <div class="contemplados-valores" id="contSorteio">—</div>
-          <div class="contemplados-chance" id="contSorteioChance">—</div>
-        </div>
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Lance Fixo</div>
-          <div class="contemplados-valores" id="contFixo">—</div>
-          <div class="contemplados-chance" id="contFixoChance">—</div>
-        </div>
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Lance Livre</div>
-          <div class="contemplados-valores" id="contLivre">—</div>
-          <div class="contemplados-chance" id="contLivreChance">—</div>
-        </div>
+      <!-- 02/11: virou 3 linhas verticais ("Sorteio: 999" etc.), no lugar
+           dos 3 blocos lado a lado de antes — label e valor no mesmo
+           elemento (não tem mais contemplados-label/contemplados-sec
+           separados). A chance (#contSorteioChance/#contFixoChance/
+           #contLivreChance) não aparece mais na tela — só os 3 divs abaixo
+           continuam existindo pra updateContempladosChances() ter onde
+           escrever, sem efeito visual (via display:none). -->
+      <div class="contemplados-lines" id="contempladosOverlay">
+        <div class="contemplados-line">Sorteio: <span id="contSorteio">—</span></div>
+        <div class="contemplados-line">Lance Fixo: <span id="contFixo">—</span></div>
+        <div class="contemplados-line">Lance Livre: <span id="contLivre">—</span></div>
+      </div>
+      <div style="display:none">
+        <span id="contSorteioChance"></span><span id="contFixoChance"></span><span id="contLivreChance"></span>
       </div>
     </div>
   </div>
