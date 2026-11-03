@@ -37,13 +37,10 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
   font-size:12px;margin-right:6px;font-weight:600}
 .kcard h3{font-size:16px;margin:0 0 10px;color:var(--ink-dim);font-weight:600;letter-spacing:.02em}
 .kcard .big{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-/* 02/11: status de contemplação (#statusInfo) em destaque verde quando
-   contemplado — mesmo verde de .lance-apply-btn.contemplado. Já foi um texto
-   .big numa caixa própria (card "Status"); agora é 1 linha .sub só, no card
-   "Valor do crédito" — a regra pro .big ficou pra trás como código morto
-   seguro (nenhum elemento com as duas classes juntas existe mais no HTML). */
-.kcard .big.contemplado{color:var(--paid)}
-.kcard .sub.contemplado{color:var(--paid)}
+/* 02/11: status de contemplação (#statusInfo, card "Valor do crédito") —
+   branco quando contemplado, cor padrão (azul escuro, var(--ink-faint), já
+   definida em .kcard .sub abaixo) enquanto não contemplado. */
+.kcard .sub.contemplado{color:#fff}
 .kcard .sub{font-size:12px;color:var(--ink-faint);margin-top:4px}
 .kcard .sub input{font-family:inherit;font-size:12px;width:40px;padding:2px 4px;margin:0 2px;
   background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink);border-radius:2px}
@@ -273,14 +270,22 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-apply-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
 .lance-apply-btn.carta-vendida{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
 .lance-apply-btn.carta-vendida:hover{border-color:var(--sell-blue);background:#102642}
-/* 02/11: "Comprar Imóvel" e "Vender Carta" lado a lado no card "Valor do
-   crédito" — o wrapper assume o sangramento até a borda do card (que cada
-   botão fazia sozinho antes de existir um 2º botão), cada botão fica com
-   50% da largura e só os cantos externos arredondados. */
-.credit-btn-row{display:flex;margin:0 -16px -16px}
-.credit-btn-row .lance-apply-btn{width:50%;margin:0;border-radius:0}
-.credit-btn-row .lance-apply-btn:first-child{border-radius:0 0 0 8px;border-right:none}
-.credit-btn-row .lance-apply-btn:last-child{border-radius:0 0 8px 0}
+/* 02/11: card "Ações" (card 6) — 5 botões empilhados, 1 por linha (Pagar
+   parcela / Cancelar consórcio / Vender carta não contemplada / Vender
+   carta contemplada / Comprar Imóvel), com visual próprio (não reaproveita
+   .lance-apply-btn, que é feito pra "colar" só no rodapé do card, pensado
+   pra 1 botão só — aqui são 5, cada um com largura/cantos iguais). */
+.acoes-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.acoes-btn{width:100%;padding:10px 12px;text-align:center;border-radius:6px;
+  background:var(--canvas-deep);color:var(--ink-dim);border:1px solid var(--grid);
+  font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.02em;
+  text-transform:none;cursor:pointer;transition:opacity .15s ease,border-color .15s ease}
+.acoes-btn:hover{border-color:var(--ink-faint);background:var(--canvas-deep)}
+.acoes-btn:disabled{opacity:.4;cursor:default}
+.acoes-btn.imovel-comprado{background:#3a2a0f;color:var(--amber);border-color:var(--amber)}
+.acoes-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
+.acoes-btn.carta-vendida{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
+.acoes-btn.carta-vendida:hover{border-color:var(--sell-blue);background:#102642}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -370,10 +375,11 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   <!-- CARD 5: Ponte -->
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
     <div class="ponte-titulo">Simulador de Consórcio</div>
+    <!-- 02/11: os botões "< < <"/"> > >" saíram de cima da ponte e foram
+         pro card "Ações" (card 6, abaixo) — aqui sobra só a cota do
+         investidor. -->
     <div class="pay-overlay" id="payOverlay">
-      <button id="restartBtn" aria-label="Cancelar carta">&lt; &lt; &lt;</button>
       <div class="ponte-cota-label" id="ponteCotaLabel">Cota —</div>
-      <button id="payBtn" class="pay-pulse" aria-label="Pagar parcela"><span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span></button>
     </div>
     <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -459,25 +465,32 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   </div>
 
   <div class="kanban">
-    <!-- CARD 6: Cotas contempladas -->
-    <!-- CARD 6: 02/11 — virou o card "Status". O texto de contemplação
-         (#statusInfo) que vivia numa caixa aqui foi pro card 1 (1 linha só,
-         "Status: ..."); no lugar dela entraram os botões "Comprar Imóvel"/
-         "Vender Carta" que viviam no card 1. As 3 estatísticas (Sorteio/
+    <!-- CARD 6: Ações -->
+    <!-- CARD 6: 02/11 — virou o card "Ações", com 5 botões empilhados (1 por
+         linha), nessa ordem: Pagar parcela / Cancelar consórcio (os 2
+         vieram de cima da ponte, ver #payOverlay acima) / Vender carta não
+         contemplada / Vender carta contemplada / Comprar Imóvel. O texto de
+         contemplação (#statusInfo) que vivia num card "Status" aqui foi pro
+         card 1 (1 linha só, "Status: ..."). As 3 estatísticas (Sorteio/
          Lance Fixo/Lance Livre) e o botão "Dar Lance" originais desse card
          foram pro card 4 ("Cotas contempladas") numa sessão anterior. -->
     <div class="kcard" id="sorteioCard">
-      <h3>Status</h3>
-      <div class="lance-spacer"></div>
-      <!-- "Comprar Imóvel" congela o crédito (ele foi usado pra comprar o
-           bem, então para de reajustar — ver creditoAt()) e troca o ícone
-           do pin na cabeça do boneco de "$" pra uma chave dourada. "Vender
-           Carta" troca o pin pro envelope azul e encerra a travessia ali
-           mesmo. Ambos ficam desabilitados até a cota ser contemplada e são
-           mutuamente exclusivos entre si. -->
-      <div class="credit-btn-row">
-        <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
-        <button id="sellCartaBtn" class="lance-apply-btn" disabled>Vender Carta</button>
+      <h3>Ações</h3>
+      <div class="acoes-list">
+        <button id="payBtn" class="acoes-btn">Pagar parcela</button>
+        <button id="restartBtn" class="acoes-btn" aria-label="Cancelar consórcio">Cancelar consórcio</button>
+        <!-- "Vender carta não contemplada": só habilita ANTES da
+             contemplação (oposto do botão de baixo) — vender a cota ainda
+             não contemplada, transferindo direitos e obrigações. -->
+        <button id="sellCartaNaoContempladaBtn" class="acoes-btn" disabled>Vender carta não contemplada</button>
+        <!-- "Vender carta contemplada": só habilita DEPOIS da contemplação.
+             Os 2 botões de venda e o "Comprar Imóvel" são mutuamente
+             exclusivos entre si — só 1 dos 3 pode acontecer, e é definitivo. -->
+        <button id="sellCartaBtn" class="acoes-btn" disabled>Vender carta contemplada</button>
+        <!-- "Comprar Imóvel": congela o crédito (ele foi usado pra comprar
+             o bem, então para de reajustar — ver creditoAt()) e troca o
+             ícone do pin na cabeça do boneco de "$" pra uma chave dourada. -->
+        <button id="buyImovelBtn" class="acoes-btn" disabled>Comprar Imóvel</button>
       </div>
     </div>
 
@@ -759,7 +772,7 @@ function buildWalker(g, baseY){
   pin.appendChild(pinEnvelope);
   pin.addEventListener('click', function(e){
     e.stopPropagation();
-    if (!contemplated) return; // só reage a clique enquanto estiver visível (contemplado)
+    if (!contemplated && !cartaSold) return; // só reage a clique enquanto estiver visível (contemplado ou carta já vendida)
     var isOpen = pinTooltip && pinTooltip.g.style.opacity === '1';
     closeAllMarkerTooltips();
     if (!isOpen){
@@ -986,12 +999,15 @@ var creditUsed = false;
 var creditUsedMonthsElapsed = null; // tempo real (meses) no instante da compra do imóvel
 var creditFrozenValue = null; // valor do crédito travado a partir daquele instante (nunca mais reajusta)
 
-// 02/11: dinâmica de "vender a carta contemplada" — alternativa ao botão
-// "Comprar Imóvel" (mutuamente exclusiva: só uma das duas pode acontecer).
-// Só fica disponível depois da contemplação; uma vez clicado (sellCarta()),
-// a travessia acaba ali — não existem mais parcelas a pagar, o boneco não
-// avança mais (ver updatePayBtn()/doPay()).
+// 02/11: dinâmica de "vender a carta" — alternativa ao botão "Comprar
+// Imóvel" (mutuamente exclusiva: só uma das três ações — comprar, vender
+// não contemplada, vender contemplada — pode acontecer, e é definitiva).
+// Uma vez clicada (sellCarta()/sellCartaNaoContemplada()), a travessia
+// acaba ali — não existem mais parcelas a pagar, o boneco não avança mais
+// (ver updatePayBtn()/doPay()). cartaSoldVia guarda qual dos 2 botões foi
+// usado, só pra saber o que mostrar no botão e no balão do pin.
 var cartaSold = false;
+var cartaSoldVia = null; // 'contemplada' | 'nao_contemplada'
 
 // parcela pós-contemplação (29/10): em vez de um multiplicador fixo
 // (PARCELA_CHEIA_MULT), recalculamos de fato com base no saldo devedor
@@ -1400,7 +1416,10 @@ function updateContemplationUI(){
   var hintEl = document.getElementById('kpiStatusHint');
   // MODALIDADE_LABEL (mapa pro nome de exibição da modalidade que
   // contemplou) agora é var global — ver declaração perto de contemplationMethod
-  setMoneyPinVisible(contemplated); // pin de dinheiro sobre a cabeça do boneco, só após contemplado
+  // 02/11: pin sobre a cabeça do boneco aparece após a contemplação (money/
+  // key) OU após vender a carta não contemplada (envelope), que pode
+  // acontecer ANTES da contemplação — ver sellCartaNaoContemplada().
+  setMoneyPinVisible(contemplated || cartaSold);
   if (contemplated){
     if (statusEl) statusEl.textContent = 'Contemplado';
     // 31/10: "Parcela cheia (sem redutor)" deu lugar à modalidade que
@@ -1445,39 +1464,57 @@ function updateContemplationUI(){
   var statusInfoEl = document.getElementById('statusInfo');
   if (statusInfoEl){
     statusInfoEl.textContent = 'Status: ' + (contemplated
-      ? ('Contemplado: ' + (MODALIDADE_LABEL[contemplationMethod] || '—'))
+      ? ('Contemplado por ' + (MODALIDADE_LABEL[contemplationMethod] || '—'))
       : 'Não contemplado');
     statusInfoEl.classList.toggle('contemplado', contemplated);
   }
 
   updateBuyBtn();
   updateSellCartaBtn();
+  updateSellCartaNaoContempladaBtn();
 }
 
 // botão "Vender Carta" (card "Valor do crédito", ao lado de "Comprar Imóvel")
-// — mesma condição de habilitação de "Comprar Imóvel" (precisa estar
-// contemplado), e trava se o crédito já foi usado pra comprar o imóvel ou
-// se a carta já foi vendida (sellCarta()) — as duas ações são mutuamente
-// exclusivas e, uma vez feitas, são definitivas.
+// — só fica disponível DEPOIS da contemplação (oposto do botão "Vender
+// carta não contemplada" abaixo). As 3 ações do card "Ações" (comprar
+// imóvel / vender contemplada / vender não contemplada) são mutuamente
+// exclusivas entre si e, uma vez feita qualquer uma delas, são definitivas.
 function updateSellCartaBtn(){
   var btn = document.getElementById('sellCartaBtn');
   if (!btn) return;
-  if (cartaSold){
+  if (cartaSold && cartaSoldVia === 'contemplada'){
     btn.disabled = true;
     btn.textContent = 'Carta vendida';
     btn.classList.add('carta-vendida'); // azul, cor própria do envelope
   } else {
-    btn.disabled = !contemplated || creditUsed;
-    btn.textContent = 'Vender Carta';
+    btn.disabled = !contemplated || creditUsed || cartaSold;
+    btn.textContent = 'Vender carta contemplada';
     btn.classList.remove('carta-vendida');
-    btn.style.opacity = (contemplated && !creditUsed) ? '1' : '0.5';
+    btn.style.opacity = (contemplated && !creditUsed && !cartaSold) ? '1' : '0.5';
   }
 }
 
-// botão "Comprar Imóvel" (card "Valor do crédito") — só fica clicável
-// depois da contemplação, e só até ser clicado uma vez (compra é um evento
-// único; ver buyImovel()), e trava também se a carta já foi vendida
-// (sellCarta() — mutuamente exclusivo com comprar o imóvel). Chamado de
+// botão "Vender carta não contemplada" (card "Ações") — só fica disponível
+// ANTES da contemplação (oposto do botão "Vender carta contemplada" acima).
+function updateSellCartaNaoContempladaBtn(){
+  var btn = document.getElementById('sellCartaNaoContempladaBtn');
+  if (!btn) return;
+  if (cartaSold && cartaSoldVia === 'nao_contemplada'){
+    btn.disabled = true;
+    btn.textContent = 'Carta vendida';
+    btn.classList.add('carta-vendida');
+  } else {
+    btn.disabled = contemplated || creditUsed || cartaSold;
+    btn.textContent = 'Vender carta não contemplada';
+    btn.classList.remove('carta-vendida');
+    btn.style.opacity = (!contemplated && !creditUsed && !cartaSold) ? '1' : '0.5';
+  }
+}
+
+// botão "Comprar Imóvel" (card "Ações") — só fica clicável depois da
+// contemplação, e só até ser clicado uma vez (compra é um evento único; ver
+// buyImovel()), e trava também se a carta já foi vendida por qualquer um
+// dos 2 botões de venda (mutuamente exclusivo com os dois). Chamado de
 // dentro de updateContemplationUI() (que já roda sempre que contemplated
 // muda) e do reset.
 function updateBuyBtn(){
@@ -1510,23 +1547,44 @@ function buyImovel(){
   updateKpis();
   updateBuyBtn();
   updateSellCartaBtn();
+  updateSellCartaNaoContempladaBtn();
 }
 document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
 
 // 02/11: dinâmica de "vender a carta contemplada" — alternativa ao "Comprar
-// Imóvel", mutuamente exclusiva com ele (só uma das duas pode acontecer).
-// Evento único e manual: troca o ícone do pin pro envelope azul e encerra a
-// travessia ali mesmo — não existem mais parcelas a pagar, o boneco não
-// avança mais daquele ponto em diante (ver updatePayBtn()/doPay()).
+// Imóvel", mutuamente exclusiva com ele e com "Vender carta não
+// contemplada" (só 1 das 3 ações pode acontecer). Evento único e manual:
+// troca o ícone do pin pro envelope azul e encerra a travessia ali mesmo —
+// não existem mais parcelas a pagar, o boneco não avança mais daquele ponto
+// em diante (ver updatePayBtn()/doPay()).
 function sellCarta(){
   if (!contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
+  cartaSoldVia = 'contemplada';
   setPinIcon('envelope');
+  setMoneyPinVisible(true);
   updateBuyBtn();
   updateSellCartaBtn();
+  updateSellCartaNaoContempladaBtn();
   updatePayBtn();
 }
 document.getElementById('sellCartaBtn').addEventListener('click', sellCarta);
+
+// 02/11: dinâmica de "vender a carta não contemplada" — a mesma ideia de
+// sellCarta() acima, só que ANTES da contemplação (cota ainda não foi
+// sorteada/não ganhou lance). Também encerra a travessia ali mesmo.
+function sellCartaNaoContemplada(){
+  if (contemplated || creditUsed || cartaSold) return;
+  cartaSold = true;
+  cartaSoldVia = 'nao_contemplada';
+  setPinIcon('envelope');
+  setMoneyPinVisible(true);
+  updateBuyBtn();
+  updateSellCartaBtn();
+  updateSellCartaNaoContempladaBtn();
+  updatePayBtn();
+}
+document.getElementById('sellCartaNaoContempladaBtn').addEventListener('click', sellCartaNaoContemplada);
 
 var deckG = document.getElementById('deck');
 var blocksG = document.getElementById('blocks');
@@ -1798,7 +1856,9 @@ function updatePinTooltipContent(){
   if (!pinTooltip) return;
   if (cartaSold){
     pinTooltip.titleEl.textContent = 'Venda de carta';
-    pinTooltip.textEl.textContent = 'É possível vender a sua carta contemplada, transferindo seus direitos e obrigações.';
+    pinTooltip.textEl.textContent = (cartaSoldVia === 'contemplada')
+      ? 'É possível vender a sua carta contemplada, transferindo seus direitos e obrigações.'
+      : 'É possível vender a sua carta antes da contemplação, transferindo seus direitos e obrigações.';
     return;
   }
   if (creditUsed){
@@ -2406,15 +2466,12 @@ function updatePayBtn(){
   // "concluído" (paidMonths >= TOTAL), mesmo faltando parcelas.
   var done = paidMonths >= TOTAL || cartaSold;
   payBtn.disabled = done;
-  // 31/10: botão voltou a ser só texto — ">>>" normalmente (cada ">" num
-  // <span> próprio, pra poder piscar em cascata via CSS — ver .pay-pulse
-  // .arrow-chevron). 02/11: ao concluir, as setas ">>>" continuam sempre
-  // visíveis (só sem piscar, ver .pay-pulse abaixo) e o botão fica
-  // desabilitado/sem clique — os fogos de artifício (launchFireworks, ver
-  // paint()) já deixam claro que a travessia terminou, então não precisa de
-  // nenhum rótulo diferente nem de esconder as setas.
-  payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span>';
-  payBtn.classList.toggle('pay-pulse', !done);
+  // 02/11: botão saiu de cima da ponte (era só as setas ">>>") e foi pro
+  // card "Ações" como um botão de texto normal, igual aos outros 4 — texto
+  // fixo "Pagar parcela", só desabilitado/opaco ao concluir (fogos de
+  // artifício já deixam claro que a travessia terminou, ver launchFireworks
+  // em paint()) ou depois de vender a carta.
+  payBtn.textContent = 'Pagar parcela';
   payBtn.style.opacity = done ? '0.5' : '1';
   payBtn.style.cursor = done ? 'default' : 'pointer';
 }
@@ -2622,6 +2679,7 @@ function resetSimulation(){
   creditUsedMonthsElapsed = null;
   creditFrozenValue = null;
   cartaSold = false;
+  cartaSoldVia = null;
   setPinIcon('money'); // pin volta a ser "$" (chave dourada ou envelope só depois de comprar/vender de novo)
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   updateContempladosPainel(null);
