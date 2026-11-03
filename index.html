@@ -10,6 +10,8 @@
   --amber:#eeab3c; --amber-ink:#2a1a04;
   --gold:#e8c468;
   --marker-orange:#ef7f2e; /* 02/11: cor dos ícones "i" da jornada guiada — trocada de âmbar pra laranja a pedido do usuário */
+  --sell-blue:#3e8ef0; /* 02/11: cor do pin de "Venda de carta" (envelope) */
+  --sell-blue-ink:#07142b;
   --concrete:#e4ebf1; --concrete-ink:#0a2744;
   --paid:#6fbf73; --paid-ink:#173a1b;
   --future:#5b6b7a;
@@ -271,6 +273,8 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-apply-btn.contemplado:hover{border-color:var(--paid);background:#143a19}
 .lance-apply-btn.imovel-comprado{background:#3a2a0f;color:var(--amber);border-color:var(--amber)}
 .lance-apply-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
+.lance-apply-btn.carta-vendida{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
+.lance-apply-btn.carta-vendida:hover{border-color:var(--sell-blue);background:#102642}
 /* 02/11: "Comprar Imóvel" e "Vender Carta" lado a lado no card "Valor do
    crédito" — o wrapper assume o sangramento até a borda do card (que cada
    botão fazia sozinho antes de existir um 2º botão), cada botão fica com
@@ -740,6 +744,15 @@ function buildWalker(g, baseY){
   pinKey.appendChild(el('line', {x1:2.5, y1:pinY + 2.6, x2:3.9, y2:pinY + 1.3, stroke:'var(--canvas)', 'stroke-width':'1.4', 'stroke-linecap':'round'}));
   pinKey.appendChild(el('line', {x1:3.9, y1:pinY + 4.1, x2:5.2, y2:pinY + 2.9, stroke:'var(--canvas)', 'stroke-width':'1.4', 'stroke-linecap':'round'}));
   pin.appendChild(pinKey);
+  // ícone de envelope — desenhado (mesmo estilo vetorial dos outros 2):
+  // retângulo + "V" da aba, em miniatura, centrado no mesmo ponto. Escondido
+  // por padrão, alternado com "$"/chave por setPinIcon('envelope').
+  var pinEnvelope = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .2s ease'});
+  pinEnvelope.appendChild(el('rect', {x:-5, y:pinY - 3.6, width:10, height:7.2, rx:'0.8',
+    fill:'none', stroke:'var(--canvas)', 'stroke-width':'1.4'}));
+  pinEnvelope.appendChild(el('path', {d:'M -5 ' + (pinY - 3.6) + ' L 0 ' + (pinY + 1.2) + ' L 5 ' + (pinY - 3.6),
+    fill:'none', stroke:'var(--canvas)', 'stroke-width':'1.4', 'stroke-linecap':'round', 'stroke-linejoin':'round'}));
+  pin.appendChild(pinEnvelope);
   pin.addEventListener('click', function(e){
     e.stopPropagation();
     if (!contemplated) return; // só reage a clique enquanto estiver visível (contemplado)
@@ -757,17 +770,22 @@ function buildWalker(g, baseY){
   g._pinBg = pinBg;
   g._pinDollar = pinDollar;
   g._pinKey = pinKey;
+  g._pinEnvelope = pinEnvelope;
 }
 
-// alterna o conteúdo do pin entre "$" (dinheiro, antes de comprar o imóvel)
-// e a chave dourada (depois de buyImovel()) — ver chamadas em
-// updateContemplationUI()/buyImovel()/resetSimulation().
+// alterna o conteúdo do pin entre "$" (dinheiro, padrão após a contemplação),
+// a chave dourada (depois de buyImovel()) e o envelope azul (depois de
+// sellCarta()) — ver chamadas em updateContemplationUI()/buyImovel()/
+// sellCarta()/resetSimulation().
 function setPinIcon(kind){
   if (!investorG._pinBg) return;
   var isKey = kind === 'key';
-  investorG._pinBg.setAttribute('fill', isKey ? 'var(--amber)' : 'var(--paid)');
-  investorG._pinDollar.style.opacity = isKey ? '0' : '1';
+  var isEnvelope = kind === 'envelope';
+  var bg = isEnvelope ? 'var(--sell-blue)' : (isKey ? 'var(--amber)' : 'var(--paid)');
+  investorG._pinBg.setAttribute('fill', bg);
+  investorG._pinDollar.style.opacity = (!isKey && !isEnvelope) ? '1' : '0';
   investorG._pinKey.style.opacity = isKey ? '1' : '0';
+  investorG._pinEnvelope.style.opacity = isEnvelope ? '1' : '0';
 }
 
 function setMoneyPinVisible(show){
@@ -963,6 +981,13 @@ var contemplationMonthsElapsed = null; // tempo real (meses) no instante da cont
 var creditUsed = false;
 var creditUsedMonthsElapsed = null; // tempo real (meses) no instante da compra do imóvel
 var creditFrozenValue = null; // valor do crédito travado a partir daquele instante (nunca mais reajusta)
+
+// 02/11: dinâmica de "vender a carta contemplada" — alternativa ao botão
+// "Comprar Imóvel" (mutuamente exclusiva: só uma das duas pode acontecer).
+// Só fica disponível depois da contemplação; uma vez clicado (sellCarta()),
+// a travessia acaba ali — não existem mais parcelas a pagar, o boneco não
+// avança mais (ver updatePayBtn()/doPay()).
+var cartaSold = false;
 
 // parcela pós-contemplação (29/10): em vez de um multiplicador fixo
 // (PARCELA_CHEIA_MULT), recalculamos de fato com base no saldo devedor
@@ -1426,21 +1451,31 @@ function updateContemplationUI(){
 }
 
 // botão "Vender Carta" (card "Valor do crédito", ao lado de "Comprar Imóvel")
-// — por ora só o habilitar/desabilitar está implementado (mesma condição de
-// "Comprar Imóvel": precisa estar contemplado, e trava se o crédito já foi
-// usado pra comprar o imóvel, já que as duas ações são mutuamente exclusivas).
-// Sem handler de clique ainda — lógica de venda em si é pendência aberta.
+// — mesma condição de habilitação de "Comprar Imóvel" (precisa estar
+// contemplado), e trava se o crédito já foi usado pra comprar o imóvel ou
+// se a carta já foi vendida (sellCarta()) — as duas ações são mutuamente
+// exclusivas e, uma vez feitas, são definitivas.
 function updateSellCartaBtn(){
   var btn = document.getElementById('sellCartaBtn');
   if (!btn) return;
-  btn.disabled = !contemplated || creditUsed;
-  btn.style.opacity = (contemplated && !creditUsed) ? '1' : '0.5';
+  if (cartaSold){
+    btn.disabled = true;
+    btn.textContent = 'Carta vendida';
+    btn.classList.add('carta-vendida'); // azul, cor própria do envelope
+  } else {
+    btn.disabled = !contemplated || creditUsed;
+    btn.textContent = 'Vender Carta';
+    btn.classList.remove('carta-vendida');
+    btn.style.opacity = (contemplated && !creditUsed) ? '1' : '0.5';
+  }
 }
 
 // botão "Comprar Imóvel" (card "Valor do crédito") — só fica clicável
 // depois da contemplação, e só até ser clicado uma vez (compra é um evento
-// único; ver buyImovel()). Chamado de dentro de updateContemplationUI() (que
-// já roda sempre que contemplated muda) e do reset.
+// único; ver buyImovel()), e trava também se a carta já foi vendida
+// (sellCarta() — mutuamente exclusivo com comprar o imóvel). Chamado de
+// dentro de updateContemplationUI() (que já roda sempre que contemplated
+// muda) e do reset.
 function updateBuyBtn(){
   var btn = document.getElementById('buyImovelBtn');
   if (!btn) return;
@@ -1449,10 +1484,10 @@ function updateBuyBtn(){
     btn.textContent = 'Imóvel comprado';
     btn.classList.add('imovel-comprado'); // amarelo, cor própria — não reaproveita o verde de .contemplado
   } else {
-    btn.disabled = !contemplated;
+    btn.disabled = !contemplated || cartaSold;
     btn.textContent = 'Comprar Imóvel';
     btn.classList.remove('imovel-comprado');
-    btn.style.opacity = contemplated ? '1' : '0.5';
+    btn.style.opacity = (contemplated && !cartaSold) ? '1' : '0.5';
   }
 }
 
@@ -1463,7 +1498,7 @@ function updateBuyBtn(){
 // investidor continua pagando parcela normalmente até concluir a travessia
 // (nenhuma mudança na caminhada em si).
 function buyImovel(){
-  if (!contemplated || creditUsed) return;
+  if (!contemplated || creditUsed || cartaSold) return;
   creditUsedMonthsElapsed = monthsElapsed;
   creditFrozenValue = currentCredit(); // calculado ANTES de marcar creditUsed, com a regra ainda normal
   creditUsed = true;
@@ -1473,6 +1508,21 @@ function buyImovel(){
   updateSellCartaBtn();
 }
 document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
+
+// 02/11: dinâmica de "vender a carta contemplada" — alternativa ao "Comprar
+// Imóvel", mutuamente exclusiva com ele (só uma das duas pode acontecer).
+// Evento único e manual: troca o ícone do pin pro envelope azul e encerra a
+// travessia ali mesmo — não existem mais parcelas a pagar, o boneco não
+// avança mais daquele ponto em diante (ver updatePayBtn()/doPay()).
+function sellCarta(){
+  if (!contemplated || creditUsed || cartaSold) return;
+  cartaSold = true;
+  setPinIcon('envelope');
+  updateBuyBtn();
+  updateSellCartaBtn();
+  updatePayBtn();
+}
+document.getElementById('sellCartaBtn').addEventListener('click', sellCarta);
 
 var deckG = document.getElementById('deck');
 var blocksG = document.getElementById('blocks');
@@ -1742,6 +1792,11 @@ function repositionPinTooltip(){
 // conteúdo passa a refletir a compra em si, não mais a contemplação.
 function updatePinTooltipContent(){
   if (!pinTooltip) return;
+  if (cartaSold){
+    pinTooltip.titleEl.textContent = 'Venda de carta';
+    pinTooltip.textEl.textContent = 'É possível vender a sua carta contemplada, transferindo seus direitos e obrigações.';
+    return;
+  }
   if (creditUsed){
     pinTooltip.titleEl.textContent = 'Carta utilizada';
     pinTooltip.textEl.textContent = 'Aquisição do imóvel no valor de ' +
@@ -2341,7 +2396,11 @@ function applyLance(vals, kind){
 
 var payBtn = document.getElementById('payBtn');
 function updatePayBtn(){
-  var done = paidMonths >= TOTAL;
+  // 02/11: vender a carta (sellCarta()) encerra a travessia ali mesmo, antes
+  // mesmo de chegar nas 200 parcelas — não existem mais parcelas a pagar a
+  // partir desse momento, então o botão fica desabilitado igual ao estado
+  // "concluído" (paidMonths >= TOTAL), mesmo faltando parcelas.
+  var done = paidMonths >= TOTAL || cartaSold;
   payBtn.disabled = done;
   // 31/10: botão voltou a ser só texto — ">>>" normalmente (cada ">" num
   // <span> próprio, pra poder piscar em cascata via CSS — ver .pay-pulse
@@ -2360,7 +2419,9 @@ function updatePayBtn(){
 // (ver listeners de pointerdown/hold abaixo) — era tudo inline dentro do
 // listener de click antes de 29/10.
 function doPay(){
-  if (paidMonths >= TOTAL) return;
+  // 02/11: depois que a carta é vendida (sellCarta()), não existem mais
+  // parcelas a pagar — o boneco fica parado onde estava pra sempre.
+  if (paidMonths >= TOTAL || cartaSold) return;
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
 
   // mesmo sem lance nenhum, todo mês saem 5 números do baralho do sorteio —
@@ -2556,7 +2617,8 @@ function resetSimulation(){
   creditUsed = false;
   creditUsedMonthsElapsed = null;
   creditFrozenValue = null;
-  setPinIcon('money'); // pin volta a ser "$" (chave dourada só depois de comprar de novo)
+  cartaSold = false;
+  setPinIcon('money'); // pin volta a ser "$" (chave dourada ou envelope só depois de comprar/vender de novo)
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   updateContempladosPainel(null);
   lanceUnlocked = false;
