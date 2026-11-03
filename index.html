@@ -34,6 +34,10 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
   font-size:12px;margin-right:6px;font-weight:600}
 .kcard h3{font-size:16px;margin:0 0 10px;color:var(--ink-dim);font-weight:600;letter-spacing:.02em}
 .kcard .big{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+/* 02/11: status de contemplação (#statusInfo, card "Status") em destaque
+   verde quando contemplado — mesmo verde de .lance-apply-btn.contemplado,
+   só que aplicado num texto simples (.big), não num botão */
+.kcard .big.contemplado{color:var(--paid)}
 .kcard .sub{font-size:12px;color:var(--ink-faint);margin-top:4px}
 .kcard .sub input{font-family:inherit;font-size:12px;width:40px;padding:2px 4px;margin:0 2px;
   background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink);border-radius:2px}
@@ -311,12 +315,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       </div>
     </div>
 
-    <!-- CARD 4: Status — 02/11: todos os textos removidos a pedido do
-         usuário (card mantido vazio no grid, sem título nem conteúdo). Os
-         elementos kpiStatus/kpiStatusHint/kpiStatusCota que o JS atualizava
-         não existem mais — updateContemplationUI() tem guards (if) pra não
-         quebrar quando getElementById retorna null. -->
-    <div class="kcard" id="statusCard"></div>
+    <!-- CARD 4: Status — 02/11: esvaziado (título e os 3 textos antigos
+         removidos), e agora recebe só o status de contemplação que antes
+         vivia no botão "cotasBtn" do card 6 (ver updateContemplationUI) —
+         como texto simples, sem botão e sem as estatísticas de
+         probabilidade (essas ficaram só no card 6, que foi esvaziado). -->
+    <div class="kcard" id="statusCard">
+      <div class="big" id="statusInfo">Não contemplado</div>
+    </div>
   </div>
 
   <!-- CARD 5: Ponte -->
@@ -412,28 +418,15 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
   <div class="kanban">
     <!-- CARD 6: Cotas contempladas -->
-    <div class="kcard" id="sorteioCard">
-      <h3>Cotas contempladas</h3>
-      <div class="contemplados-grid" id="contempladosOverlay">
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Sorteio</div>
-          <div class="contemplados-valores" id="contSorteio">—</div>
-          <div class="contemplados-chance" id="contSorteioChance">—</div>
-        </div>
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Lance Fixo</div>
-          <div class="contemplados-valores" id="contFixo">—</div>
-          <div class="contemplados-chance" id="contFixoChance">—</div>
-        </div>
-        <div class="contemplados-sec">
-          <div class="contemplados-label">Lance Livre</div>
-          <div class="contemplados-valores" id="contLivre">—</div>
-          <div class="contemplados-chance" id="contLivreChance">—</div>
-        </div>
-      </div>
-      <div class="lance-spacer"></div>
-      <button id="cotasBtn" class="lance-apply-btn">Dar Lance</button>
-    </div>
+    <!-- CARD 6: 02/11 — esvaziado a pedido do usuário. Título, as 3
+         estatísticas (Sorteio/Lance Fixo/Lance Livre) e o botão saíram daqui;
+         o status de contemplação que o botão mostrava foi pro card 4
+         (#statusInfo). Os elementos removidos (contSorteio/contFixo/
+         contLivre/*Chance/cotasBtn) já tinham guards (if) no JS que os lia,
+         então a remoção não quebra nada — updateContempladosPainel()/
+         updateContempladosChances() simplesmente deixam de escrever em
+         nenhum lugar visível. -->
+    <div class="kcard" id="sorteioCard"></div>
 
     <!-- CARD 7: Lance Fixo -->
     <div class="kcard" id="fixoCard">
@@ -1371,18 +1364,16 @@ function updateContemplationUI(){
     ponteCotaEl.textContent = 'Cota ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
   }
 
-  // 02/11: botão "Dar Lance" do card "Cotas contempladas" (ainda sem
-  // função própria) passa a mostrar o status de contemplação do
-  // investidor, com cor de destaque (mesmo verde de .lance-feedback.win)
-  // assim que ele é contemplado, por sorteio ou por lance — e, a partir de
-  // agora, também qual foi a modalidade ("Contemplado: Sorteio" etc.),
-  // reaproveitando o mesmo MODALIDADE_LABEL já usado em kpiStatusHint.
-  var cotasBtn = document.getElementById('cotasBtn');
-  if (cotasBtn){
-    cotasBtn.textContent = contemplated
+  // 02/11: esse status (que antes vivia no botão "cotasBtn" do card
+  // "Cotas contempladas", agora esvaziado) passou a aparecer como texto
+  // simples no card "Status" (#statusInfo), sem botão e sem as estatísticas
+  // de probabilidade (essas saíram de tela junto com o card 6).
+  var statusInfoEl = document.getElementById('statusInfo');
+  if (statusInfoEl){
+    statusInfoEl.textContent = contemplated
       ? ('Contemplado: ' + (MODALIDADE_LABEL[contemplationMethod] || '—'))
       : 'Não contemplado';
-    cotasBtn.classList.toggle('contemplado', contemplated);
+    statusInfoEl.classList.toggle('contemplado', contemplated);
   }
 
   updateBuyBtn();
@@ -2287,14 +2278,12 @@ function updatePayBtn(){
   payBtn.disabled = done;
   // 31/10: botão voltou a ser só texto — ">>>" normalmente (cada ">" num
   // <span> próprio, pra poder piscar em cascata via CSS — ver .pay-pulse
-  // .arrow-chevron). 02/11: ao concluir, o texto "Concluído" saiu — os
-  // fogos de artifício (launchFireworks, ver paint()) já deixam claro que
-  // a travessia terminou, sem precisar de rótulo no botão.
-  if (done){
-    payBtn.textContent = '';
-  } else {
-    payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span>';
-  }
+  // .arrow-chevron). 02/11: ao concluir, as setas ">>>" continuam sempre
+  // visíveis (só sem piscar, ver .pay-pulse abaixo) e o botão fica
+  // desabilitado/sem clique — os fogos de artifício (launchFireworks, ver
+  // paint()) já deixam claro que a travessia terminou, então não precisa de
+  // nenhum rótulo diferente nem de esconder as setas.
+  payBtn.innerHTML = '<span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span> <span class="arrow-chevron">&gt;</span>';
   payBtn.classList.toggle('pay-pulse', !done);
   payBtn.style.opacity = done ? '0.5' : '1';
   payBtn.style.cursor = done ? 'default' : 'pointer';
