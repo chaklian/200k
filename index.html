@@ -390,6 +390,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
            Desenhados por cima de tudo (depois do investidor) pra ficarem
            sempre clicáveis, em qualquer momento, independente do progresso. -->
       <g id="markers"></g>
+      <g id="pinTooltip"></g>
 
       <!-- dimension line / scale ruler (no label) -->
       <g id="dim" stroke="var(--ink-faint)" stroke-width="1"></g>
@@ -399,7 +400,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         .lbl-ink{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:var(--concrete-ink);letter-spacing:.04em}
         .year-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#4f7498;letter-spacing:.04em;font-weight:600}
         .money-pin{opacity:0;transition:opacity .4s ease}
-        .money-pin.show{opacity:1;animation:moneyPinFloat 1.8s ease-in-out infinite}
+        .money-pin.show{opacity:1;cursor:pointer;animation:moneyPinFloat 1.8s ease-in-out infinite}
         @keyframes moneyPinFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
       </style>
     </svg>
@@ -667,15 +668,34 @@ function buildWalker(g, baseY){
   // contemplado (ver setMoneyPinVisible/updateContemplationUI) e some num
   // reset. Fica FORA do bodyG de propósito — não deve balançar/inclinar
   // junto com o passo, só acompanhar o boneco horizontalmente (herdado do
-  // translateX do próprio <g id="investor">).
-  var pinY = headCY - r - 11;
+  // translateX do próprio <g id="investor">). Raio (PIN_R=11) e distância
+  // da cabeça (PIN_GAP=4) duplicados como constantes globais perto de
+  // WALKER_HEAD_TOP_Y, usados pelo balão do pin (buildPinTooltip) pra saber
+  // exatamente onde o pin está sem precisar ler o DOM.
+  var pinY = headCY - r - 15; // = WALKER_HEAD_TOP_Y - (PIN_R=11) - (PIN_GAP=4)
   var pin = el('g', {class:'money-pin'});
-  pin.appendChild(el('circle', {cx:0, cy:pinY, r:8, fill:'var(--paid)', stroke:'var(--canvas)', 'stroke-width':'1.5'}));
-  var pinLabel = el('text', {x:0, y:pinY + 3.6, 'text-anchor':'middle',
-    'font-family':"'IBM Plex Mono',monospace", 'font-size':'10', 'font-weight':'700',
+  pin.style.cursor = 'pointer';
+  // área de clique um pouco maior que o círculo visível, do mesmo jeito
+  // que os marcos da jornada guiada fazem (ver buildMarkers)
+  pin.appendChild(el('circle', {cx:0, cy:pinY, r:15, fill:'var(--canvas-deep)', opacity:'0.001'}));
+  pin.appendChild(el('circle', {cx:0, cy:pinY, r:11, fill:'var(--paid)', stroke:'var(--canvas)', 'stroke-width':'1.8'}));
+  var pinLabel = el('text', {x:0, y:pinY + 4.6, 'text-anchor':'middle',
+    'font-family':"'IBM Plex Mono',monospace", 'font-size':'13', 'font-weight':'700',
     fill:'var(--canvas)', 'pointer-events':'none'});
   pinLabel.textContent = '$';
   pin.appendChild(pinLabel);
+  pin.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (!contemplated) return; // só reage a clique enquanto estiver visível (contemplado)
+    var isOpen = pinTooltip && pinTooltip.g.style.opacity === '1';
+    closeAllMarkerTooltips();
+    if (!isOpen){
+      updatePinTooltipContent();
+      repositionPinTooltip();
+      pinTooltip.g.style.opacity = '1';
+      pinTooltip.g.style.pointerEvents = 'auto';
+    }
+  });
   g.appendChild(pin);
   g._moneyPin = pin;
 }
@@ -683,6 +703,11 @@ function buildWalker(g, baseY){
 function setMoneyPinVisible(show){
   if (!investorG._moneyPin) return;
   investorG._moneyPin.classList.toggle('show', !!show);
+  // some junto com o pin se ele estava aberto (ex.: reset da simulação)
+  if (!show && pinTooltip){
+    pinTooltip.g.style.opacity = '0';
+    pinTooltip.g.style.pointerEvents = 'none';
+  }
 }
 
 function setWalkPose(g, pose){
@@ -758,14 +783,21 @@ function investorX(n){
   var gap = bridgeStart - GROUND_X;
   return Math.max(GROUND_X, frontier - gap);
 }
+var lastInvestorN = 0; // último n usado em updateInvestor — usado só pra saber a posição
+                        // atual do pin de dinheiro (investorX) quando o balão dele está aberto
 function updateInvestor(n){
   var pose = Math.floor(n) % 2;
   if (pose !== investorPose){
     setWalkPose(investorG, pose);
     investorPose = pose;
   }
+  lastInvestorN = n;
   investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
   investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
+  // o balão do pin não é filho do <g id="investor"> (precisa recentralizar
+  // perto das bordas do viewBox, igual os marcos da jornada guiada), então
+  // precisa ser reposicionado manualmente enquanto o boneco anda com ele aberto
+  if (pinTooltip && pinTooltip.g.style.opacity === '1') repositionPinTooltip();
 }
 
 function hangerY(x){
@@ -862,6 +894,10 @@ var contemplationMonthsElapsed = null; // tempo real (meses) no instante da cont
 // mostra um valor genérico, não uma prévia calculada.
 var parcelaPosContempValue = null;
 var contemplationMethod = null;  // 'sorteio' | 'fixo' | 'livre' — só pra mostrar no card certo qual modalidade contemplou
+// rótulo de exibição por modalidade — hoisted pra var global (antes vivia só
+// dentro de updateContemplationUI) porque o balão do pin de dinheiro
+// (updatePinTooltipContent) também precisa dele
+var MODALIDADE_LABEL = {sorteio:'Sorteio', fixo:'Lance Fixo', livre:'Lance Livre'};
 
 // 31/10 (item 19 do doc de regras): taxa mensal (% do crédito) usada pra
 // calcular a parcela pós-contemplação, calculada de verdade uma única vez,
@@ -1240,9 +1276,8 @@ function contemplate(){
 function updateContemplationUI(){
   var statusEl = document.getElementById('kpiStatus');
   var hintEl = document.getElementById('kpiStatusHint');
-  // mapa pro nome de exibição da modalidade que contemplou — chaves iguais
-  // às usadas em contemplationMethod ('sorteio'/'fixo'/'livre')
-  var MODALIDADE_LABEL = {sorteio:'Sorteio', fixo:'Lance Fixo', livre:'Lance Livre'};
+  // MODALIDADE_LABEL (mapa pro nome de exibição da modalidade que
+  // contemplou) agora é var global — ver declaração perto de contemplationMethod
   setMoneyPinVisible(contemplated); // pin de dinheiro sobre a cabeça do boneco, só após contemplado
   if (contemplated){
     statusEl.textContent = 'Contemplado';
@@ -1471,6 +1506,85 @@ function markerX(month){ return X0 + (month / 12) * UNIT; }
 // nunca fique na altura em que o investidor passa andando por baixo dele.
 var WALKER_HEAD_TOP_Y = SLAB_Y - (48 * 0.84 + 3 + 2 * 4.6);
 
+// raio e distância do pin de dinheiro até a cabeça — duplicados aqui dos
+// mesmos números literais usados em buildWalker (pinY = headCY - r - 15),
+// pra montar/posicionar o balão do pin (buildPinTooltip/repositionPinTooltip)
+// sem precisar ler a posição do pin no DOM.
+var PIN_R = 11;
+var PIN_CY = WALKER_HEAD_TOP_Y - 15; // centro do pin, mesma coordenada Y usada em buildWalker
+
+var pinTooltip = null; // {g, line, dot, fo, titleEl, textEl, boxW} — montado 1x em buildPinTooltip()
+
+function buildPinTooltip(){
+  var g = document.getElementById('pinTooltip');
+  g.innerHTML = '';
+  var boxW = 220;
+
+  var tip = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .15s ease'});
+  var line = el('line', {stroke:'var(--paid)', 'stroke-width':'1.25', 'stroke-dasharray':'2.5 2.5'});
+  var dot = el('circle', {r:'1.8', fill:'var(--paid)'});
+  var fo = el('foreignObject', {width:boxW, style:'overflow:visible'});
+  var anchor = document.createElement('div');
+  anchor.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+  anchor.style.cssText = 'height:100%;display:flex;flex-direction:column;justify-content:flex-end';
+  var div = document.createElement('div');
+  div.className = 'marker-tooltip';
+  var titleEl = document.createElement('div');
+  titleEl.className = 'marker-tooltip-title';
+  var textEl = document.createElement('div');
+  textEl.className = 'marker-tooltip-text';
+  div.appendChild(titleEl);
+  div.appendChild(textEl);
+  anchor.appendChild(div);
+  fo.appendChild(anchor);
+  tip.appendChild(line);
+  tip.appendChild(dot);
+  tip.appendChild(fo);
+  g.appendChild(tip);
+
+  pinTooltip = {g:tip, line:line, dot:dot, fo:fo, titleEl:titleEl, textEl:textEl, boxW:boxW};
+  repositionPinTooltip();
+}
+
+// recalcula a posição do balão a partir da posição ATUAL do investidor
+// (investorX(lastInvestorN)) — diferente dos marcos fixos da jornada guiada,
+// o pin se move com o boneco, então esse balão (que fica FORA do <g
+// id="investor"> de propósito, pra poder recentralizar perto das bordas do
+// viewBox) precisa ser reposicionado a cada passo enquanto estiver aberto
+// (ver chamada em updateInvestor()).
+function repositionPinTooltip(){
+  if (!pinTooltip) return;
+  var mx = investorX(lastInvestorN);
+  var my = PIN_CY;
+  var boxW = pinTooltip.boxW;
+  var boxX = Math.max(14, Math.min(1200 - 14 - boxW, mx - boxW / 2));
+  var FO_H = 200;
+  var boxBottomY = my - PIN_R - 10;
+  var boxY = Math.max(6, boxBottomY - FO_H);
+  var anchorX = Math.max(boxX + 12, Math.min(boxX + boxW - 12, mx));
+
+  pinTooltip.line.setAttribute('x1', anchorX);
+  pinTooltip.line.setAttribute('y1', boxBottomY);
+  pinTooltip.line.setAttribute('x2', mx);
+  pinTooltip.line.setAttribute('y2', my - PIN_R - 2);
+  pinTooltip.dot.setAttribute('cx', mx);
+  pinTooltip.dot.setAttribute('cy', my - PIN_R - 2);
+  pinTooltip.fo.setAttribute('x', boxX);
+  pinTooltip.fo.setAttribute('y', boxY);
+  pinTooltip.fo.setAttribute('height', boxBottomY - boxY);
+}
+
+// preenche o balão com a modalidade e o mês reais da contemplação — chamado
+// só na hora de abrir (clique no pin), nunca precisa ficar atualizando
+// sozinho porque esses 2 dados ficam fixos depois que a contemplação acontece.
+function updatePinTooltipContent(){
+  if (!pinTooltip) return;
+  pinTooltip.titleEl.textContent = 'Contemplado!';
+  var modalidade = MODALIDADE_LABEL[contemplationMethod] || '—';
+  pinTooltip.textEl.textContent = 'Modalidade: ' + modalidade + '. Contemplado no mês ' +
+    contemplationMonthsElapsed + ' de ' + TOTAL + '.';
+}
+
 function buildMarkers(){
   var g = document.getElementById('markers');
   g.innerHTML = '';
@@ -1560,6 +1674,11 @@ function closeAllMarkerTooltips(){
     tip.style.opacity = '0';
     tip.style.pointerEvents = 'none';
   });
+  // mesmo grupo "só 1 balão aberto por vez" vale pro balão do pin de dinheiro
+  if (pinTooltip){
+    pinTooltip.g.style.opacity = '0';
+    pinTooltip.g.style.pointerEvents = 'none';
+  }
 }
 document.addEventListener('click', closeAllMarkerTooltips);
 
@@ -2284,6 +2403,7 @@ document.getElementById('restartBtn').addEventListener('click', function(){
 drawStructure();
 buildDeck();
 buildMarkers();
+buildPinTooltip();
 initSorteioPool();
 updateContempladosPainel(null);
 paint(0, {instant:true});
