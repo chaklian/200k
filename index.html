@@ -206,8 +206,9 @@ svg{display:block;width:100%;height:auto}
   width:360px;height:120px;max-width:calc(100% - 24px);max-height:calc(100% - 76px);
   box-sizing:border-box;overflow:auto;
   opacity:.35;pointer-events:none;transition:opacity .15s ease;z-index:6}
-/* 03/11: enquanto apagada (nenhum marco clicado) não mostra nenhum texto —
-   só o contorno/fundo da caixa. */
+/* 03/11: enquanto apagada (nenhum marco clicado) não mostra título/texto de
+   marco — só a mensagem de convite (.marker-tooltip-idle) e o contorno/fundo
+   da caixa. */
 .marker-tooltip-fixed:not(.active) .marker-tooltip-title,
 .marker-tooltip-fixed:not(.active) .marker-tooltip-text{display:none}
 /* 03/11: título e texto centralizados quando a caixa está acesa (marco
@@ -215,6 +216,12 @@ svg{display:block;width:100%;height:auto}
 .marker-tooltip-fixed .marker-tooltip-title,
 .marker-tooltip-fixed .marker-tooltip-text{text-align:center}
 .marker-tooltip-fixed.active{opacity:1;pointer-events:auto}
+/* 03/11: mensagem de convite exibida só enquanto a caixa está apagada
+   (nenhum marco clicado ainda); some assim que algum marco é selecionado. */
+.marker-tooltip-idle{display:flex;align-items:center;justify-content:center;
+  text-align:center;font-size:11px;line-height:1.55;color:var(--ink-dim);
+  height:100%}
+.marker-tooltip-fixed.active .marker-tooltip-idle{display:none}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
   background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
@@ -458,6 +465,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          título "Simulador de Consórcio") — qualquer marco clicado preenche
          essa mesma caixa, em vez de abrir um balão perto de si mesmo. -->
     <div class="marker-tooltip marker-tooltip-journey marker-tooltip-fixed" id="markerTooltipFixed">
+      <div class="marker-tooltip-idle">Clique em "Pagar parcela" para iniciar a jornada</div>
       <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle"></div>
       <div class="marker-tooltip-text" id="markerTooltipFixedText"></div>
     </div>
