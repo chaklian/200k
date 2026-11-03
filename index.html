@@ -1901,7 +1901,7 @@ var bridgeMarkers = [
                          // ficava na altura padrão dos marcos, na linha do
                          // tabuleiro)
     title: 'Indicadores',
-    text: 'Valores de referência utilizados no simulador: INCC = 6,5% a.a. Selic = 13,75% a.a.'
+    text: 'Valores de referência utilizados no simulador: INCC = 6,5% a.a. CDI = 13,75% a.a.'
   },
   {
     id: 'estrategia',
@@ -1911,7 +1911,7 @@ var bridgeMarkers = [
                          // ícone ao passar) — agora fica bem acima do topo do
                          // pin (pinY=SLAB_Y-67.52, raio 11), sem sobreposição
     title: 'Múltiplas cotas',
-    text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação. Além do sorteio, ofertar lances todo mês ajuda na probabilidade.'
+    text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação. Além do sorteio, ofertar lances todo mês também contribui para esse resultado.'
   },
   {
     id: 'encerramento',
@@ -1919,7 +1919,7 @@ var bridgeMarkers = [
     // 03/11: voltou pra ACIMA dos blocos da ponte (below:true removido) —
     // usa o my padrão (SLAB_Y - 18) do buildMarkers()
     title: 'Encerramento',
-    text: 'O prazo do grupo é planejado para contemplar todas as cotas ativas até a última assembleia. É preciso conferir as regras e recursos disponíveis.'
+    text: 'O prazo do grupo é planejado para que, em regra, as cotas ativas sejam contempladas até a última assembleia. É preciso conferir as regras do grupo e os recursos disponíveis no fundo comum.'
   }
 ];
 
@@ -1938,7 +1938,7 @@ var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxas e fundo de reserva',
 var parcelaReduzidaMarker = {
   id: 'parcela-reduzida',
   title: 'Parcela reduzida',
-  text: 'Nesta simulação as parcelas começam reduzidas. Após a contemplação, as parcelas são recalculadas considerando o restante do pagamento do crédito.'
+  text: 'Nesta simulação as parcelas começam reduzidas. Após a contemplação, as parcelas são recalculadas considerando o saldo restante do crédito.'
 };
 var sorteioMarker = {
   id: 'sorteio-mensal',
@@ -1961,9 +1961,9 @@ var lanceLivreMarker = {
 var pagarParcelaMarker = {id: 'pagar-parcela', title: 'Pagar parcela', text: 'Manter as parcelas em dia permite participar dos sorteios e ofertar lances. Alguns grupos também oferecem sorteios de fidelidade.'};
 var cancelarReiniciarMarker = {id: 'cancelar-reiniciar', title: 'Cancelar / Reiniciar', text: 'Ao desistir, a devolução do valor pago normalmente sofre deduções e é feita no encerramento do grupo.'};
 var venderNaoContempladaMarker = {id: 'vender-nao-contemplada', title: 'Venda não contemplada',
-  text: 'É possível transferir uma cota não contemplada, com aprovação da administradora. O preço pode envolver ágio ou deságio.'};
+  text: 'É possível transferir uma carta não contemplada, com aprovação da administradora. O preço pode envolver ágio ou deságio.'};
 var venderContempladaMarker = {id: 'vender-contemplada', title: 'Venda contemplada',
-  text: 'A cota contemplada pode ser vendida após sorteio ou lance, mediante aprovação da administradora. O preço depende do crédito e das obrigações restantes.'};
+  text: 'A carta contemplada pode ser vendida após sorteio ou lance, mediante aprovação da administradora. O preço depende do crédito e das obrigações restantes.'};
 var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar imóvel',
   text: 'Use o crédito contemplado para comprar um imóvel para morar ou alugar, após aprovação da administradora. Considere impostos e demais despesas.'};
 var reducaoCartaMarker = {id: 'reducao-carta', title: 'Lance embutido',
