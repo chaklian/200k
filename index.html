@@ -315,13 +315,30 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       </div>
     </div>
 
-    <!-- CARD 4: Status — 02/11: esvaziado (título e os 3 textos antigos
-         removidos), e agora recebe só o status de contemplação que antes
-         vivia no botão "cotasBtn" do card 6 (ver updateContemplationUI) —
-         como texto simples, sem botão e sem as estatísticas de
-         probabilidade (essas ficaram só no card 6, que foi esvaziado). -->
+    <!-- CARD 4: antigo "Status", renomeado pra "Cotas contempladas" (02/11)
+         — recebeu o título, o status de contemplação (#statusInfo, sem
+         botão) E as 3 estatísticas (cota do sorteio/lance fixo/lance livre
+         + chance) que antes viviam todas no card 6, agora esvaziado. -->
     <div class="kcard" id="statusCard">
+      <h3>Cotas contempladas</h3>
       <div class="big" id="statusInfo">Não contemplado</div>
+      <div class="contemplados-grid" id="contempladosOverlay">
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Sorteio</div>
+          <div class="contemplados-valores" id="contSorteio">—</div>
+          <div class="contemplados-chance" id="contSorteioChance">—</div>
+        </div>
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Lance Fixo</div>
+          <div class="contemplados-valores" id="contFixo">—</div>
+          <div class="contemplados-chance" id="contFixoChance">—</div>
+        </div>
+        <div class="contemplados-sec">
+          <div class="contemplados-label">Lance Livre</div>
+          <div class="contemplados-valores" id="contLivre">—</div>
+          <div class="contemplados-chance" id="contLivreChance">—</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -419,13 +436,11 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   <div class="kanban">
     <!-- CARD 6: Cotas contempladas -->
     <!-- CARD 6: 02/11 — esvaziado a pedido do usuário. Título, as 3
-         estatísticas (Sorteio/Lance Fixo/Lance Livre) e o botão saíram daqui;
-         o status de contemplação que o botão mostrava foi pro card 4
-         (#statusInfo). Os elementos removidos (contSorteio/contFixo/
-         contLivre/*Chance/cotasBtn) já tinham guards (if) no JS que os lia,
-         então a remoção não quebra nada — updateContempladosPainel()/
-         updateContempladosChances() simplesmente deixam de escrever em
-         nenhum lugar visível. -->
+         estatísticas (Sorteio/Lance Fixo/Lance Livre) e o botão "Dar Lance"
+         saíram daqui e foram pro card 4 (título + #statusInfo + o grid
+         #contempladosOverlay com os mesmos ids contSorteio/contFixo/
+         contLivre/*Chance — só o botão "Dar Lance" não voltou, continua
+         fora de tela). -->
     <div class="kcard" id="sorteioCard"></div>
 
     <!-- CARD 7: Lance Fixo -->
