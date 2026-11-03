@@ -271,6 +271,14 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-apply-btn.contemplado:hover{border-color:var(--paid);background:#143a19}
 .lance-apply-btn.imovel-comprado{background:#3a2a0f;color:var(--amber);border-color:var(--amber)}
 .lance-apply-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
+/* 02/11: "Comprar Imóvel" e "Vender Carta" lado a lado no card "Valor do
+   crédito" — o wrapper assume o sangramento até a borda do card (que cada
+   botão fazia sozinho antes de existir um 2º botão), cada botão fica com
+   50% da largura e só os cantos externos arredondados. */
+.credit-btn-row{display:flex;margin:0 -16px -16px}
+.credit-btn-row .lance-apply-btn{width:50%;margin:0;border-radius:0}
+.credit-btn-row .lance-apply-btn:first-child{border-radius:0 0 0 8px;border-right:none}
+.credit-btn-row .lance-apply-btn:last-child{border-radius:0 0 8px 0}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -300,12 +308,17 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="lance-spacer"></div>
-      <!-- 02/11: botão "Comprar Imóvel" — fica desabilitado até a cota ser
-           contemplada (updateContemplationUI/updateBuyBtn libera o clique).
-           Ao clicar, buyImovel() congela o crédito (ele foi usado pra comprar
-           o bem, então para de reajustar — ver creditoAt()) e troca o ícone
-           do pin na cabeça do boneco de "$" pra uma chave dourada. -->
-      <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
+      <!-- 02/11: botões "Comprar Imóvel" / "Vender Carta" lado a lado — ambos
+           ficam desabilitados até a cota ser contemplada (updateContemplationUI/
+           updateBuyBtn/updateSellCartaBtn liberam o clique). "Comprar Imóvel"
+           congela o crédito (ele foi usado pra comprar o bem, então para de
+           reajustar — ver creditoAt()) e troca o ícone do pin na cabeça do
+           boneco de "$" pra uma chave dourada. "Vender Carta" ainda não tem
+           lógica própria implementada (pendência aberta). -->
+      <div class="credit-btn-row">
+        <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
+        <button id="sellCartaBtn" class="lance-apply-btn" disabled>Vender Carta</button>
+      </div>
     </div>
 
     <!-- CARD 2: Total pago + barra de progresso -->
@@ -1409,6 +1422,19 @@ function updateContemplationUI(){
   }
 
   updateBuyBtn();
+  updateSellCartaBtn();
+}
+
+// botão "Vender Carta" (card "Valor do crédito", ao lado de "Comprar Imóvel")
+// — por ora só o habilitar/desabilitar está implementado (mesma condição de
+// "Comprar Imóvel": precisa estar contemplado, e trava se o crédito já foi
+// usado pra comprar o imóvel, já que as duas ações são mutuamente exclusivas).
+// Sem handler de clique ainda — lógica de venda em si é pendência aberta.
+function updateSellCartaBtn(){
+  var btn = document.getElementById('sellCartaBtn');
+  if (!btn) return;
+  btn.disabled = !contemplated || creditUsed;
+  btn.style.opacity = (contemplated && !creditUsed) ? '1' : '0.5';
 }
 
 // botão "Comprar Imóvel" (card "Valor do crédito") — só fica clicável
@@ -1444,6 +1470,7 @@ function buyImovel(){
   setPinIcon('key');
   updateKpis();
   updateBuyBtn();
+  updateSellCartaBtn();
 }
 document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
 
