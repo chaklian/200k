@@ -37,15 +37,13 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
   font-size:12px;margin-right:6px;font-weight:600}
 .kcard h3{font-size:16px;margin:0 0 10px;color:var(--ink-dim);font-weight:600;letter-spacing:.02em}
 .kcard .big{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-/* 02/11: status de contemplação (#statusInfo, card "Status") em destaque
-   verde quando contemplado — mesmo verde de .lance-apply-btn.contemplado,
-   só que aplicado num texto simples (.big), não num botão */
+/* 02/11: status de contemplação (#statusInfo) em destaque verde quando
+   contemplado — mesmo verde de .lance-apply-btn.contemplado. Já foi um texto
+   .big numa caixa própria (card "Status"); agora é 1 linha .sub só, no card
+   "Valor do crédito" — a regra pro .big ficou pra trás como código morto
+   seguro (nenhum elemento com as duas classes juntas existe mais no HTML). */
 .kcard .big.contemplado{color:var(--paid)}
-/* caixa que envolve #statusInfo no card "Status" (02/11) — mesmo visual de
-   caixa usado em .lance-feedback, só sem a cor de fundo condicional */
-.status-box{margin-top:4px;padding:10px 12px;border-radius:6px;
-  background:var(--canvas-deep);border:1px solid var(--grid)}
-.status-box .big{margin:0}
+.kcard .sub.contemplado{color:var(--paid)}
 .kcard .sub{font-size:12px;color:var(--ink-faint);margin-top:4px}
 .kcard .sub input{font-family:inherit;font-size:12px;width:40px;padding:2px 4px;margin:0 2px;
   background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink);border-radius:2px}
@@ -308,21 +306,15 @@ button.danger{color:var(--redline);border-color:var(--redline)}
        ponteCard/sorteioCard/fixoCard/livreCard. -->
   <div class="kanban-4">
     <!-- CARD 1: Valor do crédito -->
+    <!-- 02/11: o status de contemplação (que vivia no card 6, numa caixa
+         própria) passou pra cá, como 1 linha de texto só (#statusInfo) — os
+         botões "Comprar Imóvel"/"Vender Carta" que viviam aqui foram pro
+         card 6, no lugar desse texto (ver abaixo). -->
     <div class="kcard" id="creditoCard">
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="lance-spacer"></div>
-      <!-- 02/11: botões "Comprar Imóvel" / "Vender Carta" lado a lado — ambos
-           ficam desabilitados até a cota ser contemplada (updateContemplationUI/
-           updateBuyBtn/updateSellCartaBtn liberam o clique). "Comprar Imóvel"
-           congela o crédito (ele foi usado pra comprar o bem, então para de
-           reajustar — ver creditoAt()) e troca o ícone do pin na cabeça do
-           boneco de "$" pra uma chave dourada. "Vender Carta" ainda não tem
-           lógica própria implementada (pendência aberta). -->
-      <div class="credit-btn-row">
-        <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
-        <button id="sellCartaBtn" class="lance-apply-btn" disabled>Vender Carta</button>
-      </div>
+      <div class="sub" id="statusInfo">Status: Não contemplado</div>
     </div>
 
     <!-- CARD 2: Total pago + barra de progresso -->
@@ -468,13 +460,25 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
   <div class="kanban">
     <!-- CARD 6: Cotas contempladas -->
-    <!-- CARD 6: 02/11 — virou o card "Status": título "Status" + uma caixa
-         (.status-box) com o texto de contemplação (#statusInfo). As 3
-         estatísticas (Sorteio/Lance Fixo/Lance Livre) e o botão "Dar Lance"
-         que viviam aqui antes foram pro card 4 ("Cotas contempladas"). -->
+    <!-- CARD 6: 02/11 — virou o card "Status". O texto de contemplação
+         (#statusInfo) que vivia numa caixa aqui foi pro card 1 (1 linha só,
+         "Status: ..."); no lugar dela entraram os botões "Comprar Imóvel"/
+         "Vender Carta" que viviam no card 1. As 3 estatísticas (Sorteio/
+         Lance Fixo/Lance Livre) e o botão "Dar Lance" originais desse card
+         foram pro card 4 ("Cotas contempladas") numa sessão anterior. -->
     <div class="kcard" id="sorteioCard">
       <h3>Status</h3>
-      <div class="status-box"><div class="big" id="statusInfo">Não contemplado</div></div>
+      <div class="lance-spacer"></div>
+      <!-- "Comprar Imóvel" congela o crédito (ele foi usado pra comprar o
+           bem, então para de reajustar — ver creditoAt()) e troca o ícone
+           do pin na cabeça do boneco de "$" pra uma chave dourada. "Vender
+           Carta" troca o pin pro envelope azul e encerra a travessia ali
+           mesmo. Ambos ficam desabilitados até a cota ser contemplada e são
+           mutuamente exclusivos entre si. -->
+      <div class="credit-btn-row">
+        <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
+        <button id="sellCartaBtn" class="lance-apply-btn" disabled>Vender Carta</button>
+      </div>
     </div>
 
     <!-- CARD 7: Lance Fixo -->
@@ -1434,15 +1438,15 @@ function updateContemplationUI(){
     ponteCotaEl.textContent = 'Cota ' + (investorCotaNumber != null ? sorteioCotaLabel(investorCotaNumber) : '—');
   }
 
-  // 02/11: esse status (que antes vivia no botão "cotasBtn" do card
-  // "Cotas contempladas", agora esvaziado) passou a aparecer como texto
-  // simples no card "Status" (#statusInfo), sem botão e sem as estatísticas
-  // de probabilidade (essas saíram de tela junto com o card 6).
+  // 02/11: esse status (que já passou pelo botão "cotasBtn" do card "Cotas
+  // contempladas" e depois por uma caixa própria no card "Status") agora
+  // aparece como 1 linha só de texto (#statusInfo) no card "Valor do
+  // crédito" (card 1), formato "Status: <...>".
   var statusInfoEl = document.getElementById('statusInfo');
   if (statusInfoEl){
-    statusInfoEl.textContent = contemplated
+    statusInfoEl.textContent = 'Status: ' + (contemplated
       ? ('Contemplado: ' + (MODALIDADE_LABEL[contemplationMethod] || '—'))
-      : 'Não contemplado';
+      : 'Não contemplado');
     statusInfoEl.classList.toggle('contemplado', contemplated);
   }
 
