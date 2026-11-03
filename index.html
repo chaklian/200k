@@ -30,7 +30,11 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 
 .kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:20px;align-items:stretch}
 .kcard{background:var(--canvas);border:1px solid var(--grid);border-radius:8px;padding:16px;
-  display:flex;flex-direction:column;min-height:190px}
+  display:flex;flex-direction:column;min-height:190px;transition:opacity .2s ease}
+/* 03/11: cards "Lance Fixo"/"Lance Livre" — opacos e travados (nenhuma
+   interação, inclusive sliders/steppers) quando não é mais possível ofertar
+   lance (contemplado, ou já pago mais de 60% do crédito). */
+.kcard.lance-blocked{opacity:.45;pointer-events:none}
 .kcard .step{font-size:12px;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
 .kcard .step b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
   border-radius:50%;background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink-dim);
@@ -1511,12 +1515,25 @@ function updateContemplationUI(){
       ? ('Mês ' + contemplationMonthsElapsed + ' de ' + TOTAL)
       : ('Concorrendo ao sorteio: ' + sorteioChanceLabel());
   }
+  // 03/11: cards "Lance Fixo"/"Lance Livre" ficam opacos e travados em 2
+  // situações, além da contemplação em si (que já trava, qualquer que seja
+  // a modalidade — sorteio, fixo ou livre): (1) já contemplado — não dá mais
+  // pra ofertar lance; (2) ainda NÃO contemplado mas já pago mais de 60% do
+  // crédito (`monthsElapsed/TOTAL`) — como o lance mínimo (fixo OU livre) é
+  // 40% (`FIXO_PCT`/`LANCE_LIVRE_MIN`), oferecer o mínimo nessa altura já
+  // seria oferecer mais do que ainda falta pagar, o que não faz sentido.
+  var pctPagoCredito = TOTAL > 0 ? (Math.min(monthsElapsed, TOTAL) / TOTAL * 100) : 0;
+  var lanceBloqueado = contemplated || pctPagoCredito > 60;
   var fixoBtn = document.getElementById('fixoBtn');
   var livreBtn = document.getElementById('livreBtn');
-  fixoBtn.disabled = contemplated;
-  livreBtn.disabled = contemplated;
-  fixoBtn.style.opacity = contemplated ? '0.5' : '1';
-  livreBtn.style.opacity = contemplated ? '0.5' : '1';
+  var fixoCardEl = document.getElementById('fixoCard');
+  var livreCardEl = document.getElementById('livreCard');
+  fixoBtn.disabled = lanceBloqueado;
+  livreBtn.disabled = lanceBloqueado;
+  fixoBtn.style.opacity = lanceBloqueado ? '0.5' : '1';
+  livreBtn.style.opacity = lanceBloqueado ? '0.5' : '1';
+  if (fixoCardEl) fixoCardEl.classList.toggle('lance-blocked', lanceBloqueado);
+  if (livreCardEl) livreCardEl.classList.toggle('lance-blocked', lanceBloqueado);
 
   // 02/11: cota do investidor exibida direto no card da ponte (onde antes
   // ficava o botão "Dar Lance") — mesmo número de kpiStatusHint, só que
