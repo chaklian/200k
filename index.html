@@ -1902,27 +1902,28 @@ var bridgeMarkers = [
   },
   {
     id: 'indicadores',
-    x: TOWER_B, // 03/11: sobre o 2º pilar da ponte (antes: entre os blocos
-                // dos anos 6 e 7)
+    x: TOWER_B, // sobre o 2º pilar da ponte
+    my: TOWER_TOP - 18, // 03/11: subiu pra acima do TOPO do pilar (antes
+                         // ficava na altura padrão dos marcos, na linha do
+                         // tabuleiro)
     title: 'Indicadores',
     text: 'Índices de referência usados nesta simulação: INCC (6,5% a.a.), que corrige o crédito até a contemplação, e CDI (13,75% a.a.), do qual 80% passa a render o crédito depois de contemplado.'
   },
   {
     id: 'estrategia',
-    x: X0 + (3 - 0.5) * UNIT, // 03/11: centralizado na caixa do Ano 3 (antes:
-                               // entre os blocos dos anos 11 e 12)
-    my: SLAB_Y - 67.52, // 03/11: mesma altura relativa do pin de dinheiro que
-                         // aparece sobre a cabeça do boneco quando contemplado
-                         // (headCY - r - 15, ver buildWalker/pinY), um pouco
-                         // acima da fileira de blocos em vez de rente a ela
+    x: X0 + (3 - 0.5) * UNIT, // centralizado na caixa do Ano 3
+    my: SLAB_Y - 97.52, // 03/11: subiu mais (era SLAB_Y-67.52, mesma altura
+                         // do pin, e por isso o boneco com pin sobrepunha o
+                         // ícone ao passar) — agora fica bem acima do topo do
+                         // pin (pinY=SLAB_Y-67.52, raio 11), sem sobreposição
     title: 'Estratégia',
     text: 'É possível contratar mais de uma carta dentro do mesmo grupo para aumentar a chance de contemplação e compor o valor desejado do imóvel.'
   },
   {
     id: 'encerramento',
-    x: X0 + (SPAN_COUNT - 0.5) * UNIT, // 03/11: centralizado na caixa do
-                                        // último ano (era no fim da ponte, x:X1)
-    below: true, // mesma posição vertical do "Reajuste anual", abaixo das caixas
+    x: X0 + (SPAN_COUNT - 0.5) * UNIT, // centralizado na caixa do último ano
+    // 03/11: voltou pra ACIMA dos blocos da ponte (below:true removido) —
+    // usa o my padrão (SLAB_Y - 18) do buildMarkers()
     title: 'Encerramento',
     text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
   }
