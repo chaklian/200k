@@ -276,6 +276,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="creditoCard">
       <h3>Valor do crédito</h3>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
+      <div class="lance-spacer"></div>
+      <!-- 02/11: botão "Comprar Imóvel" — fica desabilitado até a cota ser
+           contemplada (updateContemplationUI/updateBuyBtn libera o clique).
+           Ao clicar, buyImovel() congela o crédito (ele foi usado pra comprar
+           o bem, então para de reajustar — ver creditoAt()) e troca o ícone
+           do pin na cabeça do boneco de "$" pra uma chave dourada. -->
+      <button id="buyImovelBtn" class="lance-apply-btn" disabled>Comprar Imóvel</button>
     </div>
 
     <!-- CARD 2: Total pago + barra de progresso -->
@@ -675,12 +682,26 @@ function buildWalker(g, baseY){
   // área de clique um pouco maior que o círculo visível, do mesmo jeito
   // que os marcos da jornada guiada fazem (ver buildMarkers)
   pin.appendChild(el('circle', {cx:0, cy:pinY, r:15, fill:'var(--canvas-deep)', opacity:'0.001'}));
-  pin.appendChild(el('circle', {cx:0, cy:pinY, r:11, fill:'var(--paid)', stroke:'var(--canvas)', 'stroke-width':'1.8'}));
-  var pinLabel = el('text', {x:0, y:pinY + 4.6, 'text-anchor':'middle',
+  // círculo de fundo — verde (var(--paid)) enquanto é o pin de dinheiro,
+  // vira dourado (var(--amber), mesma cor dos ícones "i" da jornada guiada)
+  // quando o imóvel é comprado (ver setPinIcon/buyImovel)
+  var pinBg = el('circle', {cx:0, cy:pinY, r:11, fill:'var(--paid)', stroke:'var(--canvas)', 'stroke-width':'1.8'});
+  pin.appendChild(pinBg);
+  var pinDollar = el('text', {x:0, y:pinY + 4.6, 'text-anchor':'middle',
     'font-family':"'IBM Plex Mono',monospace", 'font-size':'13', 'font-weight':'700',
     fill:'var(--canvas)', 'pointer-events':'none'});
-  pinLabel.textContent = '$';
-  pin.appendChild(pinLabel);
+  pinDollar.textContent = '$';
+  pin.appendChild(pinDollar);
+  // ícone de chave — desenhado (não emoji, pra manter o estilo "vetorial" do
+  // resto da ponte): um anel (bow) + cabo diagonal + 2 dentes, em miniatura,
+  // centrado no mesmo ponto do "$". Escondido por padrão (opacity 0),
+  // alternado com o "$" por setPinIcon('key'/'money').
+  var pinKey = el('g', {style:'opacity:0;pointer-events:none;transition:opacity .2s ease'});
+  pinKey.appendChild(el('circle', {cx:-3.4, cy:pinY - 2.4, r:2.9, fill:'none', stroke:'var(--canvas)', 'stroke-width':'1.6'}));
+  pinKey.appendChild(el('line', {x1:-1.2, y1:pinY - 0.3, x2:4.6, y2:pinY + 4.9, stroke:'var(--canvas)', 'stroke-width':'1.6', 'stroke-linecap':'round'}));
+  pinKey.appendChild(el('line', {x1:2.5, y1:pinY + 2.6, x2:3.9, y2:pinY + 1.3, stroke:'var(--canvas)', 'stroke-width':'1.4', 'stroke-linecap':'round'}));
+  pinKey.appendChild(el('line', {x1:3.9, y1:pinY + 4.1, x2:5.2, y2:pinY + 2.9, stroke:'var(--canvas)', 'stroke-width':'1.4', 'stroke-linecap':'round'}));
+  pin.appendChild(pinKey);
   pin.addEventListener('click', function(e){
     e.stopPropagation();
     if (!contemplated) return; // só reage a clique enquanto estiver visível (contemplado)
@@ -695,6 +716,20 @@ function buildWalker(g, baseY){
   });
   g.appendChild(pin);
   g._moneyPin = pin;
+  g._pinBg = pinBg;
+  g._pinDollar = pinDollar;
+  g._pinKey = pinKey;
+}
+
+// alterna o conteúdo do pin entre "$" (dinheiro, antes de comprar o imóvel)
+// e a chave dourada (depois de buyImovel()) — ver chamadas em
+// updateContemplationUI()/buyImovel()/resetSimulation().
+function setPinIcon(kind){
+  if (!investorG._pinBg) return;
+  var isKey = kind === 'key';
+  investorG._pinBg.setAttribute('fill', isKey ? 'var(--amber)' : 'var(--paid)');
+  investorG._pinDollar.style.opacity = isKey ? '0' : '1';
+  investorG._pinKey.style.opacity = isKey ? '1' : '0';
 }
 
 function setMoneyPinVisible(show){
@@ -880,6 +915,16 @@ var contemplated = false;
 var contemplationMonthsElapsed = null; // tempo real (meses) no instante da contemplação — marca só a
                                         // virada do percentual (reduzida → cheia) na parcela, NÃO
                                         // mais um congelamento do crédito (ver currentCredit()).
+
+// 02/11: dinâmica de "usar a carta pra comprar o imóvel" — prevista desde
+// 29/10 (ver comentário acima), implementada agora via o botão "Comprar
+// Imóvel" do card "Valor do crédito" (ver buyImovel()). Só fica disponível
+// depois da contemplação (contemplated=true); uma vez clicado, o crédito
+// É USADO e para de reajustar pra sempre (congela no valor vigente naquele
+// instante) — diferente da contemplação em si, que nunca congelava nada.
+var creditUsed = false;
+var creditUsedMonthsElapsed = null; // tempo real (meses) no instante da compra do imóvel
+var creditFrozenValue = null; // valor do crédito travado a partir daquele instante (nunca mais reajusta)
 
 // parcela pós-contemplação (29/10): em vez de um multiplicador fixo
 // (PARCELA_CHEIA_MULT), recalculamos de fato com base no saldo devedor
@@ -1159,6 +1204,15 @@ function creditoAt(months){
   // em totalPaidValue()/totalToPayValue() pra pegar o crédito vigente em
   // cada mês m (não necessariamente o monthsElapsed atual).
   //
+  // 02/11: se o crédito já foi USADO (buyImovel(), não apenas contemplado),
+  // ele trava no valor exato daquele instante e NUNCA MAIS reajusta — nem
+  // pelo INCC nem pelo CDI — porque virou o imóvel, deixou de ser crédito
+  // em aplicação financeira. Isso tem prioridade sobre a regra do CDI
+  // pós-contemplação abaixo (que só vale enquanto o crédito ainda não foi
+  // usado).
+  if (creditUsed && months >= creditUsedMonthsElapsed){
+    return creditFrozenValue;
+  }
   // 31/10 (3ª correção, item 22): se `months` já está na fase pós-
   // contemplação, o crédito não segue mais o INCC — ancora no valor
   // reajustado por INCC até o instante exato da contemplação
@@ -1330,7 +1384,45 @@ function updateContemplationUI(){
       : 'Não contemplado';
     cotasBtn.classList.toggle('contemplado', contemplated);
   }
+
+  updateBuyBtn();
 }
+
+// botão "Comprar Imóvel" (card "Valor do crédito") — só fica clicável
+// depois da contemplação, e só até ser clicado uma vez (compra é um evento
+// único; ver buyImovel()). Chamado de dentro de updateContemplationUI() (que
+// já roda sempre que contemplated muda) e do reset.
+function updateBuyBtn(){
+  var btn = document.getElementById('buyImovelBtn');
+  if (!btn) return;
+  if (creditUsed){
+    btn.disabled = true;
+    btn.textContent = 'Imóvel comprado';
+    btn.classList.add('contemplado'); // reaproveita o verde de destaque já usado em cotasBtn
+  } else {
+    btn.disabled = !contemplated;
+    btn.textContent = 'Comprar Imóvel';
+    btn.classList.remove('contemplado');
+    btn.style.opacity = contemplated ? '1' : '0.5';
+  }
+}
+
+// 02/11: dinâmica de "usar a carta pra comprar o imóvel" (prevista desde
+// 29/10, implementada agora). Evento único e manual (botão, não automático):
+// congela o crédito no valor vigente deste instante (ver creditoAt()) e
+// troca o ícone do pin na cabeça do boneco de "$" pra uma chave dourada. O
+// investidor continua pagando parcela normalmente até concluir a travessia
+// (nenhuma mudança na caminhada em si).
+function buyImovel(){
+  if (!contemplated || creditUsed) return;
+  creditUsedMonthsElapsed = monthsElapsed;
+  creditFrozenValue = currentCredit(); // calculado ANTES de marcar creditUsed, com a regra ainda normal
+  creditUsed = true;
+  setPinIcon('key');
+  updateKpis();
+  updateBuyBtn();
+}
+document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
 
 var deckG = document.getElementById('deck');
 var blocksG = document.getElementById('blocks');
@@ -2395,6 +2487,10 @@ function resetSimulation(){
   contemplationMethod = null;
   parcelaPosContempValue = null;
   parcelaPctPos = null;
+  creditUsed = false;
+  creditUsedMonthsElapsed = null;
+  creditFrozenValue = null;
+  setPinIcon('money'); // pin volta a ser "$" (chave dourada só depois de comprar de novo)
   initSorteioPool(); // nova cota (número aleatório novo) e baralho reembaralhado
   updateContempladosPainel(null);
   lanceUnlocked = false;
