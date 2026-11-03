@@ -38,6 +38,11 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
    verde quando contemplado — mesmo verde de .lance-apply-btn.contemplado,
    só que aplicado num texto simples (.big), não num botão */
 .kcard .big.contemplado{color:var(--paid)}
+/* caixa que envolve #statusInfo no card "Status" (02/11) — mesmo visual de
+   caixa usado em .lance-feedback, só sem a cor de fundo condicional */
+.status-box{margin-top:4px;padding:10px 12px;border-radius:6px;
+  background:var(--canvas-deep);border:1px solid var(--grid)}
+.status-box .big{margin:0}
 .kcard .sub{font-size:12px;color:var(--ink-faint);margin-top:4px}
 .kcard .sub input{font-family:inherit;font-size:12px;width:40px;padding:2px 4px;margin:0 2px;
   background:var(--canvas-deep);border:1px solid var(--ink-faint);color:var(--ink);border-radius:2px}
@@ -316,12 +321,11 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     </div>
 
     <!-- CARD 4: antigo "Status", renomeado pra "Cotas contempladas" (02/11)
-         — recebeu o título, o status de contemplação (#statusInfo, sem
-         botão) E as 3 estatísticas (cota do sorteio/lance fixo/lance livre
-         + chance) que antes viviam todas no card 6, agora esvaziado. -->
+         — título + as 3 estatísticas (cota do sorteio/lance fixo/lance
+         livre + chance). O texto de status (#statusInfo) saiu daqui e foi
+         pro card 6 (ver abaixo). -->
     <div class="kcard" id="statusCard">
       <h3>Cotas contempladas</h3>
-      <div class="big" id="statusInfo">Não contemplado</div>
       <div class="contemplados-grid" id="contempladosOverlay">
         <div class="contemplados-sec">
           <div class="contemplados-label">Sorteio</div>
@@ -435,13 +439,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
 
   <div class="kanban">
     <!-- CARD 6: Cotas contempladas -->
-    <!-- CARD 6: 02/11 — esvaziado a pedido do usuário. Título, as 3
+    <!-- CARD 6: 02/11 — virou o card "Status": título "Status" + uma caixa
+         (.status-box) com o texto de contemplação (#statusInfo). As 3
          estatísticas (Sorteio/Lance Fixo/Lance Livre) e o botão "Dar Lance"
-         saíram daqui e foram pro card 4 (título + #statusInfo + o grid
-         #contempladosOverlay com os mesmos ids contSorteio/contFixo/
-         contLivre/*Chance — só o botão "Dar Lance" não voltou, continua
-         fora de tela). -->
-    <div class="kcard" id="sorteioCard"></div>
+         que viviam aqui antes foram pro card 4 ("Cotas contempladas"). -->
+    <div class="kcard" id="sorteioCard">
+      <h3>Status</h3>
+      <div class="status-box"><div class="big" id="statusInfo">Não contemplado</div></div>
+    </div>
 
     <!-- CARD 7: Lance Fixo -->
     <div class="kcard" id="fixoCard">
