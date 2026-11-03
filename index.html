@@ -876,10 +876,13 @@ function setPinIcon(kind){
 function setMoneyPinVisible(show){
   if (!investorG._moneyPin) return;
   investorG._moneyPin.classList.toggle('show', !!show);
-  // some junto com o pin se ele estava aberto (ex.: reset da simulação)
+  // some junto com o pin se ele estava aberto (ex.: reset da simulação) —
+  // inclusive a caixa fixa (card 5), se era ela quem mostrava o conteúdo do
+  // pin no momento.
   if (!show && pinTooltip){
     pinTooltip.g.style.opacity = '0';
     pinTooltip.g.style.pointerEvents = 'none';
+    if (typeof openMarkerId !== 'undefined' && openMarkerId === 'pin') hideMarkerTooltipFixed();
   }
 }
 
@@ -1951,23 +1954,28 @@ function repositionPinTooltip(){
 // conteúdo passa a refletir a compra em si, não mais a contemplação.
 function updatePinTooltipContent(){
   if (!pinTooltip) return;
+  var title, text;
   if (cartaSold){
-    pinTooltip.titleEl.textContent = 'Venda de carta';
-    pinTooltip.textEl.textContent = (cartaSoldVia === 'contemplada')
+    title = 'Venda de carta';
+    text = (cartaSoldVia === 'contemplada')
       ? 'É possível vender a sua carta contemplada, transferindo seus direitos e obrigações.'
       : 'É possível vender a sua carta antes da contemplação, transferindo seus direitos e obrigações.';
-    return;
-  }
-  if (creditUsed){
-    pinTooltip.titleEl.textContent = 'Carta utilizada';
-    pinTooltip.textEl.textContent = 'Aquisição do imóvel no valor de ' +
+  } else if (creditUsed){
+    title = 'Carta utilizada';
+    text = 'Aquisição do imóvel no valor de ' +
       formatBRL(creditFrozenValue) + ' no mês ' + creditUsedMonthsElapsed + ' de ' + TOTAL + '.';
-    return;
+  } else {
+    title = 'Contemplado!';
+    var modalidade = MODALIDADE_LABEL[contemplationMethod] || '—';
+    text = 'Modalidade: ' + modalidade + '. Contemplado no mês ' +
+      contemplationMonthsElapsed + ' de ' + TOTAL + '.';
   }
-  pinTooltip.titleEl.textContent = 'Contemplado!';
-  var modalidade = MODALIDADE_LABEL[contemplationMethod] || '—';
-  pinTooltip.textEl.textContent = 'Modalidade: ' + modalidade + '. Contemplado no mês ' +
-    contemplationMonthsElapsed + ' de ' + TOTAL + '.';
+  pinTooltip.titleEl.textContent = title;
+  pinTooltip.textEl.textContent = text;
+  // 03/11: a mesma mensagem do balão do pin também aparece na caixa fixa
+  // compartilhada (#markerTooltipFixed, card 5) — igual aos marcos da
+  // jornada guiada e ao ícone do card 3.
+  showMarkerTooltipFixed({id: 'pin', title: title, text: text});
 }
 
 // 03/11: só existe 1 caixa de balão pros marcos (fixa, fora do SVG — ver
