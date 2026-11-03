@@ -1902,16 +1902,19 @@ var bridgeMarkers = [
   },
   {
     id: 'indicadores',
-    month: 72, // fim do Ano 6 / início do Ano 7 — entre os blocos dos anos 6
-               // e 7, mesma altura (my) dos demais marcos da ponte, incluindo
-               // o "Encerramento" abaixo
+    x: TOWER_B, // 03/11: sobre o 2º pilar da ponte (antes: entre os blocos
+                // dos anos 6 e 7)
     title: 'Indicadores',
     text: 'Índices de referência usados nesta simulação: INCC (6,5% a.a.), que corrige o crédito até a contemplação, e CDI (13,75% a.a.), do qual 80% passa a render o crédito depois de contemplado.'
   },
   {
     id: 'estrategia',
-    month: 132, // fim do Ano 11 / início do Ano 12 — entre os blocos dos
-                // anos 11 e 12, mesma altura (my) dos demais marcos da ponte
+    x: X0 + (3 - 0.5) * UNIT, // 03/11: centralizado na caixa do Ano 3 (antes:
+                               // entre os blocos dos anos 11 e 12)
+    my: SLAB_Y - 67.52, // 03/11: mesma altura relativa do pin de dinheiro que
+                         // aparece sobre a cabeça do boneco quando contemplado
+                         // (headCY - r - 15, ver buildWalker/pinY), um pouco
+                         // acima da fileira de blocos em vez de rente a ela
     title: 'Estratégia',
     text: 'É possível contratar mais de uma carta dentro do mesmo grupo para aumentar a chance de contemplação e compor o valor desejado do imóvel.'
   },
@@ -2053,8 +2056,9 @@ function buildMarkers(){
     // 03/11: marco pode pedir pra ficar ABAIXO da fileira de caixas dos anos
     // (mk.below) em vez de acima da fileira de blocos — mesma posição
     // vertical fixa pra todos os marcos "below" (entre o fundo da caixa do
-    // ano, DECK_Y+DECK_H, e a água, WATER_Y).
-    var my = mk.below ? (DECK_Y + DECK_H + 18) : (SLAB_Y - 18); // logo acima da fileira de blocos, sem sobrepor o "Ano N"
+    // ano, DECK_Y+DECK_H, e a água, WATER_Y). Ou pode fixar my diretamente
+    // (mk.my) pra qualquer outra altura (ex.: mesma altura do pin do boneco).
+    var my = (mk.my != null) ? mk.my : (mk.below ? (DECK_Y + DECK_H + 18) : (SLAB_Y - 18)); // logo acima da fileira de blocos, sem sobrepor o "Ano N"
 
     var wrap = el('g', {'data-marker': mk.id});
     wrap.style.cursor = 'pointer';
