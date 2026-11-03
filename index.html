@@ -284,8 +284,16 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .acoes-btn:disabled{opacity:.4;cursor:default}
 .acoes-btn.imovel-comprado{background:#3a2a0f;color:var(--amber);border-color:var(--amber)}
 .acoes-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
-.acoes-btn.carta-vendida{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
-.acoes-btn.carta-vendida:hover{border-color:var(--sell-blue);background:#102642}
+/* 02/11: "Vender carta contemplada" fica verde (mesma cor do pin de
+   dinheiro verde nesse estado) depois de vendida; "Vender carta não
+   contemplada" fica vermelha (mesma cor do pin de dinheiro vermelho —
+   alerta de possível perda nessa venda antecipada). Nenhum botão fica azul
+   — o envelope azul representa só o estado automático "carta contemplada,
+   ainda não vendida", sem botão correspondente. */
+.acoes-btn.contemplado{background:#143a19;color:var(--paid);border-color:var(--paid)}
+.acoes-btn.contemplado:hover{border-color:var(--paid);background:#143a19}
+.acoes-btn.venda-risco{background:var(--redline-fill);color:var(--redline);border-color:var(--redline)}
+.acoes-btn.venda-risco:hover{border-color:var(--redline);background:var(--redline-fill)}
 .lance-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 details.adv{margin-top:12px;font-size:12px;color:var(--ink-faint)}
 details.adv summary{cursor:pointer;color:var(--ink-dim)}
@@ -790,17 +798,22 @@ function buildWalker(g, baseY){
   g._pinEnvelope = pinEnvelope;
 }
 
-// alterna o conteúdo do pin entre "$" (dinheiro, padrão após a contemplação),
-// a chave dourada (depois de buyImovel()) e o envelope azul (depois de
-// sellCarta()) — ver chamadas em updateContemplationUI()/buyImovel()/
-// sellCarta()/resetSimulation().
+// alterna o conteúdo/cor do pin entre: envelope azul (carta contemplada,
+// ainda não vendida nem usada — ver contemplate()), "$" verde (depois de
+// vender a carta JÁ contemplada — sellCarta()), "$" vermelho (depois de
+// vender a carta AINDA NÃO contemplada — sellCartaNaoContemplada(), cor de
+// alerta porque essa venda pode significar perder dinheiro) e a chave
+// dourada (depois de comprar o imóvel — buyImovel()). "money"/"money-red"
+// usam o mesmo ícone "$", só a cor do fundo muda.
 function setPinIcon(kind){
   if (!investorG._pinBg) return;
   var isKey = kind === 'key';
   var isEnvelope = kind === 'envelope';
-  var bg = isEnvelope ? 'var(--sell-blue)' : (isKey ? 'var(--amber)' : 'var(--paid)');
+  var isMoneyRed = kind === 'money-red';
+  var isMoney = !isKey && !isEnvelope; // 'money' ou 'money-red', ambos mostram o "$"
+  var bg = isEnvelope ? 'var(--sell-blue)' : (isKey ? 'var(--amber)' : (isMoneyRed ? 'var(--redline)' : 'var(--paid)'));
   investorG._pinBg.setAttribute('fill', bg);
-  investorG._pinDollar.style.opacity = (!isKey && !isEnvelope) ? '1' : '0';
+  investorG._pinDollar.style.opacity = isMoney ? '1' : '0';
   investorG._pinKey.style.opacity = isKey ? '1' : '0';
   investorG._pinEnvelope.style.opacity = isEnvelope ? '1' : '0';
 }
@@ -1490,11 +1503,11 @@ function updateSellCartaBtn(){
   if (cartaSold && cartaSoldVia === 'contemplada'){
     btn.disabled = true;
     btn.textContent = 'Carta vendida';
-    btn.classList.add('carta-vendida'); // azul, cor própria do envelope
+    btn.classList.add('contemplado'); // verde, mesma cor do pin de dinheiro nesse estado
   } else {
     btn.disabled = !contemplated || creditUsed || cartaSold;
     btn.textContent = 'Vender carta contemplada';
-    btn.classList.remove('carta-vendida');
+    btn.classList.remove('contemplado');
     btn.style.opacity = (contemplated && !creditUsed && !cartaSold) ? '1' : '0.5';
   }
 }
@@ -1507,11 +1520,11 @@ function updateSellCartaNaoContempladaBtn(){
   if (cartaSold && cartaSoldVia === 'nao_contemplada'){
     btn.disabled = true;
     btn.textContent = 'Carta vendida';
-    btn.classList.add('carta-vendida');
+    btn.classList.add('venda-risco'); // vermelho, mesma cor do pin de dinheiro vermelho (alerta de possível perda)
   } else {
     btn.disabled = contemplated || creditUsed || cartaSold;
     btn.textContent = 'Vender carta não contemplada';
-    btn.classList.remove('carta-vendida');
+    btn.classList.remove('venda-risco');
     btn.style.opacity = (!contemplated && !creditUsed && !cartaSold) ? '1' : '0.5';
   }
 }
@@ -1559,9 +1572,10 @@ document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
 // 02/11: dinâmica de "vender a carta contemplada" — alternativa ao "Comprar
 // Imóvel", mutuamente exclusiva com ele e com "Vender carta não
 // contemplada" (só 1 das 3 ações pode acontecer). Evento único e manual:
-// troca o ícone do pin pro envelope azul e encerra a travessia ali mesmo —
-// não existem mais parcelas a pagar, o boneco não avança mais daquele ponto
-// em diante (ver updatePayBtn()/doPay()).
+// troca o ícone do pin pro "$" verde (mesma cor do botão, ver
+// updateSellCartaBtn()) e encerra a travessia ali mesmo — não existem mais
+// parcelas a pagar, o boneco não avança mais daquele ponto em diante (ver
+// updatePayBtn()/doPay()).
 function sellCarta(){
   if (!contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
@@ -1581,12 +1595,14 @@ document.getElementById('sellCartaBtn').addEventListener('click', sellCarta);
 
 // 02/11: dinâmica de "vender a carta não contemplada" — a mesma ideia de
 // sellCarta() acima, só que ANTES da contemplação (cota ainda não foi
-// sorteada/não ganhou lance). Também encerra a travessia ali mesmo.
+// sorteada/não ganhou lance). Também encerra a travessia ali mesmo. Pin e
+// botão ficam VERMELHOS (não verde) — alerta de que essa venda pode
+// significar perder dinheiro (diferente de vender já contemplado).
 function sellCartaNaoContemplada(){
   if (contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
   cartaSoldVia = 'nao_contemplada';
-  setPinIcon('envelope');
+  setPinIcon('money-red');
   setMoneyPinVisible(true);
   updateBuyBtn();
   updateSellCartaBtn();
