@@ -101,7 +101,8 @@ svg{display:block;width:100%;height:auto}
    card Status, só que também visível direto na ponte. Reaproveita o
    mesmo tamanho/peso de fonte do texto "Dar Lance" que ocupava esse
    lugar antes. */
-.ponte-cota-label{font-size:min(1.68cqw,24px);font-weight:700;color:var(--sell-blue);text-align:center;line-height:1.15}
+.ponte-cota-label{font-size:16px;font-weight:700;color:#fff;text-align:center;line-height:1.25;
+  background:rgba(7,20,38,0.45);padding:4px 10px;border-radius:6px}
 
 /* seta ">>>" piscando progressiva (31/10): cada ">" é um <span> próprio
    (ver updatePayBtn no JS) com a MESMA animação de opacidade, só que
@@ -334,7 +335,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="lance-spacer"></div>
       <div class="sub" id="statusInfo">Status: Não contemplado</div>
-      <div class="sub" id="indicadoresLabel">Indicadores</div>
     </div>
 
     <!-- CARD 2: Total pago + barra de progresso -->
