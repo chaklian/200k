@@ -382,7 +382,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          botões "Comprar Imóvel"/"Vender Carta" que viviam aqui foram pro
          card 6, no lugar desse texto (ver abaixo). -->
     <div class="kcard" id="creditoCard">
-      <h3>Valor do crédito</h3>
+      <div class="kcard-title-row"><h3>Valor do crédito</h3><span class="card-marker-icon" id="marcoReducaoCarta" data-marker="reducao-carta">i</span></div>
       <div class="big" id="kpiCredit">R$ 200.000,00</div>
       <div class="lance-spacer"></div>
       <div class="sub" id="statusInfo">Status: Não contemplado</div>
@@ -1955,6 +1955,8 @@ var venderContempladaMarker = {id: 'vender-contemplada', title: 'Vender carta co
   text: 'Vender a cota já contemplada é um instrumento de alavancagem financeira: o investidor acessa de uma vez o valor da carta conquistado no sorteio ou no lance.'};
 var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar Imóvel',
   text: 'Pode ser para uso próprio ou para alavancagem patrimonial, quando a ideia é alugar o imóvel. Vale conferir custos como corretagem, ITBI e IPTU, que também pesam na decisão.'};
+var reducaoCartaMarker = {id: 'reducao-carta', title: 'Redução da carta',
+  text: 'Após ser contemplado utilizando o lance embutido, o valor do crédito é recalculado.'};
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
 // pra qualquer mês, não só os múltiplos de 12
@@ -2079,7 +2081,8 @@ function buildCardMarkers(){
     {elId: 'marcoCancelarReiniciar', marker: cancelarReiniciarMarker},
     {elId: 'marcoVenderNaoContemplada', marker: venderNaoContempladaMarker},
     {elId: 'marcoVenderContemplada', marker: venderContempladaMarker},
-    {elId: 'marcoComprarImovel', marker: comprarImovelMarker}
+    {elId: 'marcoComprarImovel', marker: comprarImovelMarker},
+    {elId: 'marcoReducaoCarta', marker: reducaoCartaMarker}
   ].forEach(function(entry){
     var icon = document.getElementById(entry.elId);
     if (!icon) return;
