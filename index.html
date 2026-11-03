@@ -1900,12 +1900,6 @@ var bridgeMarkers = [
     text: 'A cada ano fechado de parcelas pagas o valor da carta e das parcelas são corrigidos monetariamente. Aqui foi utilizado o INCC (Índice Nacional de Custo da Construção).'
   },
   {
-    id: 'fundo-reserva',
-    month: 120, // fim do Ano 10 / início do Ano 11
-    title: 'Fundo de reserva',
-    text: 'Calculado sobre o mesmo critério da taxa de adm, o fundo serve para cobrir eventuais faltas de caixa do grupo e perda do poder de compra.'
-  },
-  {
     id: 'encerramento',
     x: X1, // fim da ponte, entre o último bloco e o chão de chegada — posição anterior
     title: 'Encerramento',
@@ -1914,9 +1908,11 @@ var bridgeMarkers = [
 ];
 
 // 03/11: "Taxa adm" migrou pro card 2 (Valor pago) — "Encerramento" voltou
-// pra ponte (bridgeMarkers acima), a pedido do usuário.
-var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxa adm',
-  text: 'Essa taxa remunera a administradora pela gestão do grupo. Incide sobre o valor do crédito. É definida no contrato e paga ao longo das parcelas.'};
+// pra ponte (bridgeMarkers acima), a pedido do usuário. "Fundo de reserva"
+// saiu da ponte e foi absorvido neste mesmo marco (título e texto juntos),
+// já que os dois mecanismos têm a mesma lógica de cobrança.
+var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxa de adm e fundo de reserva',
+  text: 'Incidem sobre o valor do crédito e são pagos nas parcelas: a taxa adm remunera a administradora pela gestão do grupo; o fundo de reserva cobre faltas de caixa e perda de poder de compra.'};
 
 // 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
 // ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
