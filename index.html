@@ -1896,6 +1896,7 @@ var bridgeMarkers = [
   {
     id: 'incc-ano1',
     month: 12, // fim do Ano 1 / início do Ano 2 — um marco por ano fechado
+    below: true, // 03/11: desceu pra baixo da fileira de caixas dos anos
     title: 'Reajuste anual',
     text: 'A cada ano fechado de parcelas pagas o valor da carta e das parcelas são corrigidos monetariamente. Aqui foi utilizado o INCC (Índice Nacional de Custo da Construção).'
   },
@@ -1916,7 +1917,9 @@ var bridgeMarkers = [
   },
   {
     id: 'encerramento',
-    x: X1, // fim da ponte, entre o último bloco e o chão de chegada — posição anterior
+    x: X0 + (SPAN_COUNT - 0.5) * UNIT, // 03/11: centralizado na caixa do
+                                        // último ano (era no fim da ponte, x:X1)
+    below: true, // mesma posição vertical do "Reajuste anual", abaixo das caixas
     title: 'Encerramento',
     text: 'O prazo do grupo é calculado para que todos os consorciados ativos sejam contemplados até a última assembleia, mesmo quem ainda não tinha ganhado por sorteio ou lance.'
   }
@@ -2047,7 +2050,11 @@ function buildMarkers(){
     // marco pode fixar x diretamente (ex.: no chão, antes do 1º mês) ou
     // usar month (posição relativa à régua de anos da ponte)
     var mx = (mk.x != null) ? mk.x : markerX(mk.month);
-    var my = SLAB_Y - 18; // logo acima da fileira de blocos, sem sobrepor o "Ano N"
+    // 03/11: marco pode pedir pra ficar ABAIXO da fileira de caixas dos anos
+    // (mk.below) em vez de acima da fileira de blocos — mesma posição
+    // vertical fixa pra todos os marcos "below" (entre o fundo da caixa do
+    // ano, DECK_Y+DECK_H, e a água, WATER_Y).
+    var my = mk.below ? (DECK_Y + DECK_H + 18) : (SLAB_Y - 18); // logo acima da fileira de blocos, sem sobrepor o "Ano N"
 
     var wrap = el('g', {'data-marker': mk.id});
     wrap.style.cursor = 'pointer';
