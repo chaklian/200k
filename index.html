@@ -151,11 +151,12 @@ svg{display:block;width:100%;height:auto}
 /* título do card da ponte (31/10) — nome do produto, centralizado, acima
    dos 3 botões de ação; usa posição absoluta própria (não entra no fluxo do
    .pay-overlay) pra não interferir no alinhamento horizontal dos botões.
-   Cor e tamanho ajustados a pedido do usuário: azul acinzentado #4f7498,
-   32px (era --ink padrão em 40px). */
+   26/11: tipografia (tamanho/cor/peso/letter-spacing) igualada à dos
+   títulos dos demais cards (.kcard h3), em qualquer estágio — só a
+   posição/alinhamento centralizado continua própria deste card. */
 .ponte-titulo{position:absolute;left:50%;top:2.5%;transform:translateX(-50%);
-  font-size:min(1.76cqw,32px);font-weight:600;color:#4f7498;text-align:center;
-  letter-spacing:.01em;white-space:nowrap;z-index:4}
+  font-size:16px;font-weight:600;color:var(--ink-dim);text-align:center;
+  letter-spacing:.02em;white-space:nowrap;z-index:4}
 
 /* painel subiu um pouco (top:14% -> 9%), mais perto do título. */
 .pay-overlay{position:absolute;left:50%;top:9%;transform:translateX(-50%);
@@ -318,7 +319,6 @@ svg{display:block;width:100%;height:auto}
    larga o posicionamento absoluto/tamanho de "hero" e vira um título de
    card normal (mesmo padrão visual de .kcard h3). */
 .ponte-titulo.docked{position:static;left:auto;top:auto;transform:none;
-  font-size:16px;font-weight:600;color:#4f7498;letter-spacing:.02em;
   text-align:left;white-space:normal;margin:0 0 10px}
 
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
