@@ -576,9 +576,16 @@ button.danger{color:var(--redline);border-color:var(--redline)}
           <line x1="0" y1="0" x2="0" y2="5" stroke="#0a2744" stroke-width="1.25"/>
         </pattern>
         <pattern id="water" width="40" height="8" patternUnits="userSpaceOnUse">
-          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 40 0" dur="4s" repeatCount="indefinite" additive="sum"/>
-          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 0 -2.6; 0 0" dur="2.1s" repeatCount="indefinite" additive="sum"/>
-          <path d="M0 4 Q10 0 20 4 T40 4" fill="none" stroke="var(--water-line)" stroke-width="1.1" opacity="0.85"/>
+          <!-- 26/11 (sessão 10): ondas pontudas (zigue-zague) em vez de
+               onduladas (curva suave), cor igual ao chão (var(--ink-faint),
+               a borda visível dos blocos de ancoragem — o preenchimento
+               deles é var(--canvas), igual ao céu, então a cor "do chão"
+               perceptível é a da borda). Movimento trocado de scroll+bob
+               contínuo pra um deslocamento diagonal em saltos (calcMode
+               discrete), mais mecânico/anguloso, condizente com o traço
+               pontudo. -->
+          <animateTransform attributeName="patternTransform" type="translate" calcMode="discrete" values="0 0; 10 -3; 20 0; 30 -3; 40 0" dur="2.4s" repeatCount="indefinite"/>
+          <path d="M0 6 L10 1 L20 6 L30 1 L40 6" fill="none" stroke="var(--ink-faint)" stroke-width="1.1" opacity="0.6"/>
         </pattern>
       </defs>
 
@@ -590,8 +597,11 @@ button.danger{color:var(--redline);border-color:var(--redline)}
            exatamente no fundo da água, sem sobrar nem faltar. viewBox
            cortado (01/11) de 460 pra 417 = WATER_Y+WATER_H, eliminando a
            faixa vazia que sobrava abaixo da água até o fim do card. -->
-      <rect id="water" x="90" y="372" width="1020" height="45" fill="var(--water-base)" opacity="0.55"/>
-      <rect x="90" y="372" width="1020" height="45" fill="url(#water)"/>
+      <!-- 26/11 (sessão 10): fundo sólido do mar (var(--water-base)) removido
+           a pedido do usuário — sem ele, a área mostra o mesmo céu/grid que
+           já está por baixo (var(--canvas) + url(#grid)), reduzindo o
+           contraste; só sobra o traçado das ondas por cima. -->
+      <rect id="water" x="90" y="372" width="1020" height="45" fill="url(#water)"/>
 
       <!-- fogos de artifício: atrás de toda a estrutura (pilares/cabos/blocos),
            na frente só do céu/água — por isso fica aqui, antes de
