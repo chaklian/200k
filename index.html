@@ -308,7 +308,7 @@ svg{display:block;width:100%;height:auto}
 
 /* Card "4,5" responsivo (26/11): quando o card da ponte entra em modo
    estreito, a caixa fixa de marcos "pula" pra fora do card da ponte e vira
-   um card normal (#card45), entre os cards 4 e 5. Essa classe .docked
+   um card normal (#cardFantasma), logo após o card 6 (Ações). Essa classe .docked
    desliga o posicionamento absoluto/tamanho fixo em px e deixa a caixa
    fluir como conteudo normal de card. */
 .marker-tooltip-fixed.docked{position:static;left:auto;top:auto;transform:none;
@@ -320,11 +320,7 @@ svg{display:block;width:100%;height:auto}
    via setAttribute('viewBox', ...). */
 .canvas-wrap.zoom-mode{height:280px}
 .canvas-wrap.zoom-mode svg{height:100%}
-/* Card 4,5 precisa do mesmo espaçamento que kanban-4/canvas-wrap já usam
-   entre si (margin-top:20px) — ele não é filho de nenhum grid, então não
-   herda esse espaçamento de graça. */
-#card45{margin-top:20px}
-/* título "Simulador de Consórcio" viaja junto pro card 4,5 — docked =
+/* título "Simulador de Consórcio" viaja junto pro card fantasma — docked =
    larga o posicionamento absoluto/tamanho de "hero" e vira um título de
    card normal (mesmo padrão visual de .kcard h3). */
 .ponte-titulo.docked{position:static;left:auto;top:auto;transform:none;
@@ -580,11 +576,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     </div>
   </div>
 
-  <!-- CARD "4,5": placeholder vazio, so recebe conteudo (a caixa
-       #markerTooltipFixed e o titulo) via JS quando o card da ponte entra
-       em modo estreito/zoom. Escondido (hidden) o resto do tempo. -->
-  <div class="kcard" id="card45" hidden></div>
-
   <!-- CARD 5: Ponte -->
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
     <div class="ponte-titulo" id="ponteTitulo">Simulador de Consórcio</div>
@@ -769,6 +760,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         </div>
       </div>
     </div>
+
+    <!-- CARD "FANTASMA": placeholder vazio, so recebe conteudo (a caixa
+         #markerTooltipFixed e o titulo) via JS quando o card da ponte entra
+         em modo estreito/zoom. Escondido (hidden) o resto do tempo. Fica
+         logo apos o card 6 (Acoes/botoes) quando aparece (26/11). Como e
+         filho do grid .kanban, o proprio gap:20px do grid cuida do
+         espacamento (hidden remove do fluxo do grid quando nao esta ativo). -->
+    <div class="kcard" id="cardFantasma" hidden></div>
 
     <!-- CARD 7: Lance Fixo -->
     <!-- 03/11: título "Lance Fixo" removido — o marco "i" saiu da linha do
@@ -3198,7 +3197,7 @@ if (savedSimState){
 //   estagio 0 (viewport > 1000px): 4 cards lado a lado — nada muda, card 5 normal.
 //   estagio 1 (560px < viewport <= 1000px): cards 1-4 empilham 2x2 — nesse
 //     momento a caixa fixa de marcos + o titulo "pulam" pra fora do card da
-//     ponte e viram o card "4,5" (entre os cards 4 e 5); o card da ponte
+//     ponte e viram o card "fantasma" (logo após o card 6, Ações); o card da ponte
 //     trava a altura (ZOOM_CARD_HEIGHT) e o SVG passa a mostrar so uma fatia
 //     (viewBox recortado) que acompanha o investidor — mar ainda visivel
 //     (ZOOM1_Y0..ZOOM1_Y1).
@@ -3215,11 +3214,11 @@ var ZOOM1_Y1 = GROUND_BOTTOM;  // viewBox units — mesmo fundo do mar de sempre
 var ZOOM2_Y0 = 215;             // viewBox units — mais fechado, rente ao pin
 var ZOOM2_Y1 = DECK_Y + DECK_H + 14; // viewBox units — logo abaixo do tabuleiro, sem o mar
 
-var zoomStage = 0; // 0 = largo, 1 = card 4,5 fora + zoom 1, 2 = zoom 2 (mar pode sumir)
+var zoomStage = 0; // 0 = largo, 1 = card fantasma fora + zoom 1, 2 = zoom 2 (mar pode sumir)
 var lastInvestorX = GROUND_X;
 var bridgeSvg = document.getElementById('bridge');
 var zoomCanvasWrap = document.getElementById('ponteCard');
-var card45 = document.getElementById('card45');
+var cardFantasma = document.getElementById('cardFantasma');
 var markerTooltipFixedEl = document.getElementById('markerTooltipFixed');
 var ponteTituloEl = document.getElementById('ponteTitulo');
 var ponteCotaOverlayEl = document.getElementById('ponteCotaOverlay');
@@ -3249,17 +3248,17 @@ function setZoomStage(stage){
   zoomCanvasWrap.classList.toggle('zoom-mode', active);
   zoomCanvasWrap.classList.toggle('zoom-mode-2', stage >= 2);
   if (active && !wasActive){
-    card45.hidden = false;
-    card45.appendChild(ponteTituloEl);
+    cardFantasma.hidden = false;
+    cardFantasma.appendChild(ponteTituloEl);
     ponteTituloEl.classList.add('docked');
-    card45.appendChild(markerTooltipFixedEl);
+    cardFantasma.appendChild(markerTooltipFixedEl);
     markerTooltipFixedEl.classList.add('docked');
   } else if (!active && wasActive){
     zoomCanvasWrap.insertBefore(ponteTituloEl, zoomCanvasWrap.firstChild);
     ponteTituloEl.classList.remove('docked');
     zoomCanvasWrap.insertBefore(markerTooltipFixedEl, ponteTituloEl.nextSibling);
     markerTooltipFixedEl.classList.remove('docked');
-    card45.hidden = true;
+    cardFantasma.hidden = true;
   }
   if (active){
     updateZoomViewBox();
