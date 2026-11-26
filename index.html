@@ -506,8 +506,8 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         <span class="card-marker-icon" id="marcoParcelaReduzida" data-marker="parcela-reduzida">i</span>
       </div>
       <div class="valor-pago-row">
-        <div class="big" id="kpiParcelaAtual">R$ 720,00</div>
-        <div class="valor-pago-pct"><span id="paidLabel">0</span>/200</div>
+        <div class="big" id="kpiParcelaAtual">R$ 800,00</div>
+        <div class="valor-pago-pct"><span id="paidLabel">0</span>/180</div>
       </div>
       <div class="lance-spacer"></div>
       <div class="progress-bar-track">
@@ -564,7 +564,7 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <div class="marker-tooltip-title marker-tooltip-title-journey" id="markerTooltipFixedTitle"></div>
       <div class="marker-tooltip-text" id="markerTooltipFixedText"></div>
     </div>
-    <svg id="bridge" viewBox="0 0 1200 417" xmlns="http://www.w3.org/2000/svg">
+    <svg id="bridge" viewBox="0 0 1200 457" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
           <path d="M24 0H0V24" fill="none" stroke="#1d4a74" stroke-width="0.5" opacity="0.5"/>
@@ -871,14 +871,14 @@ function setBtnLabel(btn, text){
 var BLOCK_TRANSITION = 'transform .6s cubic-bezier(.3,.7,.3,1), opacity .48s ease, fill .3s ease, stroke .3s ease';
 var INVESTOR_TRANSITION = 'transform .5s cubic-bezier(.3,.7,.3,1), opacity .4s ease';
 
-var X0 = 90, X1 = 1110, DECK_Y = 300, DECK_H = 26, SPAN_COUNT = 17;
+var X0 = 90, X1 = 1110, DECK_Y = 320, DECK_H = 26, SPAN_COUNT = 15;
 var SLAB_H = 10, SLAB_GAP = 3;
 var SLAB_Y = DECK_Y - SLAB_GAP - SLAB_H;
 var UNIT = (X1 - X0) / SPAN_COUNT;
 var TOWER_A = X0 + 3 * UNIT;   // left tower, after 3 approach spans
-var TOWER_B = X0 + 14 * UNIT;  // right tower, before 3 approach spans
-var TOWER_TOP = 96;
-var WATER_Y = 372;      // topo da água — onde os pilares realmente terminam
+var TOWER_B = X0 + (SPAN_COUNT - 3) * UNIT;  // right tower, before 3 approach spans
+var TOWER_TOP = 116; // +20 (era 96, 26/11) — mais distância do quadro fixo de marcos acima
+var WATER_Y = 412;      // +40 no total (era 372, 26/11) — topo da água, onde os pilares realmente terminam; +20 veio junto com a ponte (clearance do quadro de marcos) e +20 extra só na água (mar mais fundo)
 var WATER_H = 45;       // 31/10: altura da água +50% (era 30), sempre pra
                          // baixo — espelha a height do <rect id="water"> no SVG
 var GROUND_BOTTOM = WATER_Y + WATER_H; // chão/pilares de ancoragem acompanham
@@ -1185,7 +1185,7 @@ var spanStarts = [];
   spanStarts.push(acc); // total visual ao final
 })();
 var DISPLAY_TOTAL = spanStarts[SPAN_COUNT]; // 204 blocos desenhados (17×12)
-var TOTAL = 200;                            // parcelas reais do consórcio
+var TOTAL = 180;                            // parcelas reais do consórcio (15 anos — reduzido de 200 em 26/11)
 var WAIT_Y = 40;                // altura onde os blocos ficam suspensos, no alto
 var DROP = SLAB_Y - WAIT_Y;     // distância de queda até a laje
 var paidMonths = 0;    // progresso visual na ponte (blocos caídos) — avança com parcela paga E com lance
@@ -1194,7 +1194,7 @@ var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga 
                         // (derruba blocos lá na frente), mas não significa que o tempo passou de verdade.
 
 var CREDIT_BASE = 200000;       // valor da carta 200k
-var PARCELA_PCT = 0.0036;       // parcela = 0,36% do valor do crédito (R$720,00 sobre R$200k)
+var PARCELA_PCT = 0.004;       // parcela = 0,40% do valor do crédito (R$800,00 sobre R$200k) — escalado de 0,36%/200 meses pra manter a mesma proporção parcela/crédito com o prazo de 180
 var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela CHEIA (sem o redutor de 50% do item 6) —
                                  // é a base de toda parcela pós-contemplação, mas (31/10, 2ª
                                  // correção) nunca é usada sozinha — ver contemplate(): no
@@ -1292,15 +1292,15 @@ var MODALIDADE_LABEL = {sorteio:'Sorteio', fixo:'Lance Fixo', livre:'Lance Livre
 var parcelaPctPos = null;
 
 // grupo do consórcio: definição nossa aqui no protótipo, não uma regra oficial
-// de nenhum grupo real. 999 (não 1000) de propósito, pra toda cota caber em
-// 3 dígitos (001 a 999) — mais parecido com o número de cota real de 4
-// dígitos da Porto, só que sem o zero inicial redundante de um grupo de 1000.
-var GROUP_SIZE = 999;
+// de nenhum grupo real. 900 (ajustado de 999 em 26/11, junto com o prazo de
+// 180 meses) — com CONTEMPLACOES_POR_ASSEMBLEIA=5 e TOTAL=180, 5x180=900 bate
+// exatamente com GROUP_SIZE, sem sobra nem falta. Continua cabendo em 3 dígitos (001 a 900).
+var GROUP_SIZE = 900;
 
 // SORTEIO DETERMINÍSTICO SEM REPOSIÇÃO (29/10, 2ª versão — substitui a 1ª
-// versão probabilística "rollSorteio(1/N)", que podia terminar as 200
-// parcelas sem NUNCA contemplar o investidor, mesmo a chance subindo todo
-// mês — matematicamente possível (nunca ganhar 200 sorteios seguidos é raro,
+// versão probabilística "rollSorteio(1/N)", que podia terminar as parcelas
+// sem NUNCA contemplar o investidor, mesmo a chance subindo todo mês —
+// matematicamente possível (nunca ganhar todos os sorteios seguidos é raro,
 // mas não impossível), e o usuário notou esse caso e pediu uma garantia.
 //
 // Mecanismo novo: a cota simulada recebe um número fixo e aleatório (1 a
@@ -1309,9 +1309,9 @@ var GROUP_SIZE = 999;
 // cada "Pagar Parcela", saem CONTEMPLACOES_POR_ASSEMBLEIA=5 números do topo
 // do baralho (1 por sorteio + 1 por lance fixo + 3 por lance livre do resto
 // do grupo, mesmo que não sejam a cota simulada) — se o número da cota
-// simulada estiver nesses 5, ela foi contemplada. Como 5×200=1000 ≥
-// GROUP_SIZE=999, o baralho esgota até a 200ª parcela (a última leva só os
-// 4 números finais) — ou seja, toda cota (inclusive a simulada) é
+// simulada estiver nesses 5, ela foi contemplada. Como 5×180=900 ≥
+// GROUP_SIZE=900 (bate exatamente, 26/11), o baralho esgota exatamente na
+// última parcela (180ª) — ou seja, toda cota (inclusive a simulada) é
 // garantidamente contemplada até o fim, o mais tardar na última parcela.
 // Simplificação de produto, não um dado oficial da Porto (dado
 // real, item 11 do doc de regras: o nº de contemplados por assembleia varia
@@ -2759,7 +2759,7 @@ function doPay(){
   // 26/11: eventos de engajamento (Etapa 1 do masterplan 200k) — início da
   // jornada e marcos de progresso, pra medir "a pessoa simula bastante".
   if (monthsElapsed === 1) trackEvent('sim_start', {});
-  if (monthsElapsed === 50 || monthsElapsed === 100 || monthsElapsed === 150) {
+  if (monthsElapsed === 45 || monthsElapsed === 90 || monthsElapsed === 135) {
     trackEvent('sim_milestone', {months: monthsElapsed});
   }
 
