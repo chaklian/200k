@@ -604,19 +604,24 @@ button.danger{color:var(--redline);border-color:var(--redline)}
         </pattern>
       </defs>
 
-      <rect x="0" y="0" width="1200" height="417" fill="var(--canvas)"/>
-      <rect x="0" y="0" width="1200" height="417" fill="url(#grid)"/>
-      <!-- altura da água aumentada em 50% (31/10), pra baixo — y fica igual
-           (372), só a height cresce (30 -> 45); GROUND_BOTTOM (JS, abaixo)
+      <rect x="0" y="0" width="1200" height="457" fill="var(--canvas)"/>
+      <rect x="0" y="0" width="1200" height="457" fill="url(#grid)"/>
+      <!-- altura da água aumentada em 50% (31/10), pra baixo — y fica igual,
+           só a height cresce (30 -> 45); GROUND_BOTTOM (JS, abaixo)
            acompanha pra o chão/pilares de ancoragem continuarem batendo
            exatamente no fundo da água, sem sobrar nem faltar. viewBox
            cortado (01/11) de 460 pra 417 = WATER_Y+WATER_H, eliminando a
-           faixa vazia que sobrava abaixo da água até o fim do card. -->
+           faixa vazia que sobrava abaixo da água até o fim do card.
+           26/11 (sessão 12): y e viewBox/fundo reajustados de novo pra
+           WATER_Y=412/viewBox 457 (bug corrigido na mesma sessão — esses
+           3 valores tinham ficado hardcoded no 372/417 antigos, enquanto só
+           o JS (WATER_Y) tinha sido atualizado, fazendo o mar "flutuar"
+           40px acima do fundo real do card). -->
       <!-- 26/11 (sessão 10): fundo sólido do mar (var(--water-base)) removido
            a pedido do usuário — sem ele, a área mostra o mesmo céu/grid que
            já está por baixo (var(--canvas) + url(#grid)), reduzindo o
            contraste; só sobra o traçado das ondas por cima. -->
-      <rect id="water" x="90" y="372" width="1020" height="45" fill="url(#water)"/>
+      <rect id="water" x="90" y="412" width="1020" height="45" fill="url(#water)"/>
 
       <!-- fogos de artifício: atrás de toda a estrutura (pilares/cabos/blocos),
            na frente só do céu/água — por isso fica aqui, antes de
