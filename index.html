@@ -2046,26 +2046,25 @@ var bridgeMarkers = [
   {
     id: 'incc-ano1',
     month: 12, // fim do Ano 1 / início do Ano 2 — um marco por ano fechado
-    below: true, // 03/11: desceu pra baixo da fileira de caixas dos anos
+    // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
+    // pra ficar sempre clicável, mesma posição vertical dos outros 3 marcos
+    // da ponte (below:true/my customizado removidos)
     title: 'Reajuste anual',
     text: 'O crédito e as parcelas são reajustados monetariamente a cada ano, conforme índice previsto em contrato. No simulador, adotamos o INCC (Índice Nacional de Custo da Construção).'
   },
   {
     id: 'indicadores',
     x: TOWER_B, // sobre o 2º pilar da ponte
-    my: TOWER_TOP - 18, // 03/11: subiu pra acima do TOPO do pilar (antes
-                         // ficava na altura padrão dos marcos, na linha do
-                         // tabuleiro)
+    // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
+    // — my customizado (TOWER_TOP-18) removido
     title: 'Indicadores',
     text: 'Valores de referência utilizados no simulador: INCC = 6,5% a.a. CDI = 13,75% a.a.'
   },
   {
     id: 'estrategia',
     x: X0 + (3 - 0.5) * UNIT, // centralizado na caixa do Ano 3
-    my: SLAB_Y - 97.52, // 03/11: subiu mais (era SLAB_Y-67.52, mesma altura
-                         // do pin, e por isso o boneco com pin sobrepunha o
-                         // ícone ao passar) — agora fica bem acima do topo do
-                         // pin (pinY=SLAB_Y-67.52, raio 11), sem sobreposição
+    // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
+    // — my customizado (SLAB_Y-97.52) removido
     title: 'Múltiplas cotas',
     text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação. Além do sorteio, ofertar lances todo mês também contribui para esse resultado.'
   },
