@@ -2054,7 +2054,7 @@ var bridgeMarkers = [
   },
   {
     id: 'indicadores',
-    x: TOWER_B, // sobre o 2º pilar da ponte
+    x: X0 + (13 - 0.5) * UNIT, // 26/11: centralizado na caixa do Ano 13 (era TOWER_B)
     // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
     // — my customizado (TOWER_TOP-18) removido
     title: 'Indicadores',
@@ -2070,7 +2070,7 @@ var bridgeMarkers = [
   },
   {
     id: 'encerramento',
-    x: X0 + (SPAN_COUNT - 0.5) * UNIT, // centralizado na caixa do último ano
+    x: X0 + 14 * UNIT, // 26/11: entre a caixa do Ano 14 e a do Ano 15 (era centro do último ano)
     // 03/11: voltou pra ACIMA dos blocos da ponte (below:true removido) —
     // usa o my padrão (SLAB_Y - 18) do buildMarkers()
     title: 'Encerramento',
