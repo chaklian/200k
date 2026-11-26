@@ -139,6 +139,10 @@ h1{font-size:16px;font-weight:600;margin:8px 0 0;letter-spacing:.01em}
 .canvas-wrap{margin-top:20px;background:var(--canvas);border:1px solid var(--grid);border-radius:6px;
   padding:4px;overflow:hidden;container-type:inline-size;container-name:bridge}
 svg{display:block;width:100%;height:auto}
+/* 26/11: o boneco passou a ser desenhado por cima dos ícones "i" (marcos),
+   então ele precisa deixar os cliques atravessarem pra sempre acertar o
+   marco por baixo, mesmo quando se sobrepõem visualmente. */
+#investor{pointer-events:none}
 
 /* Centralizado horizontalmente acima de toda a estrutura da ponte (31/10) —
    antes ficava ancorado em left:3.6% (rente ao bloco de ancoragem/chão do
@@ -165,8 +169,10 @@ svg{display:block;width:100%;height:auto}
    ancoragem (chão) do lado esquerdo, onde o boneco começa parado — centrada
    dentro do retângulo de concreto (x:0-90, y:287-417 no viewBox 1200x417 ≈
    left:3.75%, top:84.4%), em 2 linhas. */
-.ponte-cota-overlay{position:absolute;left:3.75%;top:84.4%;transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;z-index:4}
+/* 26/11: oculto permanentemente (sumia de forma inconsistente conforme o
+   redimensionamento/zoom) — a pedido do usuário, fica escondido sempre,
+   em qualquer estágio, não só no modo zoom. */
+.ponte-cota-overlay{display:none}
 /* 31/10: os 3 "botões" voltam a ser só texto — sem fundo, borda, sombra ou
    recorte em seta — pedido do usuário pra simplificar o visual. Cancelar/
    Pagar viram literalmente "< < <"/"> > >" (com espaço entre os sinais);
@@ -310,7 +316,6 @@ svg{display:block;width:100%;height:auto}
    via setAttribute('viewBox', ...). */
 .canvas-wrap.zoom-mode{height:280px}
 .canvas-wrap.zoom-mode svg{height:100%}
-.canvas-wrap.zoom-mode .ponte-cota-overlay{display:none}
 /* Card 4,5 precisa do mesmo espaçamento que kanban-4/canvas-wrap já usam
    entre si (margin-top:20px) — ele não é filho de nenhum grid, então não
    herda esse espaçamento de graça. */
@@ -669,15 +674,16 @@ button.danger{color:var(--redline);border-color:var(--redline)}
       <g id="deck"></g>
       <g id="blocks"></g>
 
-      <!-- investor walks on top of the slab/blocks, so it must be drawn after them -->
-      <g id="investor"></g>
-
       <!-- marcos explicativos ("jornada guiada"): ícones pequenos e clicáveis
            em pontos específicos da ponte, cada um com um texto explicando um
-           evento do consórcio (ex.: reajuste pelo INCC ao fechar o ano).
-           Desenhados por cima de tudo (depois do investidor) pra ficarem
-           sempre clicáveis, em qualquer momento, independente do progresso. -->
+           evento do consórcio (ex.: reajuste pelo INCC ao fechar o ano). -->
       <g id="markers"></g>
+
+      <!-- investor walks on top of the slab/blocks/marcos (26/11: na frente
+           dos ícones "i" visualmente) — pointer-events:none (CSS) garante
+           que ele nunca "rouba" o clique dos marcos por baixo, mesmo
+           desenhado por cima deles. -->
+      <g id="investor"></g>
 
       <!-- dimension line / scale ruler (no label) -->
       <g id="dim" stroke="var(--ink-faint)" stroke-width="1"></g>
