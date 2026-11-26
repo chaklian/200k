@@ -495,14 +495,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
   font-size:12px;color:var(--ink-faint);line-height:1.7;text-align:center}
 .span-g{cursor:pointer}
 
-/* 4o estagio responsivo: telas muito largas (>1920px) - os cards de texto
+/* 4o estagio responsivo: telas muito largas (>2560px) - os cards de texto
    (1-4, 6-8) pulam pra uma coluna vertical a esquerda; o card 5 (ponte)
    ocupa o espaco restante a direita, esticado (via grid stretch) pra
    preencher a mesma altura total da coluna de cards. O SVG da ponte passa
    a usar width/height:100% (em vez de width:100%;height:auto) - o
    preserveAspectRatio padrao do SVG (xMidYMid meet) cuida de manter a
    proporcao e centralizar, sem precisar de calculo nenhum em JS. */
-@media (min-width:1921px){
+@media (min-width:2561px){
   .wrap{
     display:grid;
     grid-template-columns:minmax(320px,440px) 1fr;
