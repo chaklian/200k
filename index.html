@@ -295,6 +295,32 @@ svg{display:block;width:100%;height:auto}
   height:100%}
 .marker-tooltip-fixed.active .marker-tooltip-idle{display:none}
 
+/* Card "4,5" responsivo (26/11): quando o card da ponte entra em modo
+   estreito, a caixa fixa de marcos "pula" pra fora do card da ponte e vira
+   um card normal (#card45), entre os cards 4 e 5. Essa classe .docked
+   desliga o posicionamento absoluto/tamanho fixo em px e deixa a caixa
+   fluir como conteudo normal de card. */
+.marker-tooltip-fixed.docked{position:static;left:auto;top:auto;transform:none;
+  width:auto;height:auto;min-height:84px;max-width:none;max-height:none;margin:0}
+
+/* Card da ponte com altura travada (nao escala mais 1:1 com a largura) +
+   SVG preenchendo essa altura fixa, em vez de height:auto. O JS calcula um
+   viewBox recortado (zoom no boneco, seguindo a posicao dele) e o aplica
+   via setAttribute('viewBox', ...). */
+.canvas-wrap.zoom-mode{height:280px}
+.canvas-wrap.zoom-mode svg{height:100%}
+.canvas-wrap.zoom-mode .ponte-cota-overlay{display:none}
+/* Card 4,5 precisa do mesmo espaçamento que kanban-4/canvas-wrap já usam
+   entre si (margin-top:20px) — ele não é filho de nenhum grid, então não
+   herda esse espaçamento de graça. */
+#card45{margin-top:20px}
+/* título "Simulador de Consórcio" viaja junto pro card 4,5 — docked =
+   larga o posicionamento absoluto/tamanho de "hero" e vira um título de
+   card normal (mesmo padrão visual de .kcard h3). */
+.ponte-titulo.docked{position:static;left:auto;top:auto;transform:none;
+  font-size:16px;font-weight:600;color:#4f7498;letter-spacing:.02em;
+  text-align:left;white-space:normal;margin:0 0 10px}
+
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:16px;padding:12px 14px;
   background:var(--canvas-deep);border:1px solid var(--grid);border-radius:4px}
 .legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-dim)}
@@ -545,9 +571,14 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     </div>
   </div>
 
+  <!-- CARD "4,5": placeholder vazio, so recebe conteudo (a caixa
+       #markerTooltipFixed e o titulo) via JS quando o card da ponte entra
+       em modo estreito/zoom. Escondido (hidden) o resto do tempo. -->
+  <div class="kcard" id="card45" hidden></div>
+
   <!-- CARD 5: Ponte -->
   <div class="canvas-wrap" id="ponteCard" style="position:relative">
-    <div class="ponte-titulo">Simulador de Consórcio</div>
+    <div class="ponte-titulo" id="ponteTitulo">Simulador de Consórcio</div>
     <!-- 02/11: os botões "< < <"/"> > >" saíram de cima da ponte e foram
          pro card "Ações" (card 6, abaixo). 03/11: a cota do investidor saiu
          do painel de cima e foi pro chão (ver .ponte-cota-overlay abaixo). -->
@@ -1159,6 +1190,8 @@ function updateInvestor(n){
   }
   investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
   investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
+  lastInvestorX = investorX(n); // acompanha a posição p/ recortar o viewBox em modo zoom
+  if (zoomStage) updateZoomViewBox();
 }
 
 function hangerY(x){
@@ -1428,6 +1461,8 @@ function walkToFinish(){
       investorPose = pose;
     }
     investorG.style.transform = 'translateX(' + (startX + stepDist * k) + 'px)';
+    lastInvestorX = startX + stepDist * k; // zoom: acompanha a posição
+    if (zoomStage) updateZoomViewBox();
     if (k < FINISH_WALK_STEPS){
       finishWalkTimers.push(setTimeout(nextStep, STEP_MS));
     } else {
@@ -2317,6 +2352,8 @@ function collapseIntoSea(onDone){
   var INVESTOR_SINK_MIN_MONTHS = 8;
   var investorX0 = investorX(paidMonths);
   var investorOverBridge = paidMonths >= INVESTOR_SINK_MIN_MONTHS;
+  lastInvestorX = investorX0; // zoom: acompanha a posição
+  if (zoomStage) updateZoomViewBox();
   // posição: UMA transição só, do topo até o fundo do mar (sem parar na
   // água). opacidade: transição separada, atrasada até o instante em que os
   // pés cruzam a linha d'água, durando o resto da queda até o fundo.
@@ -3141,6 +3178,107 @@ if (savedSimState){
   updateContemplationUI();
   updateLanceUnlockUI();
   updatePayBtn();
+}
+
+// ============================================================
+// Card "4,5" + zoom no boneco em telas estreitas (26/11)
+// ============================================================
+// Os estagios seguem os MESMOS breakpoints que ja quebram o grid dos 4
+// primeiros cards (.kanban-4, max-width:1000px e max-width:560px), em vez de
+// um breakpoint proprio baseado na largura do card da ponte:
+//   estagio 0 (viewport > 1000px): 4 cards lado a lado — nada muda, card 5 normal.
+//   estagio 1 (560px < viewport <= 1000px): cards 1-4 empilham 2x2 — nesse
+//     momento a caixa fixa de marcos + o titulo "pulam" pra fora do card da
+//     ponte e viram o card "4,5" (entre os cards 4 e 5); o card da ponte
+//     trava a altura (ZOOM_CARD_HEIGHT) e o SVG passa a mostrar so uma fatia
+//     (viewBox recortado) que acompanha o investidor — mar ainda visivel
+//     (ZOOM1_Y0..ZOOM1_Y1).
+//   estagio 2 (viewport <= 560px): cada card 1-4 ocupa a largura toda — o
+//     zoom aumenta (fatia mais fechada em volta do investidor, ZOOM2_Y0..
+//     ZOOM2_Y1), mesmo que o mar deixe de aparecer.
+var STAGE1_MAX = 1000; // px, viewport — mesmo breakpoint de .kanban-4 (2 colunas)
+var STAGE2_MAX = 560;  // px, viewport — mesmo breakpoint de .kanban-4 (1 coluna)
+
+var ZOOM_CARD_HEIGHT = 280;  // px, altura travada do card da ponte em modo zoom (estagios 1 e 2)
+
+var ZOOM1_Y0 = 200;            // viewBox units — um pouco acima do pin/cabeca do boneco
+var ZOOM1_Y1 = GROUND_BOTTOM;  // viewBox units — mesmo fundo do mar de sempre
+var ZOOM2_Y0 = 215;             // viewBox units — mais fechado, rente ao pin
+var ZOOM2_Y1 = DECK_Y + DECK_H + 14; // viewBox units — logo abaixo do tabuleiro, sem o mar
+
+var zoomStage = 0; // 0 = largo, 1 = card 4,5 fora + zoom 1, 2 = zoom 2 (mar pode sumir)
+var lastInvestorX = GROUND_X;
+var bridgeSvg = document.getElementById('bridge');
+var zoomCanvasWrap = document.getElementById('ponteCard');
+var card45 = document.getElementById('card45');
+var markerTooltipFixedEl = document.getElementById('markerTooltipFixed');
+var ponteTituloEl = document.getElementById('ponteTitulo');
+var ponteCotaOverlayEl = document.getElementById('ponteCotaOverlay');
+
+function zoomWindow(){
+  return zoomStage >= 2 ? {y0: ZOOM2_Y0, y1: ZOOM2_Y1} : {y0: ZOOM1_Y0, y1: ZOOM1_Y1};
+}
+
+function updateZoomViewBox(){
+  if (!zoomStage) return;
+  var rect = bridgeSvg.getBoundingClientRect();
+  if (!rect.height || !rect.width) return;
+  var win = zoomWindow();
+  var zoomHeight = win.y1 - win.y0;
+  var scale = rect.height / zoomHeight;
+  var windowWidth = Math.min(1200, rect.width / scale);
+  var half = windowWidth / 2;
+  var vx = Math.max(0, Math.min(1200 - windowWidth, lastInvestorX - half));
+  bridgeSvg.setAttribute('viewBox', vx + ' ' + win.y0 + ' ' + windowWidth + ' ' + zoomHeight);
+}
+
+function setZoomStage(stage){
+  if (stage === zoomStage) return;
+  var wasActive = zoomStage > 0;
+  var active = stage > 0;
+  zoomStage = stage;
+  zoomCanvasWrap.classList.toggle('zoom-mode', active);
+  zoomCanvasWrap.classList.toggle('zoom-mode-2', stage >= 2);
+  if (active && !wasActive){
+    card45.hidden = false;
+    card45.appendChild(ponteTituloEl);
+    ponteTituloEl.classList.add('docked');
+    card45.appendChild(markerTooltipFixedEl);
+    markerTooltipFixedEl.classList.add('docked');
+  } else if (!active && wasActive){
+    zoomCanvasWrap.insertBefore(ponteTituloEl, zoomCanvasWrap.firstChild);
+    ponteTituloEl.classList.remove('docked');
+    zoomCanvasWrap.insertBefore(markerTooltipFixedEl, ponteTituloEl.nextSibling);
+    markerTooltipFixedEl.classList.remove('docked');
+    card45.hidden = true;
+  }
+  if (active){
+    updateZoomViewBox();
+  } else {
+    bridgeSvg.setAttribute('viewBox', '0 0 1200 457');
+  }
+}
+
+function stageFromViewport(){
+  if (window.matchMedia('(max-width: ' + STAGE2_MAX + 'px)').matches) return 2;
+  if (window.matchMedia('(max-width: ' + STAGE1_MAX + 'px)').matches) return 1;
+  return 0;
+}
+
+var mqStage1 = window.matchMedia('(max-width: ' + STAGE1_MAX + 'px)');
+var mqStage2 = window.matchMedia('(max-width: ' + STAGE2_MAX + 'px)');
+function onViewportChange(){ setZoomStage(stageFromViewport()); }
+mqStage1.addEventListener('change', onViewportChange);
+mqStage2.addEventListener('change', onViewportChange);
+setZoomStage(stageFromViewport());
+
+// Continua observando a largura do card (mesmo dentro do mesmo estagio) pra
+// recalcular o enquadramento (pan/zoom) quando o container muda de tamanho.
+if (typeof ResizeObserver !== 'undefined'){
+  var zoomRO = new ResizeObserver(function(){
+    if (zoomStage) updateZoomViewBox();
+  });
+  zoomRO.observe(zoomCanvasWrap);
 }
 </script>
 
