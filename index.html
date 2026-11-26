@@ -29,8 +29,9 @@
 
 <!-- 26/11: SEO/compartilhamento — Etapa 1 do masterplan 200k (claude/200k-masterplan.md).
      Termo-alvo principal: "simulador de consórcio". -->
-<title>Simulador de Consórcio Grátis — Veja Parcelas, Lances e Contemplação | 200k</title>
-<meta name="description" content="Simule seu consórcio de imóvel em segundos, de graça e sem cadastro. Veja parcelas, lances, contemplação e reajuste do crédito na prática. Simule quantas vezes quiser.">
+<title>Simulador de Consórcio — Veja Parcelas, Lances e Contemplação | 200k</title>
+<meta name="description" content="Simule seu consórcio de imóvel em segundos, sem cadastro. Veja parcelas, lances, contemplação e reajuste do crédito na prática. Simule quantas vezes quiser.">
+<meta name="google-site-verification" content="KZidmQVpxUmlj-Kiy1T3-JuTnre8WpwPZmigINzWXLc" />
 <link rel="canonical" href="https://200k.com.br/">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#0a2744">
@@ -39,14 +40,14 @@
 <meta property="og:locale" content="pt_BR">
 <meta property="og:url" content="https://200k.com.br/">
 <meta property="og:site_name" content="200k">
-<meta property="og:title" content="Simulador de Consórcio Grátis — 200k">
+<meta property="og:title" content="Simulador de Consórcio — 200k">
 <meta property="og:description" content="Simule seu consórcio em segundos: parcelas, lances, contemplação e reajuste, na prática. Sem cadastro, sem pressão comercial.">
 <meta property="og:image" content="https://200k.com.br/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Simulador de Consórcio Grátis — 200k">
+<meta name="twitter:title" content="Simulador de Consórcio — 200k">
 <meta name="twitter:description" content="Simule seu consórcio em segundos: parcelas, lances, contemplação e reajuste, na prática.">
 <meta name="twitter:image" content="https://200k.com.br/og-image.png">
 
@@ -61,7 +62,7 @@
   "@type": "WebApplication",
   "name": "200k — Simulador de Consórcio",
   "url": "https://200k.com.br/",
-  "description": "Simulador gratuito e interativo de consórcio: parcelas, lances, contemplação e reajuste do crédito, visualizados como a travessia de uma ponte ao longo do prazo do grupo.",
+  "description": "Simulador interativo de consórcio: parcelas, lances, contemplação e reajuste do crédito, visualizados como a travessia de uma ponte ao longo do prazo do grupo.",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web",
   "isAccessibleForFree": true,
@@ -2055,7 +2056,7 @@ var reducaoCartaMarker = {id: 'reducao-carta', title: 'Lance embutido',
   text: 'Após ser contemplado utilizando o lance embutido, o crédito reduz, pois parte do próprio valor foi usada para compor a oferta.'};
 // 26/11: marco do botão "Compartilhar" (Etapa 1 do masterplan 200k)
 var compartilharMarker = {id: 'compartilhar', title: 'Compartilhar',
-  text: 'Envie o link deste simulador para alguém que também esteja avaliando um consórcio. É gratuito e não exige cadastro.'};
+  text: 'Envie o link deste simulador para alguém que também esteja avaliando um consórcio. Não exige cadastro.'};
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
 // pra qualquer mês, não só os múltiplos de 12
@@ -3056,7 +3057,7 @@ if (shareBtn){
   shareBtn.addEventListener('click', function(){
     var shareUrl = 'https://200k.com.br/';
     var shareTitle = '200k — Simulador de Consórcio';
-    var shareMsg = 'Simule seu consórcio de graça, sem cadastro — achei esse simulador interessante.';
+    var shareMsg = 'Simule seu consórcio sem cadastro — achei esse simulador interessante.';
     if (navigator.share){
       navigator.share({title: shareTitle, text: shareMsg, url: shareUrl})
         .then(function(){ trackEvent('share', {method: 'web_share_api'}); })
