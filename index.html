@@ -649,15 +649,13 @@ button.danger{color:var(--redline);border-color:var(--redline)}
            esquerda dentro do botão (.acoes-btn-icon) foram removidos de
            novo (tinham sido adicionados antes nessa mesma sessão). -->
       <div class="acoes-list">
-        <!-- 26/11: "Compartilhar" — Etapa 1 do masterplan 200k (indicação/
-             viral é uma das métricas-chave dessa etapa). Não é mutuamente
-             exclusivo com nada, fica sempre disponível. -->
-        <div class="acoes-item">
-          <button id="shareBtn" class="acoes-btn" type="button">
-            <span class="acoes-btn-label">Compartilhar simulador</span>
-          </button>
-          <span class="card-marker-icon acoes-marker" id="marcoCompartilhar" data-marker="compartilhar">i</span>
-        </div>
+        <!-- 26/11 (3ª iteração): botão "Compartilhar simulador" removido
+             deste card a pedido do usuário — vai ficar em outro lugar do
+             site, ainda não decidido. O markup/JS (shareBtn, compartilharMarker,
+             trackEvent('share', ...)) continuam no arquivo, só sem nenhum
+             elemento no DOM que os referencie por enquanto — reconectar
+             (id="shareBtn" no botão, id="marcoCompartilhar" no marco) quando
+             o novo local for definido. -->
         <div class="acoes-item">
           <button id="payBtn" class="acoes-btn">
             <span class="acoes-btn-label">Pagar parcela</span>
