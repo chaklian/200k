@@ -580,11 +580,12 @@ button.danger{color:var(--redline);border-color:var(--redline)}
                onduladas (curva suave), cor igual ao chão (var(--ink-faint),
                a borda visível dos blocos de ancoragem — o preenchimento
                deles é var(--canvas), igual ao céu, então a cor "do chão"
-               perceptível é a da borda). Movimento trocado de scroll+bob
-               contínuo pra um deslocamento diagonal em saltos (calcMode
-               discrete), mais mecânico/anguloso, condizente com o traço
-               pontudo. -->
-          <animateTransform attributeName="patternTransform" type="translate" calcMode="discrete" values="0 0; 10 -3; 20 0; 30 -3; 40 0" dur="2.4s" repeatCount="indefinite"/>
+               perceptível é a da borda). Chegou a testar um movimento em
+               saltos (calcMode discrete) pro deslocamento, mas o usuário
+               achou estranho e pediu pra manter o movimento antigo (scroll
+               horizontal contínuo + bob vertical suave, abaixo). -->
+          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 40 0" dur="4s" repeatCount="indefinite" additive="sum"/>
+          <animateTransform attributeName="patternTransform" type="translate" values="0 0; 0 -2.6; 0 0" dur="2.1s" repeatCount="indefinite" additive="sum"/>
           <path d="M0 6 L10 1 L20 6 L30 1 L40 6" fill="none" stroke="var(--ink-faint)" stroke-width="1.1" opacity="0.6"/>
         </pattern>
       </defs>
