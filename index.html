@@ -400,6 +400,16 @@ input[type=range]{width:100%;accent-color:var(--ink-dim);height:4px}
 .lance-apply-btn.imovel-comprado:hover{border-color:var(--amber);background:#3a2a0f}
 .lance-apply-btn.carta-vendida{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
 .lance-apply-btn.carta-vendida:hover{border-color:var(--sell-blue);background:#102642}
+/* 26/11 (sessão 11): feedback visual imediato ao clicar em "Lance Fixo"/
+   "Lance Livre" — o botão vira azul (mesma cor dos 3 estados pós-ação do
+   card "Ações") assim que o clique é registrado. Se o lance for vencedor
+   (contemplação), fica azul pra sempre (o card inteiro já escurece por
+   cima, via .lance-blocked). Se for perdido, volta à cor padrão depois de
+   um instante — sinal visual claro de "não funcionou, precisa tentar de
+   novo" (ver applyLance()/listeners de fixoBtn/livreBtn). Mesmas cores de
+   .carta-vendida acima, classe própria só por clareza semântica. */
+.lance-apply-btn.lance-azul{background:#102642;color:var(--sell-blue);border-color:var(--sell-blue)}
+.lance-apply-btn.lance-azul:hover{border-color:var(--sell-blue);background:#102642}
 /* 02/11: card "Ações" (card 6) — 5 botões empilhados, 1 por linha (Pagar
    parcela / Cancelar consórcio / Vender carta não contemplada / Vender
    carta contemplada / Comprar Imóvel), com visual próprio (não reaproveita
@@ -2702,7 +2712,7 @@ function applyLance(vals, kind){
   var won = rollSorteio(chancePct);
   showLanceFeedback(kind, won);
   trackEvent('sim_lance', {kind: kind, won: won, totalPct: vals.totalPct}); // 26/11
-  if (!won) return; // lance perdido: não consome embutido/recurso nem avança a ponte — pode tentar de novo depois
+  if (!won) return false; // lance perdido: não consome embutido/recurso nem avança a ponte — pode tentar de novo depois
 
   embutidoUsedTotal += vals.valorEmbutido;
   recursoUsedTotal += vals.valorRecurso;
@@ -2715,6 +2725,7 @@ function applyLance(vals, kind){
   contemplate();
   updatePayBtn();
   saveSimState(); // 26/11: persiste o progresso após um lance vencedor
+  return true;
 }
 
 
@@ -2888,21 +2899,34 @@ document.getElementById('livrePct').addEventListener('input', function(){
   updateLivrePreview();
 });
 
-document.getElementById('fixoBtn').addEventListener('click', function(){
+// 26/11 (sessão 11): tempo que o botão fica azul antes de voltar à cor
+// padrão quando o lance é perdido — só pra dar tempo do usuário perceber o
+// clique/feedback antes do botão "resetar" visualmente (ver handleLanceClick).
+var LANCE_AZUL_REVERT_MS = 700;
+function handleLanceClick(btn, previewFn, kind){
   if (contemplated || lanceUsedThisRound) return;
-  applyLance(updateFixoPreview(), 'fixo');
+  btn.classList.add('lance-azul'); // feedback imediato: "lance registrado"
+  var won = applyLance(previewFn(), kind);
   // só dá pra dar 1 lance por parcela — fixo ou livre, nunca os dois na
   // mesma rodada. Os cards voltam a ficar opacos até a próxima "Pagar Parcela"
   lanceUsedThisRound = true;
   lanceUnlocked = false;
   updateLanceUnlockUI();
+  if (!won){
+    // lance perdido: o azul volta pra cor antiga depois de um instante,
+    // deixando claro que não funcionou e que é preciso clicar de novo
+    // (na próxima rodada, depois de "Pagar Parcela") pra tentar outra vez.
+    setTimeout(function(){ btn.classList.remove('lance-azul'); }, LANCE_AZUL_REVERT_MS);
+  }
+  // se ganhou (contemplado), o azul fica — o card inteiro escurece por cima
+  // (.lance-blocked, ver updateContemplationUI()), então o botão permanece
+  // azul como registro visual de que esse foi o lance vencedor.
+}
+document.getElementById('fixoBtn').addEventListener('click', function(){
+  handleLanceClick(this, updateFixoPreview, 'fixo');
 });
 document.getElementById('livreBtn').addEventListener('click', function(){
-  if (contemplated || lanceUsedThisRound) return;
-  applyLance(updateLivrePreview(), 'livre');
-  lanceUsedThisRound = true;
-  lanceUnlocked = false;
-  updateLanceUnlockUI();
+  handleLanceClick(this, updateLivrePreview, 'livre');
 });
 
 // os 2 cards de lance começam travados (opacos) — só liberam quando o
@@ -3055,6 +3079,11 @@ function resetSimulation(){
     el.classList.remove('show', 'win', 'lose');
     el.innerHTML = '';
   });
+  // 26/11 (sessão 11): limpa o azul de "lance em andamento/vencedor" dos 2
+  // botões ao reiniciar — senão um lance vencedor da simulação anterior
+  // deixaria o botão azul já na largada da próxima.
+  document.getElementById('fixoBtn').classList.remove('lance-azul');
+  document.getElementById('livreBtn').classList.remove('lance-azul');
   paint(0, {instant:true});
   document.getElementById('paidLabel').textContent = 0;
   updateContemplationUI();
