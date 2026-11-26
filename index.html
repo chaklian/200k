@@ -1,7 +1,78 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>200k</title>
+<!doctype html><html lang="pt-BR"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<!-- 26/11: Google Analytics 4 — Etapa 1 do masterplan 200k (claude/200k-masterplan.md).
+     TROQUE 'G-XXXXXXXXXX' pelo Measurement ID real de uma propriedade GA4
+     (Google Analytics > Admin > Fluxos de dados > Web) para ativar de
+     verdade. Enquanto for o placeholder, trackEvent() não falha em nada
+     (só não envia pra lugar nenhum) e o script do gtag.js nem chega a
+     carregar — ver condição abaixo. -->
+<script>
+  window.GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  // helper usado em todo o simulador pra registrar eventos de engajamento
+  // (ver saveSimState()/doPay()/contemplate()/applyLance()/sellCarta()/
+  // buyImovel()/resetSimulation()/shareBtn abaixo) — seguro mesmo sem GA
+  // configurado.
+  window.trackEvent = function(name, params){
+    try { gtag('event', name, params || {}); } catch(e){}
+  };
+  if (window.GA_MEASUREMENT_ID && window.GA_MEASUREMENT_ID.indexOf('XXXX') === -1){
+    gtag('js', new Date());
+    gtag('config', window.GA_MEASUREMENT_ID);
+    var gaScriptTag = document.createElement('script');
+    gaScriptTag.async = true;
+    gaScriptTag.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_MEASUREMENT_ID;
+    document.head.appendChild(gaScriptTag);
+  }
+</script>
+
+<!-- 26/11: SEO/compartilhamento — Etapa 1 do masterplan 200k (claude/200k-masterplan.md).
+     Termo-alvo principal: "simulador de consórcio". -->
+<title>Simulador de Consórcio Grátis — Veja Parcelas, Lances e Contemplação | 200k</title>
+<meta name="description" content="Simule seu consórcio de imóvel ou veículo em segundos, de graça e sem cadastro. Veja parcelas, lances, contemplação e reajuste do crédito na prática. Simule quantas vezes quiser.">
+<link rel="canonical" href="https://200k.com.br/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0a2744">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://200k.com.br/">
+<meta property="og:site_name" content="200k">
+<meta property="og:title" content="Simulador de Consórcio Grátis — 200k">
+<meta property="og:description" content="Simule seu consórcio em segundos: parcelas, lances, contemplação e reajuste, na prática. Sem cadastro, sem pressão comercial.">
+<meta property="og:image" content="https://200k.com.br/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Simulador de Consórcio Grátis — 200k">
+<meta name="twitter:description" content="Simule seu consórcio em segundos: parcelas, lances, contemplação e reajuste, na prática.">
+<meta name="twitter:image" content="https://200k.com.br/og-image.png">
+
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "200k — Simulador de Consórcio",
+  "url": "https://200k.com.br/",
+  "description": "Simulador gratuito e interativo de consórcio: parcelas, lances, contemplação e reajuste do crédito, visualizados como a travessia de uma ponte ao longo do prazo do grupo.",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "isAccessibleForFree": true,
+  "inLanguage": "pt-BR",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "BRL"}
+}
+</script>
+
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"></head><body>
 <style>
 :root{
   --bg:#0a2744; --canvas:#0d3257; --canvas-deep:#092038;
@@ -578,6 +649,15 @@ button.danger{color:var(--redline);border-color:var(--redline)}
            esquerda dentro do botão (.acoes-btn-icon) foram removidos de
            novo (tinham sido adicionados antes nessa mesma sessão). -->
       <div class="acoes-list">
+        <!-- 26/11: "Compartilhar" — Etapa 1 do masterplan 200k (indicação/
+             viral é uma das métricas-chave dessa etapa). Não é mutuamente
+             exclusivo com nada, fica sempre disponível. -->
+        <div class="acoes-item">
+          <button id="shareBtn" class="acoes-btn" type="button">
+            <span class="acoes-btn-label">Compartilhar simulador</span>
+          </button>
+          <span class="card-marker-icon acoes-marker" id="marcoCompartilhar" data-marker="compartilhar">i</span>
+        </div>
         <div class="acoes-item">
           <button id="payBtn" class="acoes-btn">
             <span class="acoes-btn-label">Pagar parcela</span>
@@ -1498,6 +1578,7 @@ function contemplate(){
   if (contemplated) return;
   contemplated = true;
   contemplationMonthsElapsed = monthsElapsed;
+  trackEvent('sim_contemplated', {method: contemplationMethod, month: monthsElapsed}); // 26/11
   // 31/10: a contemplação (por sorteio ou por lance vencedor) NÃO avança
   // mais a ponte — na prática, ganhar o sorteio ou o lance não pula meses
   // de parcela: o investidor continua pagando normalmente, 1 parcela por
@@ -1708,6 +1789,8 @@ function buyImovel(){
   updateBuyBtn();
   updateSellCartaBtn();
   updateSellCartaNaoContempladaBtn();
+  saveSimState(); // 26/11: persiste a decisão de comprar o imóvel
+  trackEvent('sim_imovel_comprado', {month: monthsElapsed}); // 26/11
 }
 document.getElementById('buyImovelBtn').addEventListener('click', buyImovel);
 
@@ -1732,6 +1815,8 @@ function sellCarta(){
   updateSellCartaBtn();
   updateSellCartaNaoContempladaBtn();
   updatePayBtn();
+  saveSimState(); // 26/11: persiste a venda da carta contemplada
+  trackEvent('sim_carta_vendida', {via: 'contemplada', month: monthsElapsed}); // 26/11
 }
 document.getElementById('sellCartaBtn').addEventListener('click', sellCarta);
 
@@ -1750,6 +1835,8 @@ function sellCartaNaoContemplada(){
   updateSellCartaBtn();
   updateSellCartaNaoContempladaBtn();
   updatePayBtn();
+  saveSimState(); // 26/11: persiste a venda da carta não contemplada
+  trackEvent('sim_carta_vendida', {via: 'nao_contemplada', month: monthsElapsed}); // 26/11
 }
 document.getElementById('sellCartaNaoContempladaBtn').addEventListener('click', sellCartaNaoContemplada);
 
@@ -1968,6 +2055,9 @@ var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar imóvel',
   text: 'Use o crédito contemplado para comprar um imóvel para morar ou alugar, após aprovação da administradora. Considere impostos e demais despesas.'};
 var reducaoCartaMarker = {id: 'reducao-carta', title: 'Lance embutido',
   text: 'Após ser contemplado utilizando o lance embutido, o crédito reduz, pois parte do próprio valor foi usada para compor a oferta.'};
+// 26/11: marco do botão "Compartilhar" (Etapa 1 do masterplan 200k)
+var compartilharMarker = {id: 'compartilhar', title: 'Compartilhar',
+  text: 'Envie o link deste simulador para alguém que também esteja avaliando um consórcio. É gratuito e não exige cadastro.'};
 
 // mesma régua de 1 ano = 1 vão (UNIT) usada no resto da ponte — funciona
 // pra qualquer mês, não só os múltiplos de 12
@@ -2099,7 +2189,8 @@ function buildCardMarkers(){
     {elId: 'marcoVenderContemplada', marker: venderContempladaMarker},
     {elId: 'marcoComprarImovel', marker: comprarImovelMarker},
     {elId: 'marcoReducaoCarta', marker: reducaoCartaMarker},
-    {elId: 'marcoTaxaAdm', marker: taxaAdmMarker}
+    {elId: 'marcoTaxaAdm', marker: taxaAdmMarker},
+    {elId: 'marcoCompartilhar', marker: compartilharMarker}
   ].forEach(function(entry){
     var icon = document.getElementById(entry.elId);
     if (!icon) return;
@@ -2305,6 +2396,7 @@ function paint(n, opts){
     bridgeCompleted = true;
     launchFireworks();
     walkToFinish();
+    trackEvent('sim_completed', {contemplated: contemplated}); // 26/11
   }
 }
 
@@ -2590,6 +2682,7 @@ function applyLance(vals, kind){
   var chancePct = lanceChance(kind, vals.totalPct);
   var won = rollSorteio(chancePct);
   showLanceFeedback(kind, won);
+  trackEvent('sim_lance', {kind: kind, won: won, totalPct: vals.totalPct}); // 26/11
   if (!won) return; // lance perdido: não consome embutido/recurso nem avança a ponte — pode tentar de novo depois
 
   embutidoUsedTotal += vals.valorEmbutido;
@@ -2602,6 +2695,7 @@ function applyLance(vals, kind){
   contemplationMethod = kind;
   contemplate();
   updatePayBtn();
+  saveSimState(); // 26/11: persiste o progresso após um lance vencedor
 }
 
 
@@ -2631,6 +2725,13 @@ function doPay(){
   // parcelas a pagar — o boneco fica parado onde estava pra sempre.
   if (paidMonths >= TOTAL || cartaSold) return;
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
+
+  // 26/11: eventos de engajamento (Etapa 1 do masterplan 200k) — início da
+  // jornada e marcos de progresso, pra medir "a pessoa simula bastante".
+  if (monthsElapsed === 1) trackEvent('sim_start', {});
+  if (monthsElapsed === 50 || monthsElapsed === 100 || monthsElapsed === 150) {
+    trackEvent('sim_milestone', {months: monthsElapsed});
+  }
 
   // mesmo sem lance nenhum, todo mês saem 5 números do baralho do sorteio —
   // então a contemplação também pode vir sem lance. Sempre roda e mostra o
@@ -2673,6 +2774,7 @@ function doPay(){
   lanceUsedThisRound = false;
   updateLanceUnlockUI();
   updatePayBtn();
+  saveSimState(); // 26/11: persiste o progresso a cada parcela paga
 }
 
 // segurar o botão "Pagar Parcela" repete o pagamento automaticamente, pra não
@@ -2813,7 +2915,100 @@ if (lanceBtn){
   });
 }
 
+// ---- 26/11: Persistência leve (localStorage) — Etapa 1 do masterplan 200k
+// (claude/200k-masterplan.md). Objetivo: um F5 não deve zerar o progresso de
+// quem já estava simulando — ajuda direto a métrica de "jogar várias vezes"/
+// retenção. Guarda só o estado financeiro/de progresso (ver variáveis
+// abaixo); nada de PII, nada enviado a servidor nenhum, tudo fica no
+// navegador do visitante.
+var SIM_STORAGE_KEY = '200k_sim_v1';
+
+function saveSimState(){
+  try {
+    var state = {
+      v: 1,
+      monthsElapsed: monthsElapsed,
+      embutidoUsedTotal: embutidoUsedTotal,
+      recursoUsedTotal: recursoUsedTotal,
+      contemplated: contemplated,
+      contemplationMonthsElapsed: contemplationMonthsElapsed,
+      contemplationMethod: contemplationMethod,
+      creditUsed: creditUsed,
+      creditUsedMonthsElapsed: creditUsedMonthsElapsed,
+      creditFrozenValue: creditFrozenValue,
+      cartaSold: cartaSold,
+      cartaSoldVia: cartaSoldVia,
+      parcelaPosContempValue: parcelaPosContempValue,
+      parcelaPctPos: parcelaPctPos,
+      investorCotaNumber: investorCotaNumber,
+      sorteioDrawPool: sorteioDrawPool,
+      lanceUsedThisRound: lanceUsedThisRound,
+      bridgeCompleted: bridgeCompleted,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(state));
+  } catch(e){ /* localStorage indisponível (aba anônima, cota cheia etc.) — segue sem persistência */ }
+}
+
+function clearSimState(){
+  try { localStorage.removeItem(SIM_STORAGE_KEY); } catch(e){}
+}
+
+function loadSimState(){
+  try {
+    var raw = localStorage.getItem(SIM_STORAGE_KEY);
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    if (!s || typeof s.monthsElapsed !== 'number') return null;
+    return s;
+  } catch(e){ return null; }
+}
+
+// Aplica um estado salvo às variáveis globais e repinta a tela inteira — só
+// é chamada uma vez, no carregamento inicial da página (ver fim do arquivo).
+// Reaproveita as mesmas funções de atualização de UI já usadas no fluxo
+// normal (paint/updateKpis/updateContemplationUI/...), que são idempotentes
+// e já derivam toda a UI a partir do estado — por isso não precisa duplicar
+// nenhuma lógica de desenho aqui.
+function restoreSimState(s){
+  monthsElapsed = Math.max(0, Math.min(TOTAL, s.monthsElapsed || 0));
+  embutidoUsedTotal = s.embutidoUsedTotal || 0;
+  recursoUsedTotal = s.recursoUsedTotal || 0;
+  contemplated = !!s.contemplated;
+  contemplationMonthsElapsed = (s.contemplationMonthsElapsed != null) ? s.contemplationMonthsElapsed : null;
+  contemplationMethod = s.contemplationMethod || null;
+  creditUsed = !!s.creditUsed;
+  creditUsedMonthsElapsed = (s.creditUsedMonthsElapsed != null) ? s.creditUsedMonthsElapsed : null;
+  creditFrozenValue = (s.creditFrozenValue != null) ? s.creditFrozenValue : null;
+  cartaSold = !!s.cartaSold;
+  cartaSoldVia = s.cartaSoldVia || null;
+  parcelaPosContempValue = (s.parcelaPosContempValue != null) ? s.parcelaPosContempValue : null;
+  parcelaPctPos = (s.parcelaPctPos != null) ? s.parcelaPctPos : null;
+  investorCotaNumber = (s.investorCotaNumber != null) ? s.investorCotaNumber : investorCotaNumber;
+  sorteioDrawPool = Array.isArray(s.sorteioDrawPool) ? s.sorteioDrawPool.slice() : sorteioDrawPool;
+  lanceUsedThisRound = !!s.lanceUsedThisRound;
+  bridgeCompleted = !!s.bridgeCompleted;
+
+  // ícone do pin derivado do estado restaurado, na mesma ordem de prioridade
+  // das ações originais (vender > comprar imóvel > só contemplado > nada)
+  var pinKind = 'money';
+  if (cartaSold && cartaSoldVia === 'nao_contemplada') pinKind = 'money-red';
+  else if (cartaSold && cartaSoldVia === 'contemplada') pinKind = 'money';
+  else if (creditUsed) pinKind = 'key';
+  else if (contemplated) pinKind = 'envelope';
+  setPinIcon(pinKind);
+
+  var v = Math.min(TOTAL, monthsElapsed);
+  document.getElementById('paidLabel').textContent = v;
+  paint(v, {instant:true});
+  updateKpis();
+  updateContemplationUI();
+  updateLanceUnlockUI();
+  updatePayBtn();
+}
+
 function resetSimulation(){
+  clearSimState(); // 26/11: reiniciar a simulação também apaga o progresso salvo
   embutidoUsedTotal = 0;
   recursoUsedTotal = 0;
   monthsElapsed = 0;
@@ -2850,8 +3045,30 @@ function resetSimulation(){
 document.getElementById('restartBtn').addEventListener('click', function(){
   stopFireworks();
   clearFinishWalk();
+  trackEvent('sim_restart', {months_at_restart: monthsElapsed}); // 26/11
   collapseIntoSea(resetSimulation);
 });
+
+// 26/11: "Compartilhar simulador" — Etapa 1 do masterplan 200k. Web Share
+// API quando disponível (mobile principalmente — abre o menu nativo de
+// compartilhamento, incluindo WhatsApp), com fallback de link direto pro
+// WhatsApp Web em desktop/navegadores sem suporte.
+var shareBtn = document.getElementById('shareBtn');
+if (shareBtn){
+  shareBtn.addEventListener('click', function(){
+    var shareUrl = 'https://200k.com.br/';
+    var shareTitle = '200k — Simulador de Consórcio';
+    var shareMsg = 'Simule seu consórcio de graça, sem cadastro — achei esse simulador interessante.';
+    if (navigator.share){
+      navigator.share({title: shareTitle, text: shareMsg, url: shareUrl})
+        .then(function(){ trackEvent('share', {method: 'web_share_api'}); })
+        .catch(function(){ /* usuário cancelou o share nativo — sem tracking de erro */ });
+    } else {
+      trackEvent('share', {method: 'whatsapp_fallback'});
+      window.open('https://wa.me/?text=' + encodeURIComponent(shareMsg + ' ' + shareUrl), '_blank', 'noopener');
+    }
+  });
+}
 
 drawStructure();
 buildDeck();
@@ -2859,11 +3076,19 @@ buildMarkers();
 buildCardMarkers();
 initSorteioPool();
 updateContempladosPainel(null);
-paint(0, {instant:true});
-updateKpis();
-updateContemplationUI();
-updateLanceUnlockUI();
-updatePayBtn();
+
+// 26/11: se houver uma simulação salva (localStorage), restaura o progresso
+// em vez de começar do zero — ver saveSimState()/restoreSimState() acima.
+var savedSimState = loadSimState();
+if (savedSimState){
+  restoreSimState(savedSimState);
+} else {
+  paint(0, {instant:true});
+  updateKpis();
+  updateContemplationUI();
+  updateLanceUnlockUI();
+  updatePayBtn();
+}
 </script>
 
 </body></html>

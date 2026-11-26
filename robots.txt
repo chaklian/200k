@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://200k.com.br/sitemap.xml
