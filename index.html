@@ -974,79 +974,114 @@ function drawBackstay(g, x1, y1, x2, y2, offset){
   g.appendChild(el('polyline', {points:pts2.join(' '), fill:'none', stroke:'var(--ink-faint)', 'stroke-width':'1.5'}));
 }
 // figura em caminhada: pernas e braços são membros fixos que GIRAM em torno
-// do quadril/ombro (CSS transform + transition), então a passada é animada
-// de verdade em vez de trocar de pose de uma vez. A posição horizontal
-// segue a borda real do último bloco que caiu (monthX), pra ele pisar
-// sempre sobre o bloco, nunca flutuando entre eles.
+// do quadril/ombro. A posição horizontal segue a borda real do último
+// bloco que caiu (monthX), pra ele pisar sempre sobre o bloco, nunca
+// flutuando entre eles. 27/11: o ângulo/pose em si não é mais fixo por
+// passo — ver WALK_CYCLE_MS e applyWalkFrame() mais abaixo (ciclo contínuo).
 var monthX = [];   // preenchido em buildDeck(): borda x de cada mês, 0..TOTAL
-var WALK_ANGLE = 24; // graus de giro da perna/braço a cada passo
 
-var STEP_MS = 480;
+var STEP_MS = 480; // usado só pra pacing da caminhada extra final (walkToFinish)
 
 function buildWalker(g, baseY){
   g.innerHTML = '';
-  var H = 48, r = 4.6;
+  // 27/11: silhueta refeita (terno/calça, afunilada, com sapato e tufo de
+  // cabelo) + ciclo de caminhada contínuo — desenhada e ajustada num
+  // sandbox separado antes de entrar aqui (ver claude/ponte-patrimonio-
+  // prototipo.md). Mantém o mesmo rig (coxa+canela articuladas no joelho,
+  // braço único, pivôs em hipY/kneeY/shoulderY) pra não quebrar o resto do
+  // arquivo (pin de dinheiro, zoom, etc.), só troca o desenho e a forma de
+  // animar (ver WALK_CYCLE_MS/applyWalkFrame() mais abaixo, que substitui
+  // setWalkPose()).
+  var H = 48, r = 5.3;
   var footY = baseY, hipY = baseY - H*0.52, shoulderY = baseY - H*0.84;
   var kneeY = hipY + (footY - hipY) * 0.52;
-  var neckLen = 3, neckW = 1.6;
+  var neckLen = 2, neckW = 3.2;
   var headCY = shoulderY - neckLen - r;
 
-  var bodyG = el('g', {}); // carrega a figura inteira — usado só pro leve balanço vertical do passo
+  var bodyG = el('g', {}); // carrega a figura inteira — usado pro sway/bounce do passo
   g.appendChild(bodyG);
 
-  function pivotLimb(pivotY, endY, w){
+  function taperedPath(y1, y2, w1, w2){
+    var h1 = w1/2, h2 = w2/2;
+    return 'M ' + (-h1) + ' ' + y1 + ' L ' + h1 + ' ' + y1 +
+      ' L ' + h2 + ' ' + y2 + ' L ' + (-h2) + ' ' + y2 + ' Z';
+  }
+
+  // braço: manga fina e afunilada (ombro -> punho), com uma mãozinha
+  // pequena e arredondada na ponta.
+  function pivotLimb(pivotY, endY, w1, w2){
     var wrap = el('g', {});
-    wrap.appendChild(el('line', {x1:0, y1:pivotY, x2:0, y2:endY, stroke:'var(--ink)',
-      'stroke-width':w, 'stroke-linecap':'round'}));
+    wrap.appendChild(el('path', {d:taperedPath(pivotY, endY, w1, w2), fill:'var(--ink)'}));
+    wrap.appendChild(el('circle', {cx:0, cy:pivotY, r:w1/2, fill:'var(--ink)'}));
+    wrap.appendChild(el('circle', {cx:0, cy:endY, r:w2/2 + 0.5, fill:'var(--ink)'}));
     wrap.style.transformOrigin = '0px ' + pivotY + 'px';
-    wrap.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
     bodyG.appendChild(wrap);
     return wrap;
   }
 
-  // perna = dois segmentos (coxa + canela) articulados no joelho, com um pé
-  // (sola) na ponta — pra poder dobrar o joelho na perna que está
-  // balançando, igual a uma caminhada real, e dar apoio visível no chão.
-  function pivotLeg(w){
+  // perna = coxa + canela da calça, finas e com corte reto (silhueta de
+  // alfaiataria), terminando num sapato com bico fino e salto atrás.
+  function pivotLeg(){
     var thigh = el('g', {});
-    thigh.appendChild(el('line', {x1:0, y1:hipY, x2:0, y2:kneeY, stroke:'var(--ink)',
-      'stroke-width':w, 'stroke-linecap':'round'}));
+    thigh.appendChild(el('path', {d:taperedPath(hipY, kneeY, 5.0, 4.2), fill:'var(--ink)'}));
+    thigh.appendChild(el('circle', {cx:0, cy:hipY, r:2.6, fill:'var(--ink)'}));
     thigh.style.transformOrigin = '0px ' + hipY + 'px';
-    thigh.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
 
     var shin = el('g', {});
-    shin.appendChild(el('line', {x1:0, y1:kneeY, x2:0, y2:footY, stroke:'var(--ink)',
-      'stroke-width':w*0.85, 'stroke-linecap':'round'}));
-    // pé/sola — sempre apontando pra frente (direção da caminhada)
-    shin.appendChild(el('path', {d:'M -1.2 ' + footY + ' L 6.5 ' + footY + ' L 4.3 ' + (footY+2.2) + ' L -1.2 ' + (footY+2.2) + ' Z',
+    shin.appendChild(el('path', {d:taperedPath(kneeY, footY, 4.2, 3.0), fill:'var(--ink)'}));
+    shin.appendChild(el('circle', {cx:0, cy:kneeY, r:2.1, fill:'var(--ink)'}));
+    // sapato: bico fino na frente, salto atrás
+    shin.appendChild(el('path', {d:
+      'M -2.6 ' + footY + ' L 2.0 ' + footY +
+      ' L 7.0 ' + (footY+1.3) + ' L 5.4 ' + (footY+3) +
+      ' L -3.4 ' + (footY+3) + ' L -3.4 ' + (footY+1.1) + ' Z',
       fill:'var(--ink)'}));
     shin.style.transformOrigin = '0px ' + kneeY + 'px';
-    shin.style.transform = 'rotate(0deg)';
     thigh.appendChild(shin);
 
     bodyG.appendChild(thigh);
     return {thigh:thigh, shin:shin};
   }
 
-  var legBack = pivotLeg(5.6);
-  var legFront = pivotLeg(5.6);
+  // ordem de desenho (z-order): perna/braço de trás primeiro (ficam atrás
+  // do tronco quando cruzam), tronco por cima, perna/braço da frente por
+  // cima de tudo.
+  var legBack = pivotLeg();
+  var armBack = pivotLimb(shoulderY, hipY + 3, 3.4, 2.2);
 
-  // torso — trapezoide com leve inclinação pra frente (mesma impressão de
-  // "andar inclinado no passo" de uma referência de caminhada real)
-  var torsoD = 'M ' + (-3.6) + ' ' + shoulderY + ' L ' + 3.6 + ' ' + shoulderY +
-    ' L ' + 4 + ' ' + hipY + ' L ' + (-1.6) + ' ' + hipY + ' Z';
-  bodyG.appendChild(el('path', {d:torsoD, fill:'var(--ink)'}));
+  // tronco/paletó: curva ombro -> cintura -> barra do paletó, com os
+  // cantos do ombro arredondados (fillet) pra não ficar pontudo.
+  var torso = el('g', {});
+  var sw = 6.2, ww = 4.0, hw = 5.0;
+  var midY = (shoulderY + hipY) / 2;
+  var fillet = 1.3;
+  var torsoD = 'M ' + (-sw+fillet) + ' ' + shoulderY +
+    ' Q ' + (-sw) + ' ' + shoulderY + ' ' + (-sw) + ' ' + (shoulderY+fillet) +
+    ' Q ' + (-ww) + ' ' + midY + ' ' + (-hw) + ' ' + hipY +
+    ' L ' + hw + ' ' + hipY +
+    ' Q ' + ww + ' ' + midY + ' ' + sw + ' ' + (shoulderY+fillet) +
+    ' Q ' + sw + ' ' + shoulderY + ' ' + (sw-fillet) + ' ' + shoulderY +
+    ' Z';
+  torso.appendChild(el('path', {d:torsoD, fill:'var(--ink)'}));
+  torso.appendChild(el('rect', {x:-neckW/2, y:shoulderY - neckLen, width:neckW, height:neckLen + 1, fill:'var(--ink)'}));
+  torso.style.transformOrigin = '0px ' + hipY + 'px';
+  bodyG.appendChild(torso);
 
-  // pescoço — fino, conecta a cabeça ao topo do torso
-  bodyG.appendChild(el('rect', {x:-neckW/2, y:shoulderY - neckLen, width:neckW, height:neckLen + 0.5, fill:'var(--ink)'}));
+  var legFront = pivotLeg();
+  var armFront = pivotLimb(shoulderY, hipY + 3, 3.4, 2.2);
 
-  var armBack = pivotLimb(shoulderY, hipY + 2, 3.2);
-  var armFront = pivotLimb(shoulderY, hipY + 2, 3.2);
-
+  // cabeça + um tufo de cabelo ancorado na borda do círculo (sem gap).
   var head = el('circle', {cx:0, cy:headCY, r:r, fill:'var(--ink)'});
-  bodyG.appendChild(head);
+  var hair = el('path', {d:
+    'M ' + (r*-0.94) + ' ' + (headCY + r*-0.34) +
+    ' Q ' + (r*-0.14) + ' ' + (headCY + r*-1.55) + ' ' + (r*0.87) + ' ' + (headCY + r*-0.5) +
+    ' Z',
+    fill:'var(--ink)'});
+  torso.appendChild(head);
+  torso.appendChild(hair);
 
   g._bodyG = bodyG;
+  g._torso = torso;
   g._legBack = legBack; g._legFront = legFront;
   g._armBack = armBack; g._armFront = armFront;
 
@@ -1144,56 +1179,100 @@ function setMoneyPinVisible(show){
   if (!show && openMarkerId === 'pin') hideMarkerTooltipFixed();
 }
 
-function setWalkPose(g, pose){
-  var a = pose ? WALK_ANGLE : -WALK_ANGLE;
-  // a perna que vai PRA FRENTE (+a) é a que balança no ar — dobra o joelho
-  // no meio do passo e estica de novo ao pousar. a que vai pra trás (-a) é
-  // a perna de apoio/empurro, que fica praticamente esticada.
-  var swingLeg = pose ? g._legFront : g._legBack;
-  var stanceLeg = pose ? g._legBack : g._legFront;
+// 27/11: ciclo de caminhada contínuo (substitui o antigo setWalkPose(), que
+// trocava de pose fixa a cada passo via CSS transition — o visual ficava
+// "robótico" entre um passo e outro). Curvas e parâmetros ajustados num
+// sandbox separado (ver claude/ponte-patrimonio-prototipo.md), baseadas no
+// ciclo clássico de caminhada (contato → apoio → passagem → balanço).
+var WALK_CYCLE_MS = 1500;  // duração de uma passada completa (2 passos)
+var WALK_HIP_AMP = 30;     // graus, amplitude do quadril
+var WALK_KNEE_AMP = 30;    // graus, flexão máx. do joelho no balanço
+var WALK_KNEE_STANCE = 10; // graus, flexão residual na perna de apoio
+var WALK_ARM_AMP = 1.2;    // fator sobre WALK_HIP_AMP
+var WALK_ARM_PHASE_DEG = 20; // defasagem do braço em relação à perna oposta
+var WALK_BOUNCE = 1;       // px, oscilação vertical do corpo
+var WALK_SWAY = 1;         // px, balanço lateral do quadril
+var WALK_LEAN = 6;         // graus, inclinação do tronco pra frente (sentido do andar)
 
-  g._legBack.thigh.style.transform = 'rotate(' + (-a) + 'deg)';
-  g._legFront.thigh.style.transform = 'rotate(' + a + 'deg)';
-  // braços balançam quase tanto quanto as pernas — é o que deixa a marcha
-  // mais viva em vez de travada
-  g._armBack.style.transform = 'rotate(' + (a*0.9) + 'deg)';
-  g._armFront.style.transform = 'rotate(' + (-a*0.9) + 'deg)';
-
-  stanceLeg.shin.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
-  stanceLeg.shin.style.transform = 'rotate(0deg)';
-  swingLeg.shin.getAnimations().forEach(function(anim){ anim.cancel(); });
-  swingLeg.shin.animate([
-    { transform: 'rotate(0deg)' },
-    { transform: 'rotate(38deg)' },
-    { transform: 'rotate(0deg)' }
-  ], { duration: STEP_MS, easing: 'cubic-bezier(.4,0,.2,1)' });
-
-  g._bodyG.getAnimations().forEach(function(anim){ anim.cancel(); });
-  g._bodyG.animate([
-    { transform: 'translateY(0px)' },
-    { transform: 'translateY(-1.8px)' },
-    { transform: 'translateY(0px)' }
-  ], { duration: STEP_MS, easing: 'ease-in-out' });
+function legAnglesAtPhase(phi){
+  var hip = WALK_HIP_AMP * Math.sin(2*Math.PI*phi);
+  var knee;
+  if (phi >= 0.5){
+    var swingT = (phi - 0.5) / 0.5;
+    knee = WALK_KNEE_AMP * Math.sin(Math.PI * swingT);
+  } else {
+    var stanceT = phi / 0.5;
+    knee = WALK_KNEE_STANCE * Math.sin(Math.PI * stanceT);
+  }
+  return {hip:hip, knee:knee};
 }
 
-// ao concluir a travessia, pernas/braços voltam pra posição neutra (parado em
-// pé) em vez de ficar "congelado" no meio de um passo — usa a mesma transição
-// já configurada nos membros, então o movimento de parar fica suave
+function applyWalkFrame(g, t){
+  var phiBack = t;
+  var phiFront = (t + 0.5) % 1;
+  var back = legAnglesAtPhase(phiBack);
+  var front = legAnglesAtPhase(phiFront);
+  g._legBack.thigh.style.transform = 'rotate(' + back.hip.toFixed(2) + 'deg)';
+  g._legFront.thigh.style.transform = 'rotate(' + front.hip.toFixed(2) + 'deg)';
+  g._legBack.shin.style.transform = 'rotate(' + back.knee.toFixed(2) + 'deg)';
+  g._legFront.shin.style.transform = 'rotate(' + front.knee.toFixed(2) + 'deg)';
+
+  var armPhaseShift = WALK_ARM_PHASE_DEG / 360;
+  var armBackAngle = -WALK_HIP_AMP * WALK_ARM_AMP * Math.sin(2*Math.PI*(phiBack + armPhaseShift));
+  var armFrontAngle = -WALK_HIP_AMP * WALK_ARM_AMP * Math.sin(2*Math.PI*(phiFront + armPhaseShift));
+  g._armBack.style.transform = 'rotate(' + armBackAngle.toFixed(2) + 'deg)';
+  g._armFront.style.transform = 'rotate(' + armFrontAngle.toFixed(2) + 'deg)';
+
+  // quadril desce no contato (apoio duplo) e sobe na passagem (apoio único,
+  // perna de sustentação na vertical) — 2 ciclos por passada completa.
+  var bounceY = Math.cos(2*Math.PI*t*2) * WALK_BOUNCE;
+  var swayX = Math.sin(2*Math.PI*t) * WALK_SWAY;
+  g._bodyG.style.transform = 'translate(' + swayX.toFixed(2) + 'px,' + bounceY.toFixed(2) + 'px)';
+  g._torso.style.transform = 'rotate(' + WALK_LEAN + 'deg)';
+}
+
+var walkLoopActive = false;
+var walkLoopRaf = null;
+var walkLoopStartTs = null;
+function walkLoopFrame(ts){
+  if (!walkLoopActive) return;
+  if (walkLoopStartTs == null) walkLoopStartTs = ts;
+  var elapsed = ts - walkLoopStartTs;
+  var t = (elapsed % WALK_CYCLE_MS) / WALK_CYCLE_MS;
+  applyWalkFrame(investorG, t);
+  walkLoopRaf = requestAnimationFrame(walkLoopFrame);
+}
+// chamado em todo "Pagar Parcela" (doPay()) — liga o ciclo contínuo se
+// ainda não estiver rodando; chamadas repetidas não fazem nada (guard).
+function startWalkLoop(){
+  if (walkLoopActive) return;
+  walkLoopActive = true;
+  walkLoopStartTs = null;
+  walkLoopRaf = requestAnimationFrame(walkLoopFrame);
+}
+// chamado quando a travessia para de verdade (carta vendida, reset, fim da
+// ponte) — opcionalmente volta pernas/braços/tronco pra pose neutra.
+function stopWalkLoop(toNeutral){
+  walkLoopActive = false;
+  if (walkLoopRaf) cancelAnimationFrame(walkLoopRaf);
+  walkLoopRaf = null;
+  if (toNeutral) standStill(investorG);
+}
+
+// pose neutra (parado em pé) — usada ao parar o ciclo contínuo, em vez de
+// ficar "congelado" no meio de um passo.
 function standStill(g){
   g._legBack.thigh.style.transform = 'rotate(0deg)';
   g._legFront.thigh.style.transform = 'rotate(0deg)';
+  g._legBack.shin.style.transform = 'rotate(0deg)';
+  g._legFront.shin.style.transform = 'rotate(0deg)';
   g._armBack.style.transform = 'rotate(0deg)';
   g._armFront.style.transform = 'rotate(0deg)';
-  [g._legBack.shin, g._legFront.shin].forEach(function(shin){
-    shin.getAnimations().forEach(function(anim){ anim.cancel(); });
-    shin.style.transition = 'transform ' + STEP_MS + 'ms cubic-bezier(.4,0,.2,1)';
-    shin.style.transform = 'rotate(0deg)';
-  });
-  g._bodyG.getAnimations().forEach(function(anim){ anim.cancel(); });
+  g._bodyG.style.transform = 'translate(0px,0px)';
+  g._torso.style.transform = 'rotate(0deg)';
 }
 
 var investorG = document.getElementById('investor');
-var investorPose = 0;
 var GROUND_X = 40; // onde ele fica parado antes do primeiro bloco cair — no chão, afastado da ponte
 // chão da margem final (direita): mesmo retângulo desenhado em "anchorages" (x=1110, largura 90)
 // — o investidor termina a travessia exatamente no CENTRO desse chão, não só na borda da ponte
@@ -1218,11 +1297,6 @@ function investorX(n){
   return Math.max(GROUND_X, frontier - gap);
 }
 function updateInvestor(n){
-  var pose = Math.floor(n) % 2;
-  if (pose !== investorPose){
-    setWalkPose(investorG, pose);
-    investorPose = pose;
-  }
   investorG.style.transform = 'translateX(' + investorX(n) + 'px)';
   investorG.style.opacity = '1'; // garante que ele reapareça normal após afundar no mar (cancelar carta)
   lastInvestorX = investorX(n); // acompanha a posição p/ recortar o viewBox em modo zoom
@@ -1490,20 +1564,15 @@ function walkToFinish(){
   var k = 0;
   function nextStep(){
     k++;
-    var pose = k % 2;
-    if (pose !== investorPose){
-      setWalkPose(investorG, pose);
-      investorPose = pose;
-    }
     investorG.style.transform = 'translateX(' + (startX + stepDist * k) + 'px)';
     lastInvestorX = startX + stepDist * k; // zoom: acompanha a posição
     if (zoomStage) updateZoomViewBox();
     if (k < FINISH_WALK_STEPS){
       finishWalkTimers.push(setTimeout(nextStep, STEP_MS));
     } else {
-      // último passo: espera ele terminar de pousar e só então para numa
-      // pose neutra, em vez de ficar "congelado" no meio de uma passada
-      finishWalkTimers.push(setTimeout(function(){ standStill(investorG); }, STEP_MS));
+      // último passo: espera ele terminar de pousar e só então para o ciclo
+      // contínuo numa pose neutra, em vez de ficar "congelado" no meio dele
+      finishWalkTimers.push(setTimeout(function(){ stopWalkLoop(true); }, STEP_MS));
     }
   }
   nextStep();
@@ -1909,6 +1978,7 @@ function sellCarta(){
   if (!contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
   cartaSoldVia = 'contemplada';
+  stopWalkLoop(true); // 27/11: travessia encerra aqui — boneco para de andar
   // 02/11: "carta vendida contemplada" volta ao pin verde de dinheiro ($) —
   // invertido a pedido do usuário (era o envelope azul; agora o envelope
   // passou a representar o estado "carta contemplada" ainda não vendida,
@@ -1933,6 +2003,7 @@ function sellCartaNaoContemplada(){
   if (contemplated || creditUsed || cartaSold) return;
   cartaSold = true;
   cartaSoldVia = 'nao_contemplada';
+  stopWalkLoop(true); // 27/11: travessia encerra aqui — boneco para de andar
   setPinIcon('money-red');
   setMoneyPinVisible(true);
   updateBuyBtn();
@@ -1978,7 +2049,7 @@ function drawStructure(){
   // our investor, who will walk across the bridge as parcelas são pagas
   buildWalker(investorG, SLAB_Y);
   investorG.style.transition = INVESTOR_TRANSITION;
-  setWalkPose(investorG, 0);
+  standStill(investorG); // pose neutra inicial — o ciclo contínuo só liga no 1º doPay()
 
   // main cable, sampled across main span
   var pts1 = [], pts2 = [];
@@ -2830,6 +2901,7 @@ function doPay(){
   // 02/11: depois que a carta é vendida (sellCarta()), não existem mais
   // parcelas a pagar — o boneco fica parado onde estava pra sempre.
   if (paidMonths >= TOTAL || cartaSold) return;
+  startWalkLoop(); // 27/11: liga o ciclo contínuo de caminhada (idempotente)
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
 
   // 26/11: eventos de engajamento (Etapa 1 do masterplan 200k) — início da
@@ -3128,6 +3200,7 @@ function restoreSimState(s){
 
 function resetSimulation(){
   clearSimState(); // 26/11: reiniciar a simulação também apaga o progresso salvo
+  stopWalkLoop(true); // 27/11: para o ciclo contínuo e volta o boneco pra pose neutra
   embutidoUsedTotal = 0;
   recursoUsedTotal = 0;
   monthsElapsed = 0;
