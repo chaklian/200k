@@ -998,7 +998,7 @@ function buildWalker(g, baseY){
   // visualmente afundada dentro do chão/laje. FOOT_LIFT sobe só o pé
   // (quadril/ombro/cabeça continuam na mesma altura de baseY), encostando
   // a sola em cima da linha do chão em vez de atravessá-la.
-  var FOOT_LIFT = 6;
+  var FOOT_LIFT = 2;
   var footY = baseY - FOOT_LIFT, hipY = baseY - H*0.52, shoulderY = baseY - H*0.84;
   var kneeY = hipY + (footY - hipY) * 0.52;
   var neckLen = 2, neckW = 3.2;
@@ -1238,30 +1238,34 @@ function applyWalkFrame(g, t){
 }
 
 // 27/11 (ajuste): o ciclo NÃO fica em marcha contínua pra sempre — cada
-// "Pagar Parcela" dá direito a exatamente 1 ciclo completo (1 passada,
-// t:0→1) e o boneco volta a ficar parado (pose neutra) no final. Se outra
-// parcela for paga ANTES desse ciclo terminar (clique rápido ou "segurar
-// pra pagar", HOLD_REPEAT_MS=80ms « WALK_CYCLE_MS=1500ms), o ciclo se
-// estende por mais 1 passada em vez de parar — nunca interrompe uma
-// passada no meio, só no limite exato entre uma passada e a próxima.
+// "Pagar Parcela" dá direito a exatamente MEIO ciclo (1 passo de 1 perna só,
+// t avança 0,5 "unidade de fase" — WALK_CYCLE_MS é a duração de 1 ciclo
+// completo/2 passos, então 1 clique dura WALK_CYCLE_MS/2) e o boneco volta a
+// ficar parado (pose neutra) no final desse meio ciclo. Se outra parcela for
+// paga ANTES desse meio ciclo terminar (clique rápido ou "segurar pra
+// pagar", HOLD_REPEAT_MS=80ms « WALK_HALF_MS), o ciclo se estende por mais
+// meio ciclo em vez de parar — nunca interrompe um passo no meio, só no
+// limite exato entre um passo e o próximo, dando uma caminhada fluida
+// enquanto o botão estiver sendo segurado.
+var WALK_HALF_MS = WALK_CYCLE_MS / 2;
 var walkLoopActive = false;
 var walkLoopRaf = null;
 var walkLoopStartTs = null;
-var walkLoopLastCycle = 0; // 0 = ainda dentro da 1ª passada (ver bug corrigido 27/11: com -1 aqui, o loop achava que a passada já tinha terminado no 1º frame, elapsed=0, e parava antes de animar)
-var walkKeepAlive = false; // true = "pelo menos mais 1 passada" (setado por cada doPay())
+var walkLoopLastHalf = 0; // 0 = ainda dentro do 1º meio ciclo (elapsed=0 no 1º frame não deve contar como "já terminou")
+var walkKeepAlive = false; // true = "pelo menos mais 1 meio ciclo" (setado por cada doPay())
 function walkLoopFrame(ts){
   if (!walkLoopActive) return;
   if (walkLoopStartTs == null) walkLoopStartTs = ts;
   var elapsed = ts - walkLoopStartTs;
-  var cycleIndex = Math.floor(elapsed / WALK_CYCLE_MS);
-  if (cycleIndex > walkLoopLastCycle){
-    // acabou de cruzar o limite entre uma passada e a próxima
+  var halfIndex = Math.floor(elapsed / WALK_HALF_MS);
+  if (halfIndex > walkLoopLastHalf){
+    // acabou de cruzar o limite entre um passo e o próximo
     if (!walkKeepAlive){
       stopWalkLoop(true);
       return;
     }
-    walkKeepAlive = false; // consome o "continue" — precisa de novo poke pra passar da PRÓXIMA passada
-    walkLoopLastCycle = cycleIndex;
+    walkKeepAlive = false; // consome o "continue" — precisa de novo poke pra passar do PRÓXIMO meio ciclo
+    walkLoopLastHalf = halfIndex;
   }
   var t = (elapsed % WALK_CYCLE_MS) / WALK_CYCLE_MS;
   applyWalkFrame(investorG, t);
@@ -1269,7 +1273,8 @@ function walkLoopFrame(ts){
 }
 // chamado em todo "Pagar Parcela" (doPay()) e em cada passo de
 // walkToFinish() — se o ciclo já está rodando, só marca "continua por mais
-// 1 passada"; se estava parado, inicia um ciclo novo do zero.
+// meio ciclo"; se estava parado, inicia um ciclo novo do zero (sempre
+// alinhado em t=0, pra nunca começar um passo "no meio").
 function startWalkLoop(){
   if (walkLoopActive){
     walkKeepAlive = true;
@@ -1277,7 +1282,7 @@ function startWalkLoop(){
   }
   walkLoopActive = true;
   walkLoopStartTs = null;
-  walkLoopLastCycle = 0;
+  walkLoopLastHalf = 0;
   walkKeepAlive = false;
   walkLoopRaf = requestAnimationFrame(walkLoopFrame);
 }
