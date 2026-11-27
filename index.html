@@ -1386,23 +1386,15 @@ var PARCELA_PCT_CHEIA = PARCELA_PCT * 2; // parcela CHEIA (sem o redutor de 50% 
                                  // sorteio, soma-se um adicional pra recuperar o desconto já
                                  // aproveitado; no lance, recalcula-se de verdade sobre o saldo.
 var INCC_PCT = 6.5;              // referência anual, travado em 6,5% — não editável (bate com o
-                                 // texto do card "Valor do crédito": "INCC = 6,5% a.a. / ...").
-                                 // Usado SÓ até a contemplação — ver CDI_PCT_ANUAL abaixo pro que
-                                 // acontece depois.
-var CDI_PCT_ANUAL = 13.75;       // 31/10 (3ª correção, item 22 do doc de regras): decisão de produto
-                                 // do usuário — a PARTIR da contemplação, o crédito passa a render
-                                 // 80% do CDI (referência anual aqui, capitalizado mês a mês — ver
-                                 // creditoAt()), em vez de continuar só pelo INCC. Antes da
-                                 // contemplação, o crédito reajusta só pelo INCC, anual (mantém a
-                                 // correção do item 21). Nota de pesquisa: o regulamento da Porto
-                                 // (art. 29.1/29.2) confirma que o crédito de quem já foi contemplado
-                                 // e ainda não usou a carta fica aplicado financeiramente, rastreado
-                                 // por consorciado — mas o art. 29.3 diz que o PRODUTO desse
-                                 // rendimento reverte ao fundo comum do grupo, não necessariamente à
-                                 // carta individual (exceto em caso de exclusão/cancelamento, art.
-                                 // 11/11.1). Ou seja, este 80% do CDI aplicado à carta individual é
-                                 // uma escolha de modelagem do usuário, não uma regra 100% confirmada
-                                 // letra-por-letra no regulamento — documentado como ⚠️ no item 22.
+                                 // texto do card "Valor do crédito": "INCC = 6,5% a.a.").
+                                 // 27/11 (decisão pós-ABAC, ver claude/200k-regras-oficiais-pos-abac-27nov.md
+                                 // item ✅.13): usado do início ao fim do plano, contemplado ou não —
+                                 // removida a bifurcação de índice que existia antes (CDI pós-
+                                 // contemplação, nunca confirmada por nenhuma fonte oficial — nem a
+                                 // ABAC nem o regulamento da Porto, que só sugeria reversão do
+                                 // rendimento ao fundo comum, não à carta individual). Manter um
+                                 // único índice também simplifica a explicação pro usuário leigo —
+                                 // ver nota em creditoAt() abaixo.
 var EMBUTIDO_CAP = 30;           // trava (%), fixa — confirmado com exemplo real do app: embutido máx. R$33.156,47 numa carta de R$110.521,57 = exatos 30%
 var LANCE_LIVRE_MAX = 80;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
 var LANCE_LIVRE_MIN = 40;        // faixa não oficial — considerada ideal pelo usuário, não um limite do regulamento
@@ -1698,13 +1690,12 @@ function currentCredit(){
   // definição, enquanto essa dinâmica não existir, o crédito nunca para de
   // reajustar — nem na contemplação, nem depois.
   //
-  // 31/10 (3ª correção, item 22 do doc de regras): ANTES da contemplação, o
-  // índice é só o INCC, anual (igual sempre foi). A PARTIR da contemplação,
-  // o crédito passa a render 80% do CDI, capitalizado mês a mês — decisão
-  // de produto do usuário (ver nota em CDI_PCT_ANUAL acima pra fonte e
-  // ressalva). Serve tanto pro card "Valor do crédito" quanto pros cálculos
-  // de lance e da parcela pós-contemplação (que usa o mesmo crédito
-  // vigente, só com o percentual cheio/recalculado em vez do reduzido).
+  // 27/11 (decisão pós-ABAC): o índice é o INCC, anual, do início ao fim do
+  // plano — contemplado ou não (removida a bifurcação pra CDI pós-
+  // contemplação, ver nota em INCC_PCT acima e em creditoAt() abaixo). Serve
+  // tanto pro card "Valor do crédito" quanto pros cálculos de lance e da
+  // parcela pós-contemplação (que usa o mesmo crédito vigente, só com o
+  // percentual cheio/recalculado em vez do reduzido).
   return creditoAt(monthsElapsed);
 }
 
@@ -1722,26 +1713,20 @@ function creditoAt(months){
   // cada mês m (não necessariamente o monthsElapsed atual).
   //
   // 02/11: se o crédito já foi USADO (buyImovel(), não apenas contemplado),
-  // ele trava no valor exato daquele instante e NUNCA MAIS reajusta — nem
-  // pelo INCC nem pelo CDI — porque virou o imóvel, deixou de ser crédito
-  // em aplicação financeira. Isso tem prioridade sobre a regra do CDI
-  // pós-contemplação abaixo (que só vale enquanto o crédito ainda não foi
-  // usado).
+  // ele trava no valor exato daquele instante e NUNCA MAIS reajusta pelo
+  // INCC — porque virou o imóvel, deixou de ser crédito em aplicação
+  // financeira. Isso tem prioridade sobre o reajuste pelo INCC abaixo (que
+  // só vale enquanto o crédito ainda não foi usado).
   if (creditUsed && months >= creditUsedMonthsElapsed){
     return creditFrozenValue;
   }
-  // 31/10 (3ª correção, item 22): se `months` já está na fase pós-
-  // contemplação, o crédito não segue mais o INCC — ancora no valor
-  // reajustado por INCC até o instante exato da contemplação
-  // (`creditoAtIncc(contemplationMonthsElapsed)`), e a partir dali
-  // capitaliza mês a mês a 80% do CDI (CDI_PCT_ANUAL). Antes da
-  // contemplação (ou se nunca contemplado), segue só o INCC, anual.
-  if (contemplated && months >= contemplationMonthsElapsed){
-    var creditoNaContemplacao = creditoAtIncc(contemplationMonthsElapsed);
-    var mesesDesdeContemplacao = months - contemplationMonthsElapsed;
-    var taxaMensalCDI = Math.pow(1 + (CDI_PCT_ANUAL/100) * 0.80, 1/12) - 1;
-    return creditoNaContemplacao * Math.pow(1 + taxaMensalCDI, mesesDesdeContemplacao);
-  }
+  // 27/11 (decisão pós-ABAC, claude/200k-regras-oficiais-pos-abac-27nov.md
+  // item ✅.13): o crédito reajusta só pelo INCC, do início ao fim do plano,
+  // contemplado ou não — removida a bifurcação que existia antes (INCC até
+  // a contemplação, depois 80% do CDI capitalizado mês a mês). Essa
+  // bifurcação nunca teve fonte oficial confirmada (nem a ABAC nem o
+  // regulamento da Porto a sustentavam letra-por-letra) e introduzia a
+  // maior fonte de variância arbitrária no "total pago" do simulador.
   return creditoAtIncc(months);
 }
 
@@ -2203,7 +2188,7 @@ var bridgeMarkers = [
     // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
     // — my customizado (TOWER_TOP-18) removido
     title: 'Indicadores',
-    text: 'Valores de referência utilizados no simulador: INCC = 6,5% a.a. CDI = 13,75% a.a.'
+    text: 'Valor de referência utilizado no simulador: INCC = 6,5% a.a. — único índice usado do início ao fim do plano, contemplado ou não.'
   },
   {
     id: 'estrategia',
