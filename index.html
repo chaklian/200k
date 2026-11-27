@@ -993,7 +993,13 @@ function buildWalker(g, baseY){
   // animar (ver WALK_CYCLE_MS/applyWalkFrame() mais abaixo, que substitui
   // setWalkPose()).
   var H = 48, r = 5.3;
-  var footY = baseY, hipY = baseY - H*0.52, shoulderY = baseY - H*0.84;
+  // 27/11 (ajuste): o sapato novo desenha a sola até footY+3 (antes o
+  // boneco-palito ia só até footY+2.2) — sem compensar, a sola ficava
+  // visualmente afundada dentro do chão/laje. FOOT_LIFT sobe só o pé
+  // (quadril/ombro/cabeça continuam na mesma altura de baseY), encostando
+  // a sola em cima da linha do chão em vez de atravessá-la.
+  var FOOT_LIFT = 6;
+  var footY = baseY - FOOT_LIFT, hipY = baseY - H*0.52, shoulderY = baseY - H*0.84;
   var kneeY = hipY + (footY - hipY) * 0.52;
   var neckLen = 2, neckW = 3.2;
   var headCY = shoulderY - neckLen - r;
@@ -1231,29 +1237,56 @@ function applyWalkFrame(g, t){
   g._torso.style.transform = 'rotate(' + WALK_LEAN + 'deg)';
 }
 
+// 27/11 (ajuste): o ciclo NÃO fica em marcha contínua pra sempre — cada
+// "Pagar Parcela" dá direito a exatamente 1 ciclo completo (1 passada,
+// t:0→1) e o boneco volta a ficar parado (pose neutra) no final. Se outra
+// parcela for paga ANTES desse ciclo terminar (clique rápido ou "segurar
+// pra pagar", HOLD_REPEAT_MS=80ms « WALK_CYCLE_MS=1500ms), o ciclo se
+// estende por mais 1 passada em vez de parar — nunca interrompe uma
+// passada no meio, só no limite exato entre uma passada e a próxima.
 var walkLoopActive = false;
 var walkLoopRaf = null;
 var walkLoopStartTs = null;
+var walkLoopLastCycle = -1;
+var walkKeepAlive = false; // true = "pelo menos mais 1 passada" (setado por cada doPay())
 function walkLoopFrame(ts){
   if (!walkLoopActive) return;
   if (walkLoopStartTs == null) walkLoopStartTs = ts;
   var elapsed = ts - walkLoopStartTs;
+  var cycleIndex = Math.floor(elapsed / WALK_CYCLE_MS);
+  if (cycleIndex > walkLoopLastCycle){
+    // acabou de cruzar o limite entre uma passada e a próxima
+    if (!walkKeepAlive){
+      stopWalkLoop(true);
+      return;
+    }
+    walkKeepAlive = false; // consome o "continue" — precisa de novo poke pra passar da PRÓXIMA passada
+    walkLoopLastCycle = cycleIndex;
+  }
   var t = (elapsed % WALK_CYCLE_MS) / WALK_CYCLE_MS;
   applyWalkFrame(investorG, t);
   walkLoopRaf = requestAnimationFrame(walkLoopFrame);
 }
-// chamado em todo "Pagar Parcela" (doPay()) — liga o ciclo contínuo se
-// ainda não estiver rodando; chamadas repetidas não fazem nada (guard).
+// chamado em todo "Pagar Parcela" (doPay()) e em cada passo de
+// walkToFinish() — se o ciclo já está rodando, só marca "continua por mais
+// 1 passada"; se estava parado, inicia um ciclo novo do zero.
 function startWalkLoop(){
-  if (walkLoopActive) return;
+  if (walkLoopActive){
+    walkKeepAlive = true;
+    return;
+  }
   walkLoopActive = true;
   walkLoopStartTs = null;
+  walkLoopLastCycle = -1;
+  walkKeepAlive = false;
   walkLoopRaf = requestAnimationFrame(walkLoopFrame);
 }
 // chamado quando a travessia para de verdade (carta vendida, reset, fim da
-// ponte) — opcionalmente volta pernas/braços/tronco pra pose neutra.
+// ponte) — para IMEDIATAMENTE (não espera o fim da passada) e opcionalmente
+// volta pernas/braços/tronco pra pose neutra.
 function stopWalkLoop(toNeutral){
   walkLoopActive = false;
+  walkKeepAlive = false;
   if (walkLoopRaf) cancelAnimationFrame(walkLoopRaf);
   walkLoopRaf = null;
   if (toNeutral) standStill(investorG);
@@ -1564,6 +1597,7 @@ function walkToFinish(){
   var k = 0;
   function nextStep(){
     k++;
+    startWalkLoop(); // cutuca o ciclo contínuo (liga ou estende por +1 passada)
     investorG.style.transform = 'translateX(' + (startX + stepDist * k) + 'px)';
     lastInvestorX = startX + stepDist * k; // zoom: acompanha a posição
     if (zoomStage) updateZoomViewBox();
