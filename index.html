@@ -1247,7 +1247,7 @@ function applyWalkFrame(g, t){
 var walkLoopActive = false;
 var walkLoopRaf = null;
 var walkLoopStartTs = null;
-var walkLoopLastCycle = -1;
+var walkLoopLastCycle = 0; // 0 = ainda dentro da 1ª passada (ver bug corrigido 27/11: com -1 aqui, o loop achava que a passada já tinha terminado no 1º frame, elapsed=0, e parava antes de animar)
 var walkKeepAlive = false; // true = "pelo menos mais 1 passada" (setado por cada doPay())
 function walkLoopFrame(ts){
   if (!walkLoopActive) return;
@@ -1277,7 +1277,7 @@ function startWalkLoop(){
   }
   walkLoopActive = true;
   walkLoopStartTs = null;
-  walkLoopLastCycle = -1;
+  walkLoopLastCycle = 0;
   walkKeepAlive = false;
   walkLoopRaf = requestAnimationFrame(walkLoopFrame);
 }
