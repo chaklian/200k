@@ -535,7 +535,19 @@ button.danger{color:var(--redline);border-color:var(--redline)}
          card 6, no lugar desse texto (ver abaixo). -->
     <div class="kcard" id="creditoCard">
       <div class="kcard-title-row"><h3>Valor do crédito</h3><span class="card-marker-icon" id="marcoReducaoCarta" data-marker="reducao-carta">i</span></div>
-      <div class="big" id="kpiCredit">R$ 200.000,00</div>
+      <!-- 28/11: stepper +/- pra simular uma carta de valor maior, em
+           múltiplos de R$200k (1x a 10x, mesmo visual dos steppers dos
+           cards de lance — .lance-donut-stepper). Só multiplica
+           CREDIT_BASE: parcela e os valores dos cards 7/8 (Lance Fixo/
+           Livre) acompanham sozinhos, pois já são derivados de
+           currentCredit()/calcLance(). Representa SEMPRE 1 carta maior,
+           nunca várias cartas concorrendo — nenhuma mecânica de sorteio/
+           lance muda, só os valores em R$ (ver attachCreditoStepper()/
+           setCreditMult() no script). Travado após a 1ª parcela paga. -->
+      <div class="valor-pago-row" style="align-items:center">
+        <div class="big" id="kpiCredit">R$ 200.000,00</div>
+        <div class="lance-donut-stepper" id="creditoStepper"></div>
+      </div>
       <div class="lance-spacer"></div>
       <div class="sub" id="statusInfo">Status: Não contemplado</div>
     </div>
@@ -1375,7 +1387,14 @@ var monthsElapsed = 0; // tempo real decorrido — avança SÓ com parcela paga 
                         // é isso que corrige o INCC e o "total pago": um lance encurta o prazo
                         // (derruba blocos lá na frente), mas não significa que o tempo passou de verdade.
 
-var CREDIT_BASE = 200000;       // valor da carta 200k
+var CREDIT_BASE_UNIT = 200000;  // 1 unidade de carta = R$200k
+// 28/11: stepper do card "Valor do crédito" — simula 1 carta de valor
+// maior (200k a 2MM, em múltiplos de 200k via CREDIT_MULT), nunca várias
+// cartas concorrendo: nenhuma mecânica de sorteio/lance muda, só os
+// valores em R$ (ver attachCreditoStepper()/setCreditMult() mais abaixo).
+var CREDIT_MULT_MIN = 1, CREDIT_MULT_MAX = 10;
+var creditMult = 1;
+var CREDIT_BASE = CREDIT_BASE_UNIT * creditMult; // valor da carta (200k × multiplicador)
 // 28/11: composição explícita da parcela — calibrada com um extrato real
 // (grupo I0450, cota 0177-00, crédito R$200k/200 meses): taxa de
 // administração 20% + fundo de reserva 2% + seguro 0%, mesma fórmula do
@@ -2798,6 +2817,49 @@ function attachStepper(stepperId, inputId, step){
   wrap.appendChild(plus);
 }
 
+// 28/11: stepper +/- do card "Valor do crédito" (card 1) — multiplica
+// CREDIT_BASE em passos de CREDIT_BASE_UNIT (R$200k), de 1x a 10x (R$200k a
+// R$2MM). Representa sempre 1 carta de valor maior, nunca várias cartas
+// concorrendo — por isso NENHUMA mecânica de sorteio/lance/probabilidade
+// muda aqui, só os valores em R$ (crédito, parcela, e os valores calculados
+// nos cards 7/8, que já são derivados de currentCredit()/calcLance() e por
+// isso acompanham sozinhos, sem precisar recalcular nada à parte). Travado
+// assim que a 1ª parcela é paga (ver doPay()) — simular uma carta maior só
+// faz sentido antes de começar a pagar de verdade.
+function updateCreditoStepperDisabled(){
+  var wrap = document.getElementById('creditoStepper');
+  if (!wrap) return;
+  var minus = wrap.querySelector('.credito-step-minus');
+  var plus = wrap.querySelector('.credito-step-plus');
+  var locked = monthsElapsed > 0;
+  if (minus) minus.disabled = locked || creditMult <= CREDIT_MULT_MIN;
+  if (plus) plus.disabled = locked || creditMult >= CREDIT_MULT_MAX;
+}
+
+function setCreditMult(mult){
+  mult = Math.max(CREDIT_MULT_MIN, Math.min(CREDIT_MULT_MAX, mult));
+  if (mult === creditMult) return;
+  creditMult = mult;
+  CREDIT_BASE = CREDIT_BASE_UNIT * creditMult;
+  updateCreditoStepperDisabled();
+  updateKpis(); // crédito, parcela e os cards de lance (7/8) recalculam sozinhos
+  saveSimState();
+}
+
+function attachCreditoStepper(){
+  var wrap = document.getElementById('creditoStepper');
+  if (!wrap) return;
+  var minus = document.createElement('button');
+  minus.type = 'button'; minus.className = 'credito-step-minus'; minus.setAttribute('aria-label', 'Diminuir valor do crédito'); minus.textContent = '−';
+  var plus = document.createElement('button');
+  plus.type = 'button'; plus.className = 'credito-step-plus'; plus.setAttribute('aria-label', 'Aumentar valor do crédito'); plus.textContent = '+';
+  minus.addEventListener('click', function(){ setCreditMult(creditMult - 1); });
+  plus.addEventListener('click', function(){ setCreditMult(creditMult + 1); });
+  wrap.appendChild(minus);
+  wrap.appendChild(plus);
+  updateCreditoStepperDisabled();
+}
+
 // chamada no fim de updateLanceCard() — redesenha os 3 donuts e os estados
 // disabled dos steppers a partir do valor/min/max ATUAIS dos inputs (que a
 // lógica de negócio já deixou corretos a essa altura).
@@ -2946,6 +3008,7 @@ function doPay(){
   if (paidMonths >= TOTAL || cartaSold) return;
   startWalkLoop(); // 27/11: liga o ciclo contínuo de caminhada (idempotente)
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
+  updateCreditoStepperDisabled(); // 28/11: trava o stepper do crédito após a 1ª parcela paga
 
   // 26/11: eventos de engajamento (Etapa 1 do masterplan 200k) — início da
   // jornada e marcos de progresso, pra medir "a pessoa simula bastante".
@@ -3075,6 +3138,7 @@ fixoResync();
 attachStepper('fixoEmbutidoStepper', 'fixoEmbutidoPct', 1);
 attachStepper('fixoRecursoStepper', 'fixoRecursoPct', 1);
 // fixoTotalPct não ganha stepper — travado pela assembleia em FIXO_PCT (40%), não editável.
+attachCreditoStepper(); // 28/11: stepper do card "Valor do crédito" (card 1)
 
 function livreTotal(){
   return Math.max(LANCE_LIVRE_MIN, Math.min(LANCE_LIVRE_MAX, Math.round(parseFloat(document.getElementById('livrePct').value) || 0)));
@@ -3162,6 +3226,7 @@ function saveSimState(){
     var state = {
       v: 1,
       monthsElapsed: monthsElapsed,
+      creditMult: creditMult, // 28/11: multiplicador do crédito (card 1)
       embutidoUsedTotal: embutidoUsedTotal,
       recursoUsedTotal: recursoUsedTotal,
       contemplated: contemplated,
@@ -3206,6 +3271,8 @@ function loadSimState(){
 // nenhuma lógica de desenho aqui.
 function restoreSimState(s){
   monthsElapsed = Math.max(0, Math.min(TOTAL, s.monthsElapsed || 0));
+  creditMult = Math.max(CREDIT_MULT_MIN, Math.min(CREDIT_MULT_MAX, s.creditMult || 1)); // 28/11
+  CREDIT_BASE = CREDIT_BASE_UNIT * creditMult;
   embutidoUsedTotal = s.embutidoUsedTotal || 0;
   recursoUsedTotal = s.recursoUsedTotal || 0;
   contemplated = !!s.contemplated;
@@ -3239,6 +3306,7 @@ function restoreSimState(s){
   updateContemplationUI();
   updateLanceUnlockUI();
   updatePayBtn();
+  updateCreditoStepperDisabled(); // 28/11
 }
 
 function resetSimulation(){
@@ -3247,6 +3315,8 @@ function resetSimulation(){
   embutidoUsedTotal = 0;
   recursoUsedTotal = 0;
   monthsElapsed = 0;
+  creditMult = 1; // 28/11: reinicia também o multiplicador do crédito
+  CREDIT_BASE = CREDIT_BASE_UNIT;
   contemplated = false;
   contemplationMonthsElapsed = null;
   contemplationMethod = null;
@@ -3281,6 +3351,7 @@ function resetSimulation(){
   updateContemplationUI();
   updateLanceUnlockUI();
   updatePayBtn();
+  updateCreditoStepperDisabled(); // 28/11: destrava o stepper do crédito no reset
 }
 document.getElementById('restartBtn').addEventListener('click', function(){
   stopFireworks();
