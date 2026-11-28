@@ -557,9 +557,6 @@ button.danger{color:var(--redline);border-color:var(--redline)}
     <div class="kcard" id="parcelaCard">
       <div class="kcard-title-row">
         <h3>Parcela</h3>
-        <!-- 28/11: ícone mantido a pedido do usuário — o texto do marco (ver
-             parcelaReduzidaMarker abaixo) será revisado depois com base no
-             PDF, já que a parcela deixou de começar reduzida (PARCELA_PCT). -->
         <span class="card-marker-icon" id="marcoParcelaReduzida" data-marker="parcela-reduzida">i</span>
       </div>
       <div class="valor-pago-row">
@@ -2196,7 +2193,7 @@ var bridgeMarkers = [
     // pra ficar sempre clicável, mesma posição vertical dos outros 3 marcos
     // da ponte (below:true/my customizado removidos)
     title: 'Reajuste anual',
-    text: 'O crédito e as parcelas são reajustados monetariamente a cada ano, conforme índice previsto em contrato. No simulador, adotamos o INCC (Índice Nacional de Custo da Construção).'
+    text: 'O crédito e as parcelas são reajustados monetariamente a cada ano, conforme índice previsto em contrato.'
   },
   {
     id: 'indicadores',
@@ -2204,7 +2201,7 @@ var bridgeMarkers = [
     // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
     // — my customizado (TOWER_TOP-18) removido
     title: 'Indicadores',
-    text: 'Valor de referência utilizado no simulador: INCC = 6% a.a.'
+    text: 'INCC = 6% a.a.<br>Taxa adm = 20%<br>Fundo de reserva = 2%<br>Seguro = 0'
   },
   {
     id: 'estrategia',
@@ -2212,7 +2209,7 @@ var bridgeMarkers = [
     // 26/11: alinhado na mesma altura do ícone de "Encerramento" (SLAB_Y-18)
     // — my customizado (SLAB_Y-97.52) removido
     title: 'Múltiplas cotas',
-    text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação. Além do sorteio, ofertar lances todo mês também contribui para esse resultado.'
+    text: 'Contratar mais de uma cota no mesmo grupo pode ampliar as chances de contemplação.'
   },
   {
     id: 'encerramento',
@@ -2220,7 +2217,7 @@ var bridgeMarkers = [
     // 03/11: voltou pra ACIMA dos blocos da ponte (below:true removido) —
     // usa o my padrão (SLAB_Y - 18) do buildMarkers()
     title: 'Encerramento',
-    text: 'O prazo do grupo é planejado para que, em regra, as cotas ativas sejam contempladas até a última assembleia. É preciso conferir as regras do grupo e os recursos disponíveis no fundo comum.'
+    text: 'O prazo do grupo é planejado para que, em regra, as cotas ativas sejam contempladas até a última assembleia.'
   }
 ];
 
@@ -2228,50 +2225,50 @@ var bridgeMarkers = [
 // pra ponte (bridgeMarkers acima), a pedido do usuário. "Fundo de reserva"
 // saiu da ponte e foi absorvido neste mesmo marco (título e texto juntos),
 // já que os dois mecanismos têm a mesma lógica de cobrança.
-var taxaAdmMarker = {id: 'taxa-adm', title: 'Taxas e fundo de reserva',
-  text: 'A taxa de administração remunera a gestão do grupo: 20% do crédito, diluída ao longo do prazo. O fundo de reserva (2%) cobre despesas e faltas ocasionais. Este simulador não considera seguro (0%).'};
+var taxaAdmMarker = {id: 'taxa-adm', title: 'Custos',
+  text: 'A taxa de administração remunera a gestão do grupo e o fundo de reserva cobre despesas e faltas ocasionais.'};
 
 // 03/11: marcos "Parcela reduzida" e "Sorteio" saíram da ponte (não têm mais
 // ícone "i" sobre os blocos) e viraram ícones "i" dentro dos próprios cards
 // 3 ("Parcela"), 4 ("Cotas contempladas"), 7 ("Lance Fixo") e 8 ("Lance
 // Livre"), na mesma linha do título — o conteúdo continua abrindo na mesma
-// caixa fixa compartilhada dos outros marcos (#markerTooltipFixed). 28/11:
-// o texto abaixo ainda descreve a parcela reduzida (regra antiga) —
-// pendente de revisão pelo usuário com base no PDF, já que a parcela deixou
-// de começar reduzida (ver PARCELA_PCT).
+// caixa fixa compartilhada dos outros marcos (#markerTooltipFixed). 28/11
+// (2ª atualização): texto revisado — vira conteúdo genérico/educativo
+// (outras administradoras oferecem o mecanismo de parcela reduzida), já
+// que o simulador em si não usa mais esse redutor (ver PARCELA_PCT).
 var parcelaReduzidaMarker = {
   id: 'parcela-reduzida',
-  title: 'Parcela reduzida',
-  text: 'Nesta simulação as parcelas começam reduzidas. Após a contemplação, as parcelas são recalculadas considerando o saldo restante do crédito.'
+  title: 'Parcela',
+  text: 'Algumas administradoras oferecem planos com parcelas reduzidas antes da contemplação.'
 };
 var sorteioMarker = {
   id: 'sorteio-mensal',
   title: 'Sorteio',
-  text: 'Todo mês o consorciado adimplente concorre por sorteio, normalmente realizado pela Loteria Federal. É preciso ter recurso suficiente no fundo comum para liberar o crédito.'
+  text: 'Todo mês o consorciado adimplente concorre por sorteio.'
 };
 var lanceFixoMarker = {
   id: 'lance-fixo',
   title: 'Lance fixo',
-  text: 'Os participantes ofertam o mesmo percentual, definido pela assembleia do grupo. O vencedor é definido por sorteio.'
+  text: 'Os participantes ofertam o mesmo percentual e o vencedor é definido por sorteio.'
 };
 var lanceLivreMarker = {
   id: 'lance-livre',
   title: 'Lance livre',
-  text: 'O participante escolhe qual valor ofertar. Vencem os maiores lances elegíveis, conforme as regras e os recursos do grupo.'
+  text: 'O participante escolhe qual valor ofertar. Vencem os maiores lances elegíveis.'
 };
 
 // 03/11: 1 marco por botão do card "Ações" (card 6) — textos ainda são
 // placeholder ("Texto a definir."), à espera do conteúdo definitivo.
-var pagarParcelaMarker = {id: 'pagar-parcela', title: 'Pagar parcela', text: 'Manter as parcelas em dia permite participar dos sorteios e ofertar lances. Alguns grupos também oferecem sorteios de fidelidade.'};
+var pagarParcelaMarker = {id: 'pagar-parcela', title: 'Pagar parcela', text: 'Manter as parcelas em dia permite participar dos sorteios e ofertar lances.'};
 var cancelarReiniciarMarker = {id: 'cancelar-reiniciar', title: 'Cancelar / Reiniciar', text: 'Ao desistir, a devolução do valor pago normalmente sofre deduções e é feita no encerramento do grupo.'};
 var venderNaoContempladaMarker = {id: 'vender-nao-contemplada', title: 'Venda não contemplada',
   text: 'É possível transferir uma carta não contemplada, com aprovação da administradora. O preço pode envolver ágio ou deságio.'};
 var venderContempladaMarker = {id: 'vender-contemplada', title: 'Venda contemplada',
-  text: 'A carta contemplada pode ser vendida após sorteio ou lance, mediante aprovação da administradora. O preço depende do crédito e das obrigações restantes.'};
+  text: 'A carta contemplada pode ser vendida após sorteio ou lance. O preço depende do crédito e das obrigações restantes.'};
 var comprarImovelMarker = {id: 'comprar-imovel', title: 'Comprar imóvel',
-  text: 'Use o crédito contemplado para comprar um imóvel para morar ou alugar, após aprovação da administradora. Considere impostos e demais despesas.'};
+  text: 'Use o crédito contemplado para comprar um imóvel para morar ou alugar. Considere impostos e demais despesas.'};
 var reducaoCartaMarker = {id: 'reducao-carta', title: 'Lance embutido',
-  text: 'Após ser contemplado utilizando o lance embutido, o crédito reduz, pois parte do próprio valor foi usada para compor a oferta.'};
+  text: 'O valor do crédito sofre mudanças durante todo o período, seja pelo reajuste e/ou pela dedução do lance embutido.'};
 // 26/11: marco do botão "Compartilhar" (Etapa 1 do masterplan 200k)
 var compartilharMarker = {id: 'compartilhar', title: 'Compartilhar',
   text: 'Envie o link deste simulador para alguém que também esteja avaliando um consórcio. Não exige cadastro.'};
@@ -2327,7 +2324,10 @@ var openMarkerId = null;
 
 function setMarkerTooltipFixedContent(mk){
   document.getElementById('markerTooltipFixedTitle').textContent = mk.title;
-  document.getElementById('markerTooltipFixedText').textContent = mk.text;
+  // 28/11: innerHTML em vez de textContent — o marco "Indicadores" passou a
+  // usar <br> pra listar INCC/taxa de administração/fundo de reserva/seguro
+  // em linhas separadas; nenhum outro marco usa HTML, então é seguro.
+  document.getElementById('markerTooltipFixedText').innerHTML = mk.text;
 }
 
 function showMarkerTooltipFixed(mk){
