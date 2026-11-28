@@ -1942,6 +1942,17 @@ function updateContemplationUI(){
   updateBuyBtn();
   updateSellCartaBtn();
   updateSellCartaNaoContempladaBtn();
+  // 28/11 (correção de bug): o stepper do crédito (card 1) também trava se
+  // a contemplação acontecer por LANCE antes da 1ª parcela ser paga — os
+  // botões "Lance Fixo"/"Lance Livre" não exigem nenhuma parcela paga pra
+  // serem usados (ver lanceBloqueado acima, que não depende de
+  // monthsElapsed > 0), então sem isso seria possível vencer um lance no
+  // mês 0 e só então aumentar o crédito, deixando embutidoUsedTotal/
+  // recursoUsedTotal (já comprometidos em R$ sobre o crédito ANTIGO)
+  // inconsistentes com o crédito NOVO. updateContemplationUI() roda sempre
+  // que esse estado muda (contemplate(), doPay(), restore, reset), então
+  // centraliza a trava aqui em vez de cada chamador lembrar de chamá-la.
+  updateCreditoStepperDisabled();
 }
 
 // botão "Vender Carta" (card "Valor do crédito", ao lado de "Comprar Imóvel")
@@ -2824,14 +2835,19 @@ function attachStepper(stepperId, inputId, step){
 // muda aqui, só os valores em R$ (crédito, parcela, e os valores calculados
 // nos cards 7/8, que já são derivados de currentCredit()/calcLance() e por
 // isso acompanham sozinhos, sem precisar recalcular nada à parte). Travado
-// assim que a 1ª parcela é paga (ver doPay()) — simular uma carta maior só
-// faz sentido antes de começar a pagar de verdade.
+// assim que a 1ª parcela é paga (ver doPay()) OU assim que a cota é
+// contemplada por lance — mesmo antes de qualquer parcela, os botões
+// "Lance Fixo"/"Lance Livre" já aceitam cliques (ver lanceBloqueado em
+// updateContemplationUI(), que não exige monthsElapsed > 0), e um lance
+// vencedor compromete embutidoUsedTotal/recursoUsedTotal em R$ sobre o
+// crédito vigente naquele instante — mudar o crédito depois deixaria esses
+// valores já gastos inconsistentes com o novo crédito.
 function updateCreditoStepperDisabled(){
   var wrap = document.getElementById('creditoStepper');
   if (!wrap) return;
   var minus = wrap.querySelector('.credito-step-minus');
   var plus = wrap.querySelector('.credito-step-plus');
-  var locked = monthsElapsed > 0;
+  var locked = monthsElapsed > 0 || contemplated;
   if (minus) minus.disabled = locked || creditMult <= CREDIT_MULT_MIN;
   if (plus) plus.disabled = locked || creditMult >= CREDIT_MULT_MAX;
 }
@@ -3008,7 +3024,9 @@ function doPay(){
   if (paidMonths >= TOTAL || cartaSold) return;
   startWalkLoop(); // 27/11: liga o ciclo contínuo de caminhada (idempotente)
   monthsElapsed += 1; // parcela real, de verdade — é isso que mexe no INCC e no total pago
-  updateCreditoStepperDisabled(); // 28/11: trava o stepper do crédito após a 1ª parcela paga
+  // 28/11: o stepper do crédito (card 1) é travado dentro de
+  // updateContemplationUI() (chamada logo abaixo, sempre) — não precisa de
+  // chamada própria aqui.
 
   // 26/11: eventos de engajamento (Etapa 1 do masterplan 200k) — início da
   // jornada e marcos de progresso, pra medir "a pessoa simula bastante".
@@ -3303,10 +3321,9 @@ function restoreSimState(s){
   document.getElementById('paidLabel').textContent = v;
   paint(v, {instant:true});
   updateKpis();
-  updateContemplationUI();
+  updateContemplationUI(); // 28/11: já trava/destrava o stepper do crédito (card 1) sozinha
   updateLanceUnlockUI();
   updatePayBtn();
-  updateCreditoStepperDisabled(); // 28/11
 }
 
 function resetSimulation(){
@@ -3348,10 +3365,9 @@ function resetSimulation(){
   document.getElementById('livreBtn').classList.remove('lance-azul');
   paint(0, {instant:true});
   document.getElementById('paidLabel').textContent = 0;
-  updateContemplationUI();
+  updateContemplationUI(); // 28/11: já destrava o stepper do crédito (card 1) sozinha
   updateLanceUnlockUI();
   updatePayBtn();
-  updateCreditoStepperDisabled(); // 28/11: destrava o stepper do crédito no reset
 }
 document.getElementById('restartBtn').addEventListener('click', function(){
   stopFireworks();
